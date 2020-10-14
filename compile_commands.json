@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/./include -I/home/saitama/ws/dev/resmack_c11/./src -I/home/saitama/ws/dev/resmack_c11/./libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/main.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/main.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/main.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/./include -I/home/saitama/ws/dev/resmack_c11/./src -I/home/saitama/ws/dev/resmack_c11/./libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/rules.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/rules.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/rules.cpp"
+}
+]
