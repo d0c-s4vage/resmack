@@ -1,15 +1,17 @@
 #include <iostream>
 #include <map>
+#include <set>
 #include <stdio.h>
+#include <string>
 
-#include "rules.hpp"
 #include "items/or.hpp"
+#include "calc/reach.hpp"
+#include "rules.hpp"
 
 namespace resmack {
 
-Rules::Rules() {
-  std::cout << "Constructed!\n";
-}
+Rules::Rules(): Rules(NULL) {}
+Rules::Rules(Rules* parent): parent_(parent) {}
 
 Rules::~Rules() {
   for (auto it = this->map_.begin(); it != this->map_.end(); it++) {
@@ -55,6 +57,21 @@ bool Rules::Build(std::string rule_name, BuildContext* ctx) {
   this->map_[rule_name]->Build(ctx);
 
   return true;
+}
+
+Rules* Rules::NewChild() {
+  return new Rules(this);
+}
+
+void Rules::Finalize() {
+  calc::Reach reach_calc(&this->map_);
+
+  while (1) {
+    reach_calc.Calc();
+    if (reach_calc.NumChanges() == 0) {
+      break;
+    }
+  }
 }
 
 }

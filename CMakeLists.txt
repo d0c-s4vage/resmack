@@ -18,14 +18,25 @@ project(resmack)
 set(CMAKE_CXX_STANDARD 20)
 
 # include
-include_directories(./include ./src ./libs)
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/libs)
 
-set(GLOB FIELDS src/fields/*.hpp)
-set(MAIN_SOURCES src/main.cpp 
-            src/rules.cpp
-            src/rules.hpp
-            libs/nlohmann/json.hpp
-            ${FIELDS})
+file(GLOB ITEMS
+    ${PROJECT_SOURCE_DIR}/src/items/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/items/*.cpp)
+
+file(GLOB CALCS
+    ${PROJECT_SOURCE_DIR}/src/calc/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/calc/*.cpp)
+
+set(MAIN_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp 
+            ${PROJECT_SOURCE_DIR}/src/rules.cpp
+            ${PROJECT_SOURCE_DIR}/src/rules.hpp
+            ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp
+            ${ITEMS}
+            ${CALCS})
 
 # target
 add_executable(resmack ${MAIN_SOURCES})

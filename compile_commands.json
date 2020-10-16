@@ -1,12 +1,47 @@
 [
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
-  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/./include -I/home/saitama/ws/dev/resmack_c11/./src -I/home/saitama/ws/dev/resmack_c11/./libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/main.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/main.cpp",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/main.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/main.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/src/main.cpp"
 },
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
-  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/./include -I/home/saitama/ws/dev/resmack_c11/./src -I/home/saitama/ws/dev/resmack_c11/./libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/rules.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/rules.cpp",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/rules.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/rules.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/src/rules.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/and.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/and.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/and.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/opt.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/opt.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/opt.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/or.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/or.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/or.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/raw.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/raw.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/raw.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/ref.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/ref.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/ref.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/str.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/str.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/str.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/calc/reach.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/calc/reach.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/calc/reach.cpp"
 }
 ]

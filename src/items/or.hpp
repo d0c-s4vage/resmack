@@ -6,40 +6,31 @@
 
 #include "../item.hpp"
 #include "../rand.hpp"
+#include "build_context.hpp"
 
 namespace resmack {
+
+namespace calc {
+  class Reach;
+}
+
 namespace items {
 
 class Or: public resmack::Item {
-  private:
-   std::vector<resmack::Item*> items_;
+ private:
+  std::vector<resmack::Item*> items_;
+  std::vector<size_t> choice_indices_;
+  bool keep_;
 
-  public:
-   Or() : items_() {
-     std::cout << "Created OR\n";
-   }
+ public:
+  Or();
+  Or(bool keep);
+  ~Or();
 
-   ~Or() {
-     for (Item *item: this->items_) {
-       delete item;
-     }
-     this->items_.clear();
-   }
-
-   ItemType Type() {
-     return ItemType::OR;
-   }
-
-   void Build(BuildContext* ctx) {
-     uint32_t chosen_idx = (ctx->rand->Next() % this->items_.size());
-     this->items_[chosen_idx]->Build(ctx);
-   }
-
-   Or* AddItem(Item *item) {
-     this->items_.push_back(item);
-     std::cout << "Adding Item\n";
-     return this;
-   }
+  ItemType Type();
+  void Build(BuildContext* ctx);
+  Or* AddItem(Item *item);
+  bool CalcReachability(calc::Reach* reach_calc);
 };
 
 }
