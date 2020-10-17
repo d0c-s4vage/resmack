@@ -39,7 +39,7 @@ namespace items {
    }
 
    // none of our options are reachable!
-   return this->choice_indices_.size() == 0;
+   return this->choice_indices_.size() != 0;
   }
 
 }

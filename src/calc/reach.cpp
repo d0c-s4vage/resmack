@@ -3,36 +3,42 @@
 namespace resmack {
 namespace calc {
 
-  Reach::Reach(std::map<std::string, items::Or*>* map): map_(map) {}
+  Reach::Reach(std::map<std::string, items::Or*>* map): map_(map), num_changes_(0) {}
   Reach::~Reach() {}
 
   void Reach::Calc() {
+    this->num_changes_ = 0;
     this->tmp_new_rules_.clear();
     this->tmp_to_prune_.clear();
 
     for (auto it = this->map_->begin(); it != this->map_->end(); it++) {
       std::string rule_name = it->first;
       items::Or* rule_or = it->second;
-      // it has been finalized, officially pruned
-      if (this->pruned_->contains(rule_name)) { continue; }
+      // it has been finalized and officially pruned, so ignore it
+      if (this->pruned_.contains(rule_name)) { continue; }
 
-      this->CalcItem(rule_or);
+      if (!this->CalcItem(rule_or)) {
+        this->tmp_to_prune_.emplace(rule_name);
+      }
     }
 
     for (auto rule_name: this->tmp_to_prune_) {
-      if (this->tmp_to_prune_.contains(rule_name)) { continue; }
+      if (this->tmp_new_rules_.contains(rule_name)) { continue; }
 
       this->map_->erase(rule_name);
-      this->pruned_->emplace(rule_name);
+      this->pruned_.emplace(rule_name);
+      std::cout << "Pruned rule: " << rule_name << std::endl;
+      this->num_changes_++;
     }
 
     for (auto rule_name: this->tmp_new_rules_) {
       this->map_->emplace(rule_name, new items::Or(true));
+      this->num_changes_++;
     }
   }
 
   size_t Reach::NumChanges() {
-    return 0;
+    return this->num_changes_;
   }
 
   bool Reach::CalcItem(Item* item) {
@@ -41,7 +47,7 @@ namespace calc {
     switch(item->Type()) {
       case ItemType::REF:
         if (!fully_reachable) {
-          this->unresolved_refs_->emplace(((items::Ref*)item)->rule_name_);
+          this->unresolved_refs_.emplace(((items::Ref*)item)->rule_name_);
         }
         break;
       default:
@@ -49,6 +55,10 @@ namespace calc {
     }
 
     return fully_reachable;
+  }
+
+  bool Reach::RuleExists(std::string rule_name) {
+    return this->map_->contains(rule_name);
   }
 
 }

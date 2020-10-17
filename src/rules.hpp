@@ -13,22 +13,25 @@
 namespace resmack {
 
 class Rules {
-  public:
-   std::map<std::string, items::Or*> map_;
-   Rules* parent_;
+ private:
+  bool finalized_;
 
-  public:
-   Rules();
-   Rules(Rules *parent);
-   ~Rules();
+ public:
+  std::map<std::string, items::Or*> map_;
+  Rules* parent_;
 
-   Rules* AddRule(std::string name, Item* item);
-   bool Build(std::string rule_name,
-              std::string *output,
-              Rand *rand);
-   bool Build(std::string rule_name, BuildContext *ctx);
-   Rules* NewChild();
-   void Finalize();
+ public:
+  Rules();
+  Rules(Rules *parent);
+  ~Rules();
+
+  Rules* AddRule(std::string name, Item* item);
+  bool Build(std::string rule_name,
+             std::string *output,
+             Rand *rand);
+  bool Build(std::string rule_name, BuildContext *ctx);
+  Rules* NewChild();
+  void Finalize();
 };
 
 }

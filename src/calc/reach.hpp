@@ -14,22 +14,23 @@ namespace resmack {
 namespace calc {
 
 class Reach {
-  public:
-   std::map<std::string, items::Or*>* map_;
-   std::set<std::string>* unresolved_refs_;
-   std::set<std::string>* pruned_;
+ public:
+  std::map<std::string, items::Or*>* map_;
 
-   std::set<std::string> tmp_new_rules_;
-   std::set<std::string> tmp_to_prune_;
-   size_t num_changes_;
+  std::set<std::string> unresolved_refs_;
+  std::set<std::string> pruned_;
 
-   Reach(std::map<std::string, items::Or*>* map);
-   ~Reach();
+  std::set<std::string> tmp_new_rules_;
+  std::set<std::string> tmp_to_prune_;
+  size_t num_changes_;
 
-   void Calc();
-   size_t NumChanges();
+  Reach(std::map<std::string, items::Or*>* map);
+  ~Reach();
 
-   bool CalcItem(Item* item);
+  void Calc();
+  size_t NumChanges();
+  bool CalcItem(Item* item);
+  bool RuleExists(std::string rule_name);
 };
 
 }

@@ -16,6 +16,10 @@ namespace items {
     ctx->rules->Build(this->rule_name_, ctx);
   }
 
+  bool Ref::CalcReachability(calc::Reach* reach_calc) {
+    return reach_calc->RuleExists(this->rule_name_);
+  }
+
 }
 }
 

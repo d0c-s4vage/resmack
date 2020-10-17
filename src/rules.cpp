@@ -11,7 +11,7 @@
 namespace resmack {
 
 Rules::Rules(): Rules(NULL) {}
-Rules::Rules(Rules* parent): parent_(parent) {}
+Rules::Rules(Rules* parent): parent_(parent), finalized_(false) {}
 
 Rules::~Rules() {
   for (auto it = this->map_.begin(); it != this->map_.end(); it++) {
@@ -44,6 +44,10 @@ bool Rules::Build(std::string rule_name, std::string *output, Rand *rand) {
 }
 
 bool Rules::Build(std::string rule_name, BuildContext* ctx) {
+  if (!this->finalized_) {
+    this->Finalize();
+  }
+
   std::string tmp_pre_output;
   if (ctx->rules == NULL) {
     ctx->rules = this;
@@ -72,6 +76,8 @@ void Rules::Finalize() {
       break;
     }
   }
+
+  this->finalized_ = true;
 }
 
 }

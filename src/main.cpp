@@ -10,6 +10,7 @@
 #include "items/ref.hpp"
 #include "items/opt.hpp"
 #include "items/raw.hpp"
+#include "items/int.hpp"
 #include "rand.hpp"
 
 #include <nlohmann/json.hpp>
@@ -27,15 +28,18 @@ int main(int argc, char** argv) {
   items::Raw str1("Hello World1");
   items::Raw str2("Hello World2");
   items::Raw str3("Hello World3");
+  items::Int int1(90, 100);
   items::And and_("<->");
   and_.AddItem(new items::Raw("And Item 1"));
   and_.AddItem(new items::Raw("And Item 2"));
   and_.AddItem(new items::Raw("And Item 3"));
   and_.AddItem(new items::Raw("And Item 4"));
 
+  rules.AddRule("unresolvable", new items::Ref("DNE"));
   rules.AddRule("test_rule", &str1);
   rules.AddRule("test_rule", &str2);
   rules.AddRule("test_rule", &str3);
+  rules.AddRule("test_rule", &int1);
   rules.AddRule("test_rule", new items::Str(10, 20));
   rules.AddRule("test_rule", &and_);
 
@@ -64,6 +68,7 @@ int main(int argc, char** argv) {
     total_bytes += output.size();
 
     if (count % 0x100000 == 0) {
+      std::cout << "Output: " << output << std::endl;
       float curr = clock() / (float)CLOCKS_PER_SEC;
       float totalMibs = (float)total_bytes / (1024.0f * 1024.0f);
       printf("%08lx | %0.2f iters/s | %0.2f MiB/s\n",

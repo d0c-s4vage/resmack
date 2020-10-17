@@ -18,6 +18,7 @@ class Ref: public resmack::Item {
 
   ItemType Type();
   void Build(BuildContext *ctx);
+  bool CalcReachability(calc::Reach* reach_calc);
 };
 
 }

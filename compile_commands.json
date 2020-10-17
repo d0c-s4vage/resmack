@@ -16,6 +16,11 @@
 },
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/int.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/int.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/items/int.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/release",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs  -O3 -DNDEBUG   -std=gnu++2a -o CMakeFiles/resmack.dir/src/items/opt.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/items/opt.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/src/items/opt.cpp"
 },
