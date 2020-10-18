@@ -18,7 +18,7 @@
 using json = nlohmann::json;
 using namespace resmack;
 
-int main(int argc, char** argv) {
+int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
   Rules rules;
 
   Rand rand;

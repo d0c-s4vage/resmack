@@ -37,7 +37,7 @@ file(GLOB CALCS
     ${PROJECT_SOURCE_DIR}/src/calc/*.hpp
     ${PROJECT_SOURCE_DIR}/src/calc/*.cpp)
 
-set(MAIN_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp 
+set(MAIN_SOURCES
             ${PROJECT_SOURCE_DIR}/src/rules.cpp
             ${PROJECT_SOURCE_DIR}/src/rules.hpp
             ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp
@@ -45,7 +45,7 @@ set(MAIN_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
             ${CALCS})
 
 # target
-add_executable(resmack ${MAIN_SOURCES})
+add_executable(resmack ${PROJECT_SOURCE_DIR}/src/main.cpp ${MAIN_SOURCES})
 
 # https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
 # add_subdirectory(./libs/json)

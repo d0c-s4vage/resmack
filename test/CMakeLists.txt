@@ -4,6 +4,7 @@ set(GMOCK_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/libs-test/googletest/googlemock/incl
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/test
     ${GTEST_INCLUDE_DIR}
     ${GMOCK_INCLUDE_DIR}
 )
@@ -11,6 +12,7 @@ include_directories(
 file(GLOB TESTS *.cpp)
 add_executable(test_${PROJECT_NAME}
   ./main.cpp
+  ${MAIN_SOURCES}
   ${TESTS}
 )
 

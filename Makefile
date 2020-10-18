@@ -68,7 +68,8 @@ libs-test/googletest/build/lib/libgtest_main.a:
 build/test:
 	mkdir -p build/test ; \
 	cd build/test ; \
-	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug ;
+	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
+	cp compile_commands.json ../../
 
 .PHONY: build/test/test_resmack
 build/test/test_resmack: build/test

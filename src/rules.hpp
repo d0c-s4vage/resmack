@@ -17,8 +17,8 @@ class Rules {
   bool finalized_;
 
  public:
-  std::map<std::string, items::Or*> map_;
   Rules* parent_;
+  std::map<std::string, items::Or*> map_;
 
  public:
   Rules();

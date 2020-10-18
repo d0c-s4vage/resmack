@@ -32,7 +32,6 @@ namespace items {
 
   And* And::AddItem(Item *item) {
    this->items_.push_back(item);
-   std::cout << "Adding Item\n";
    return this;
   }
 

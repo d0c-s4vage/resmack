@@ -29,7 +29,7 @@ class Item {
    virtual ~Item() { };
    virtual ItemType Type() = 0;
    virtual void Build(BuildContext *ctx) = 0;
-   virtual bool CalcReachability(calc::Reach *calc) {
+   virtual bool CalcReachability(calc::Reach *calc __attribute__((unused))) {
      return true;
    }
 };

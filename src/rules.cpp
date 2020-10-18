@@ -11,7 +11,7 @@
 namespace resmack {
 
 Rules::Rules(): Rules(NULL) {}
-Rules::Rules(Rules* parent): parent_(parent), finalized_(false) {}
+Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {}
 
 Rules::~Rules() {
   for (auto it = this->map_.begin(); it != this->map_.end(); it++) {
