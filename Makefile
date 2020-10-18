@@ -49,7 +49,10 @@ build/release/resmack:
 # TEST ------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-test: libs-test/google-test
+test: libs-test/google-test build/test/test_resmack
+
+run-test: test
+	build/test/test/test_resmack
 
 libs-test/google-test: libs-test/googletest/build/lib/libgtest_main.a
 
@@ -61,3 +64,13 @@ libs-test/googletest/build/lib/libgtest_main.a:
 		cd build ; \
 		cmake ../ ; \
 		make -j $(nproc)
+
+build/test:
+	mkdir -p build/test ; \
+	cd build/test ; \
+	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug ;
+
+.PHONY: build/test/test_resmack
+build/test/test_resmack: build/test
+	cd build/test ; \
+	make -j $(nproc)

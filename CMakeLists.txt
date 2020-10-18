@@ -12,6 +12,9 @@ cmake_minimum_required(VERSION 3.0)
 
 project(resmack)
 
+# options
+option(BUILD_TEST "Build the unit tests" OFF)
+
 # flags
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -47,3 +50,7 @@ add_executable(resmack ${MAIN_SOURCES})
 # https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
 # add_subdirectory(./libs/json)
 # target_link_libraries(resmack json)
+
+if(BUILD_TEST)
+  add_subdirectory(test)
+endif()
