@@ -13,6 +13,9 @@ cmake_minimum_required(VERSION 3.0)
 project(resmack)
 
 # flags
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # files
 set(CMAKE_CXX_STANDARD 20)
@@ -44,5 +47,3 @@ add_executable(resmack ${MAIN_SOURCES})
 # https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
 # add_subdirectory(./libs/json)
 # target_link_libraries(resmack json)
-
-# 

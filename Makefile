@@ -44,3 +44,20 @@ build/release:
 build/release/resmack:
 	cd build/release ; \
 	make -j $(proc)
+
+# -----------------------------------------------------------------------------
+# TEST ------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+test: libs-test/google-test
+
+libs-test/google-test: libs-test/googletest/build/lib/libgtest_main.a
+
+libs-test/googletest/build/lib/libgtest_main.a:
+	mkdir -p libs-test
+	wget -qO- "https://github.com/google/googletest/archive/release-1.10.0.tar.gz" | tar xvz -C libs-test --transform 's/^googletest-release-1.10.0/googletest/'
+	cd libs-test/googletest ; \
+		mkdir build ; \
+		cd build ; \
+		cmake ../ ; \
+		make -j $(nproc)
