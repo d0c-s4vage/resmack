@@ -17,34 +17,34 @@ namespace calc {
 
 namespace items {
 
-class Or: public resmack::Item {
- private:
-  std::vector<resmack::Item*> items_;
-  std::vector<size_t> choice_indices_;
-  std::vector<size_t> shortest_indices_;
-  bool keep_;
+  class Or: public resmack::Item {
+   private:
+    std::vector<resmack::Item*> items_;
+    std::vector<size_t> choice_indices_;
+    std::vector<size_t> shortest_indices_;
+    bool keep_;
 
- public:
-  Or();
-  Or(bool keep);
-  ~Or();
+   public:
+    Or();
+    Or(bool keep);
+    ~Or();
 
-  ItemType Type();
-  void Build(BuildContext* ctx);
-  Or* AddItem(Item *item);
-  size_t NumItems() { return this->items_.size(); }
-  size_t NumChoicesItems() { return this->choice_indices_.size(); }
-  size_t NumShortestItems() { return this->shortest_indices_.size(); }
-  bool ShouldKeep() { return this->keep_; }
+    ItemType Type();
+    void Build(BuildContext* ctx);
+    Or* AddItem(Item *item);
+    /**
+     * Add a variable number of items to this Or. NULL *MUST* be passed
+     * as the final argument as a sentinel value
+     **/
+    Or* AddItems(Item* item, .../*Item* item, .., NULL sentinel value*/);
+    size_t NumItems() { return this->items_.size(); }
+    size_t NumChoicesItems() { return this->choice_indices_.size(); }
+    size_t NumShortestItems() { return this->shortest_indices_.size(); }
+    bool ShouldKeep() { return this->keep_; }
 
-  /**
-   * Add a variable number of items to this Or. NULL *MUST* be passed
-   * as the final argument as a sentinel value
-   **/
-  Or* AddItems(Item* item, .../*Item* item, .., NULL sentinel value*/);
-  bool CalcReachability(calc::Reach* reach_calc);
-  size_t CalcRefDepth(calc::RefDepth* ref_calc);
-};
+    bool CalcReachability(calc::Reach* reach_calc);
+    size_t CalcRefDepth(calc::RefDepth* ref_calc);
+  };
 
 }
 }

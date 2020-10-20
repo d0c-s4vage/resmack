@@ -19,43 +19,49 @@ using json = nlohmann::json;
 using namespace resmack;
 
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
+  Rand rand;
   Rules rules;
 
-  Rand rand;
+  rules.AddRule("PruneMe", new items::Ref("unresolvable"))
+    ->AddRule("PruneMeToo", new items::Ref("PruneMe"))
+    ->AddRule("Special", new items::Raw("SPECIAL ONE"))
+    ->AddRule("RefdRule", (new items::Or())->AddItems(
+      new items::Raw("Hello"),
+      new items::Raw("Blah"),
+      new items::Ref("Special"),
+      NULL))
+    ->AddRule("RefdRule", (new items::Or())->AddItems(
+      new items::Raw("Hello"),
+      new items::Raw("Blah"),
+      new items::Ref("Special"),
+      new items::Ref("TestRule"),
+      NULL))
+    ->AddRule("TestRule", (new items::And())->AddItems(
+      new items::Ref("RefdRule"),
+      new items::Raw("World"),
+      NULL))
+    ->AddRule("TestRule2", (new items::And())->AddItems(
+      new items::Ref("TestRule"),
+      new items::Raw("World"),
+      NULL))
+    ->AddRule("TestRule2", (new items::And())->AddItems(
+      new items::Ref("TestRule"),
+      new items::Raw("World"),
+      NULL))
+    ->AddRule("TestRule2", (new items::Int(5, 1337)))
+    ->AddRule("TestRule2", (new items::And())->AddItem((new items::Or())->AddItems(
+      new items::Raw("1"),
+      new items::Raw("2"),
+      new items::Raw("3"),
+      new items::Raw("4"),
+      new items::Raw("5"),
+      new items::Str(5, 10, "abcdefg"),
+      NULL)))
+    ->AddRule("TestRule2", (new items::And())->AddItem(new items::Raw("1000.5")))
+    ->AddRule("TestRule2", new items::Raw("---World"));
+
   std::string output;
-  output.reserve(0x100);
-
-  items::Raw str1("Hello World1");
-  items::Raw str2("Hello World2");
-  items::Raw str3("Hello World3");
-  items::Int int1(90, 100);
-  items::And and_("<->");
-  and_.AddItem(new items::Raw("And Item 1"));
-  and_.AddItem(new items::Raw("And Item 2"));
-  and_.AddItem(new items::Raw("And Item 3"));
-  and_.AddItem(new items::Raw("And Item 4"));
-
-  rules.AddRule("unresolvable", new items::Ref("DNE"));
-  rules.AddRule("test_rule", &str1);
-  rules.AddRule("test_rule", &str2);
-  rules.AddRule("test_rule", &str3);
-  rules.AddRule("test_rule", &int1);
-  rules.AddRule("test_rule", new items::Str(10, 20));
-  rules.AddRule("test_rule", &and_);
-
-  items::Ref ref("test_rule");
-  items::And big_and("==");
-  big_and\
-    .AddItem(new items::Raw("hello"))\
-    ->AddItem((new items::Or())\
-        ->AddItem(new items::Raw("blah"))\
-        ->AddItem(new items::Raw("halb"))\
-        ->AddItem(new items::Opt(new items::Raw("testing")))
-    );
-
-  rules.AddRule("other_rule", &ref);
-  rules.AddRule("other_rule", &big_and);
-
+  //output.reserve(0x1000);
   uint64_t total_bytes = 0;
   uint64_t count = 0;
   float start = clock() / (float)CLOCKS_PER_SEC;
@@ -64,7 +70,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     count += 1;
 
     output.clear();
-    rules.Build("other_rule", &output, &rand);
+    rules.Build("TestRule2", &output, &rand);
     total_bytes += output.size();
 
     if (count % 0x100000 == 0) {

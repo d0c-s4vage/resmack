@@ -1,3 +1,5 @@
+#include <cstdarg>
+
 #include "../item.hpp"
 #include "and.hpp"
 
@@ -33,6 +35,19 @@ namespace items {
   And* And::AddItem(Item *item) {
    this->items_.push_back(item);
    return this;
+  }
+
+  And* And::AddItems(Item* first, .../*Item* item, .., NULL sentinel value*/) {
+    va_list args;
+    va_start(args, first);
+    Item* next = first;
+
+    while (NULL != next) {
+      if (next == NULL) { break; }
+      this->items_.push_back(next);
+      next = va_arg(args, Item*);
+    }
+    return this;
   }
 
   bool And::CalcReachability(calc::Reach* reach_calc) {

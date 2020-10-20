@@ -30,6 +30,11 @@ namespace items {
     ItemType Type();
     void Build(BuildContext *ctx);
     And* AddItem(Item *item);
+    /**
+     * Add a variable number of items to this Or. NULL *MUST* be passed
+     * as the final argument as a sentinel value
+     **/
+    And* AddItems(Item* item, .../*Item* item, .., NULL sentinel value*/);
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_depth);
   };
