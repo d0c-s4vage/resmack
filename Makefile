@@ -32,24 +32,48 @@ build/debug/resmack:
 # RELEASE ---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-release: build/release build/release/resmack
+RELEASE_TYPE=Release
+RELEASE_SUFFIX=""
+RELEASE_PATH=build/release$(RELEASE_SUFFIX)
+
+.PHONY: \
+	release \
+	release-syms \
+	build-release \
+	perf-release-inner \
+	$(RELEASE_PATH)/resmack
+
+release:
+	$(MAKE) build-release
 
 run-release: release
-	build/release/resmack
+	$(RELEASE_PATH)/resmack
 
-gdb-release: release
-	gdb -ex run build/release/resmack
+release-syms:
+	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
-build/release:
-	mkdir -p build/release ; \
-	cd build/release ; \
-	cmake ../../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
-	cp -u compile_commands.json ../../
+gdb-release: release-syms
+	gdb -ex run $(RELEASE_PATH)-syms/resmack
 
-.PHONY: build/release/resmack
-build/release/resmack:
-	cd build/release ; \
+run-perf: release-syms
+	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
+
+perf-release-inner:
+	perf record -g $(RELEASE_PATH)-syms/resmack || true
+
+
+# -----------------------------------------------------------------------------
+
+build-release: $(RELEASE_PATH)/resmack
+
+$(RELEASE_PATH)/resmack: $(RELEASE_PATH)
+	cd $(RELEASE_PATH) ; \
 	make -j $(proc)
+
+$(RELEASE_PATH):
+	mkdir -p $(RELEASE_PATH) ; \
+	cd $(RELEASE_PATH) ; \
+	cmake ../../ -DCMAKE_BUILD_TYPE=$(RELEASE_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 
 # -----------------------------------------------------------------------------
 # TEST ------------------------------------------------------------------------

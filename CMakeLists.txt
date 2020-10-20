@@ -18,7 +18,7 @@ option(BUILD_TEST "Build the unit tests" OFF)
 # flags
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
 
 # files
 set(CMAKE_CXX_STANDARD 20)

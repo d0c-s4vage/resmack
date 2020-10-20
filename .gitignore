@@ -7,3 +7,5 @@ build
 .clangd
 externals
 libs-test
+perf.data
+perf.data.old
