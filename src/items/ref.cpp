@@ -1,6 +1,7 @@
 #include "../item.hpp"
 #include "ref.hpp"
 #include "../rules.hpp"
+#include <regex.h>
 
 namespace resmack {
 namespace items {
@@ -20,6 +21,13 @@ namespace items {
     return reach_calc->RuleExists(this->rule_name_);
   }
 
-}
-}
+  size_t Ref::CalcRefDepth(calc::RefDepth* ref_calc) {
+    size_t res = ref_calc->DepthOf(this->rule_name_);
+    if (res == calc::RefDepth::INF_DEPTH) {
+      return res;
+    }
+    return res + 1;
+  }
 
+}
+}

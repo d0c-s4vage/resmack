@@ -27,7 +27,6 @@ namespace calc {
 
       this->map_->erase(rule_name);
       this->pruned_.emplace(rule_name);
-      std::cout << "Pruned rule: " << rule_name << std::endl;
       this->num_changes_++;
     }
 

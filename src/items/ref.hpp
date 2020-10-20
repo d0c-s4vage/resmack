@@ -9,17 +9,18 @@
 namespace resmack {
 namespace items {
 
-class Ref: public resmack::Item {
- public:
-  std::string rule_name_;
+  class Ref: public resmack::Item {
+   public:
+    std::string rule_name_;
 
-  Ref(std::string rule_name);
-  ~Ref();
+    Ref(std::string rule_name);
+    ~Ref();
 
-  ItemType Type();
-  void Build(BuildContext *ctx);
-  bool CalcReachability(calc::Reach* reach_calc);
-};
+    ItemType Type();
+    void Build(BuildContext *ctx);
+    bool CalcReachability(calc::Reach* reach_calc);
+    size_t CalcRefDepth(calc::RefDepth* ref_calc);
+  };
 
 }
 }

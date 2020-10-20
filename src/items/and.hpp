@@ -9,22 +9,30 @@
 #include "../rand.hpp"
 
 namespace resmack {
+
+namespace calc {
+  class Reach;
+  class RefDepth;
+}
+
 namespace items {
 
-class And: public resmack::Item {
- private:
-  std::vector<resmack::Item*> items_;
-  std::string sep_;
+  class And: public resmack::Item {
+   private:
+    std::vector<resmack::Item*> items_;
+    std::string sep_;
 
- public:
-  And(std::string sep);
-  And();
-  ~And();
+   public:
+    And(std::string sep);
+    And();
+    ~And();
 
-  ItemType Type();
-  void Build(BuildContext *ctx);
-  And* AddItem(Item *item);
-};
+    ItemType Type();
+    void Build(BuildContext *ctx);
+    And* AddItem(Item *item);
+    bool CalcReachability(calc::Reach* reach_calc);
+    size_t CalcRefDepth(calc::RefDepth* ref_depth);
+  };
 
 }
 }

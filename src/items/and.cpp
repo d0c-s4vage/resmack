@@ -35,5 +35,31 @@ namespace items {
    return this;
   }
 
+  bool And::CalcReachability(calc::Reach* reach_calc) {
+    for (Item *item: this->items_) {
+      if (!item->CalcReachability(reach_calc)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Returns the maximum reference depth of all items in this And
+   */
+  size_t And::CalcRefDepth(calc::RefDepth* ref_depth) {
+    size_t max_len = 0;
+
+    for (Item *item: this->items_) {
+      size_t len = item->CalcRefDepth(ref_depth);
+      if (len > max_len) {
+        max_len = len;
+      }
+    }
+
+    return max_len;
+  }
+
 }
 }

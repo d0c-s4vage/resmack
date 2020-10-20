@@ -1,3 +1,6 @@
+#ifndef RESMACK_UTILS_HPP
+#define RESMACK_UTILS_HPP
+
 #include <stdint.h>
 
 namespace resmack {
@@ -16,3 +19,5 @@ namespace utils {
 
 }
 }
+
+#endif

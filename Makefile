@@ -14,11 +14,14 @@ debug: build/debug build/debug/resmack
 run-debug: debug
 	build/debug/resmack
 
+gdb-debug: debug
+	gdb -ex run build/debug/resmack
+
 build/debug:
 	mkdir -p build/debug ; \
 	cd build/debug ; \
 	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
-	cp compile_commands.json ../../
+	cp -u compile_commands.json ../../
 
 .PHONY: build/debug/resmack
 build/debug/resmack:
@@ -34,11 +37,14 @@ release: build/release build/release/resmack
 run-release: release
 	build/release/resmack
 
+gdb-release: release
+	gdb -ex run build/release/resmack
+
 build/release:
 	mkdir -p build/release ; \
 	cd build/release ; \
 	cmake ../../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
-	cp compile_commands.json ../../
+	cp -u compile_commands.json ../../
 
 .PHONY: build/release/resmack
 build/release/resmack:
@@ -49,10 +55,12 @@ build/release/resmack:
 # TEST ------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+TEST="*"
+
 test: libs-test/google-test build/test/test_resmack
 
 run-test: test
-	build/test/test/test_resmack
+	build/test/test/test_resmack --gtest_filter=$(TEST)
 
 libs-test/google-test: libs-test/googletest/build/lib/libgtest_main.a
 
@@ -69,7 +77,7 @@ build/test:
 	mkdir -p build/test ; \
 	cd build/test ; \
 	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
-	cp compile_commands.json ../../
+	cp -u compile_commands.json ../../
 
 .PHONY: build/test/test_resmack
 build/test/test_resmack: build/test
