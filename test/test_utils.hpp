@@ -1,9 +1,9 @@
 #ifndef RESMACK_TEST_UTILS
 #define RESMACK_TEST_UTILS
 
-#include <map>
 #include <string>
 
+#include "types.hpp"
 #include "rand.hpp"
 #include "item.hpp"
 #include "rules.hpp"
@@ -21,7 +21,7 @@ namespace test_utils {
     return output;
   }
 
-  static void CountBuilds(int iters, resmack::Item* item, std::map<std::string, int>* counts) {
+  static void CountBuilds(int iters, resmack::Item* item, resmack::Map<std::string, int>* counts) {
     resmack::Rand rand;
     resmack::Rules rules;
     rules.AddRule("test", item);

@@ -1,10 +1,9 @@
 #ifndef RESMACK_CALC_REACH_H
 #define RESMACK_CALC_REACH_H
 
-#include <map>
-#include <set>
 #include <string>
 
+#include "../types.hpp"
 #include "../item.hpp"
 #include "../items/or.hpp"
 #include "../items/ref.hpp"
@@ -14,16 +13,16 @@ namespace calc {
 
   class Reach {
    public:
-    std::map<std::string, items::Or*>* map_;
+    Map<std::string, items::Or*>* map_;
 
-    std::set<std::string> unresolved_refs_;
-    std::set<std::string> pruned_;
+    Set<std::string> unresolved_refs_;
+    Set<std::string> pruned_;
 
-    std::set<std::string> tmp_new_rules_;
-    std::set<std::string> tmp_to_prune_;
+    Set<std::string> tmp_new_rules_;
+    Set<std::string> tmp_to_prune_;
     size_t num_changes_;
 
-    Reach(std::map<std::string, items::Or*>* map);
+    Reach(Map<std::string, items::Or*>* map);
     ~Reach();
 
     void Calc();

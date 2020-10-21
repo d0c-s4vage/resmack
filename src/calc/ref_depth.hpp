@@ -2,10 +2,9 @@
 #define RESMACK_CALC_REF_DEPTH_H
 
 #include <limits>
-#include <map>
-#include <set>
 #include <string>
 
+#include "types.hpp"
 #include "item.hpp"
 #include "items/or.hpp"
 
@@ -14,18 +13,18 @@ namespace calc {
 
   class RefDepth {
    private:
-    std::map<std::string, items::Or*>* map_;
+    Map<std::string, items::Or*>* map_;
 
     size_t num_changes_;
-    std::set<std::string> pruned_;
-    std::set<std::string> tmp_new_rules_;
-    std::set<std::string> tmp_to_prune_;
-    std::map<std::string, size_t> depths_;
+    Set<std::string> pruned_;
+    Set<std::string> tmp_new_rules_;
+    Set<std::string> tmp_to_prune_;
+    Map<std::string, size_t> depths_;
 
    public:
     static const size_t INF_DEPTH = std::numeric_limits<size_t>::max();
 
-    RefDepth(std::map<std::string, items::Or*>* map);
+    RefDepth(Map<std::string, items::Or*>* map);
     ~RefDepth();
 
     void Calc();

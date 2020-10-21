@@ -3,7 +3,7 @@
 namespace resmack {
 namespace calc {
 
-  RefDepth::RefDepth(std::map<std::string, items::Or*>* map): map_(map) {}
+  RefDepth::RefDepth(Map<std::string, items::Or*>* map): map_(map) {}
   RefDepth::~RefDepth() {}
 
   void RefDepth::Calc() {

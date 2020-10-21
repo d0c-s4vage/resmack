@@ -1,9 +1,8 @@
 #include <iostream>
-#include <map>
-#include <set>
 #include <stdio.h>
 #include <string>
 
+#include "types.hpp"
 #include "items/or.hpp"
 #include "calc/reach.hpp"
 #include "calc/ref_depth.hpp"

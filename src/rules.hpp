@@ -1,9 +1,7 @@
 #ifndef RESMACK_RULES_H
 #define RESMACK_RULES_H
 
-#include <map>
-#include <set>
-
+#include "types.hpp"
 #include "rand.hpp"
 #include "item.hpp"
 #include "calc/reach.hpp"
@@ -19,14 +17,14 @@ namespace resmack {
 
    public:
     Rules* parent_;
-    std::map<std::string, items::Or*> map_;
+    Map<std::string, items::Or*> map_;
 
    public:
     Rules();
     Rules(Rules *parent);
     ~Rules();
 
-    std::map<std::string, items::Or*>* GetRules() { return &this->map_; }
+    Map<std::string, items::Or*>* GetRules() { return &this->map_; }
     Rules* AddRule(std::string name, Item* item);
     bool Build(std::string rule_name,
                std::string *output,

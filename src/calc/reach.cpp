@@ -3,7 +3,7 @@
 namespace resmack {
 namespace calc {
 
-  Reach::Reach(std::map<std::string, items::Or*>* map): map_(map), num_changes_(0) {}
+  Reach::Reach(Map<std::string, items::Or*>* map): map_(map), num_changes_(0) {}
   Reach::~Reach() {}
 
   void Reach::Calc() {

@@ -1,7 +1,6 @@
-#include <map>
-
 #include "gtest/gtest.h"
 
+#include "types.hpp"
 #include "calc/reach.hpp"
 #include "rules.hpp"
 #include "item.hpp"
@@ -22,7 +21,7 @@ namespace items {
 
     EXPECT_EQ(or_->NumItems(), 2);
 
-    std::map<std::string, int> counts;
+    Map<std::string, int> counts;
     test_utils::CountBuilds(100, or_, &counts);
 
     EXPECT_EQ(counts.contains("hello"), true);
@@ -43,7 +42,7 @@ namespace items {
 
     EXPECT_EQ(or_->NumItems(), 3);
 
-    std::map<std::string, int> counts;
+    Map<std::string, int> counts;
     test_utils::CountBuilds(100, or_, &counts);
 
     EXPECT_EQ(counts.contains("hello"), true);
@@ -65,7 +64,7 @@ namespace items {
         new Raw("test"),
         NULL);
 
-    std::map<std::string, Or*> map;
+    Map<std::string, Or*> map;
     calc::Reach reach(&map);
     calc::RefDepth ref_depth(&map);
     reach.CalcItem(or_);

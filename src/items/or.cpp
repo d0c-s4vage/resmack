@@ -1,8 +1,8 @@
-#include <map>
 #include <cstdarg>
 #include <cstddef>
 #include <limits>
 
+#include "types.hpp"
 #include "../item.hpp"
 #include "or.hpp"
 
@@ -63,7 +63,7 @@ namespace items {
   size_t Or::CalcRefDepth(calc::RefDepth* ref_depth) {
     this->shortest_indices_.clear();
     size_t shortest_len = std::numeric_limits<size_t>::max();
-    std::map<size_t, size_t> depths;
+    Map<size_t, size_t> depths;
 
     for (size_t idx = 0; idx < this->choice_indices_.size(); idx++) {
       Item* item = this->items_[this->choice_indices_[idx]];
