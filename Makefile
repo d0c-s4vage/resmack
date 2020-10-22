@@ -17,6 +17,9 @@ run-debug: debug
 gdb-debug: debug
 	gdb -ex run build/debug/resmack
 
+gdb-test: test
+	gdb -ex run build/test/test/test_resmack
+
 build/debug:
 	mkdir -p build/debug ; \
 	cd build/debug ; \
