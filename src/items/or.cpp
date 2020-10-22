@@ -23,8 +23,13 @@ namespace items {
   }
 
   void Or::Build(BuildContext* ctx) {
-    uint32_t choice_idx = (ctx->rand->Next() % this->choice_indices_.size());
-    uint32_t chosen_idx = this->choice_indices_[choice_idx];
+    size_t choice_idx;
+    if (this->choice_indices_.size() == 1) {
+      choice_idx = 0;
+    } else {
+      choice_idx = (ctx->rand->Next() % this->choice_indices_.size());
+    }
+    size_t chosen_idx = this->choice_indices_[choice_idx];
     this->items_[chosen_idx]->Build(ctx);
   }
 

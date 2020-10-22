@@ -12,6 +12,7 @@ namespace items {
   class Ref: public resmack::Item {
    public:
     std::string rule_name_;
+    size_t rule_idx_;
 
     Ref(std::string rule_name);
     ~Ref();

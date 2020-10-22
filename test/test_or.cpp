@@ -19,16 +19,16 @@ namespace items {
       ->AddItem(new Raw("hello"))
       ->AddItem(new Raw("world"));
 
-    EXPECT_EQ(or_->NumItems(), 2);
+    EXPECT_EQ(or_->NumItems(), 2u);
 
-    Map<std::string, int> counts;
+    Map<std::string, size_t> counts;
     test_utils::CountBuilds(100, or_, &counts);
 
     EXPECT_EQ(counts.contains("hello"), true);
-    EXPECT_GT(counts["hello"], 0);
+    EXPECT_GT(counts["hello"], 0u);
 
     EXPECT_EQ(counts.contains("world"), true);
-    EXPECT_GT(counts["world"], 0);
+    EXPECT_GT(counts["world"], 0u);
   }
 
   TEST(Or, VariableOptions)
@@ -40,19 +40,19 @@ namespace items {
         new Raw("test"),
         NULL);
 
-    EXPECT_EQ(or_->NumItems(), 3);
+    EXPECT_EQ(or_->NumItems(), 3u);
 
-    Map<std::string, int> counts;
+    Map<std::string, size_t> counts;
     test_utils::CountBuilds(100, or_, &counts);
 
     EXPECT_EQ(counts.contains("hello"), true);
-    EXPECT_GT(counts["hello"], 0);
+    EXPECT_GT(counts["hello"], 0u);
 
     EXPECT_EQ(counts.contains("world"), true);
-    EXPECT_GT(counts["world"], 0);
+    EXPECT_GT(counts["world"], 0u);
 
     EXPECT_EQ(counts.contains("test"), true);
-    EXPECT_GT(counts["test"], 0);
+    EXPECT_GT(counts["test"], 0u);
   }
 
   TEST(Or, SetsChoiceIndices)
@@ -64,14 +64,14 @@ namespace items {
         new Raw("test"),
         NULL);
 
-    Map<std::string, Or*> map;
-    calc::Reach reach(&map);
-    calc::RefDepth ref_depth(&map);
+    RuleManager rule_man;
+    calc::Reach reach(&rule_man);
+    calc::RefDepth ref_depth(&rule_man);
     reach.CalcItem(or_);
     ref_depth.CalcItem(or_);
 
-    EXPECT_EQ(or_->NumChoicesItems(), 3);
-    EXPECT_EQ(or_->NumShortestItems(), 3);
+    EXPECT_EQ(or_->NumChoicesItems(), 3u);
+    EXPECT_EQ(or_->NumShortestItems(), 3u);
   }
 
 }

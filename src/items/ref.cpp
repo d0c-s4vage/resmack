@@ -14,11 +14,11 @@ namespace items {
   }
 
   void Ref::Build(BuildContext *ctx) {
-    ctx->rules->Build(this->rule_name_, ctx);
+    ctx->rules->Build(this->rule_idx_, ctx);
   }
 
   bool Ref::CalcReachability(calc::Reach* reach_calc) {
-    return reach_calc->RuleExists(this->rule_name_);
+    return reach_calc->IndexOf(this->rule_name_, &this->rule_idx_);
   }
 
   size_t Ref::CalcRefDepth(calc::RefDepth* ref_calc) {

@@ -11,11 +11,12 @@ namespace items {
 
 class Raw: public resmack::Item {
  private:
-  char* data_;
+   std::string data_;
 
  public:
   Raw(char* data);
   Raw(const char* data);
+  Raw(std::string data);
   ~Raw();
 
   ItemType Type();

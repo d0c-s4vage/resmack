@@ -3,7 +3,7 @@
 namespace resmack {
 namespace calc {
 
-  Reach::Reach(Map<std::string, items::Or*>* map): map_(map), num_changes_(0) {}
+  Reach::Reach(RuleManager* rule_man): rule_man_(rule_man), num_changes_(0) {}
   Reach::~Reach() {}
 
   void Reach::Calc() {
@@ -11,27 +11,30 @@ namespace calc {
     this->tmp_new_rules_.clear();
     this->tmp_to_prune_.clear();
 
-    for (auto it = this->map_->begin(); it != this->map_->end(); it++) {
-      std::string rule_name = it->first;
-      items::Or* rule_or = it->second;
+    Vector<items::Or*>* rules = this->rule_man_->GetRules();
+    for (size_t rule_idx = 0; rule_idx < rules->size(); rule_idx++) {
+      items::Or* rule = (*rules)[rule_idx];
+      if (NULL == rule) { continue; }
       // it has been finalized and officially pruned, so ignore it
-      if (this->pruned_.contains(rule_name)) { continue; }
+      if (this->pruned_.contains(rule_idx)) { continue; }
 
-      if (!this->CalcItem(rule_or)) {
-        this->tmp_to_prune_.emplace(rule_name);
+      if (!this->CalcItem(rule)) {
+        this->tmp_to_prune_.emplace(rule_idx);
       }
     }
 
-    for (auto rule_name: this->tmp_to_prune_) {
+    for (auto rule_idx: this->tmp_to_prune_) {
+      std::string rule_name;
+      if (!this->rule_man_->NameOf(rule_idx, &rule_name)) { continue; }
       if (this->tmp_new_rules_.contains(rule_name)) { continue; }
 
-      this->map_->erase(rule_name);
-      this->pruned_.emplace(rule_name);
+      this->rule_man_->Prune(rule_idx);
+      this->pruned_.emplace(rule_idx);
       this->num_changes_++;
     }
 
     for (auto rule_name: this->tmp_new_rules_) {
-      this->map_->emplace(rule_name, new items::Or(true));
+      this->rule_man_->Ensure(rule_name);
       this->num_changes_++;
     }
   }
@@ -56,8 +59,8 @@ namespace calc {
     return fully_reachable;
   }
 
-  bool Reach::RuleExists(std::string rule_name) {
-    return this->map_->contains(rule_name);
+  bool Reach::IndexOf(std::string rule_name, size_t* out) {
+    return this->rule_man_->IndexOf(rule_name, out);
   }
 
 }

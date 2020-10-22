@@ -10,6 +10,7 @@
 #include "build_context.hpp"
 
 namespace test_utils {
+  __attribute__((unused))
   static std::string BuildItem(resmack::Item* item) {
     resmack::Rand rand;
     resmack::Rules rules;
@@ -21,7 +22,8 @@ namespace test_utils {
     return output;
   }
 
-  static void CountBuilds(int iters, resmack::Item* item, resmack::Map<std::string, int>* counts) {
+  __attribute__((unused))
+  static void CountBuilds(int iters, resmack::Item* item, resmack::Map<std::string, size_t>* counts) {
     resmack::Rand rand;
     resmack::Rules rules;
     rules.AddRule("test", item);

@@ -29,7 +29,7 @@ namespace items {
     Rand rand;
     rules.Finalize();
 
-    EXPECT_EQ(rules.GetRules()->contains("test"), false);
+    EXPECT_EQ(rules.GetRuleMan()->ValidRule("test"), false);
   }
 
   TEST(Ref, PruneCircular) {
@@ -41,8 +41,8 @@ namespace items {
     Rand rand;
     rules.Finalize();
 
-    EXPECT_EQ(rules.GetRules()->contains("rule1"), false);
-    EXPECT_EQ(rules.GetRules()->contains("rule2"), false);
+    EXPECT_EQ(rules.GetRuleMan()->ValidRule("rule1"), false);
+    EXPECT_EQ(rules.GetRuleMan()->ValidRule("rule2"), false);
   }
 
 }

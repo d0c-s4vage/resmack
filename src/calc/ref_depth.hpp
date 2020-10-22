@@ -4,6 +4,7 @@
 #include <limits>
 #include <string>
 
+#include "rule_man.hpp"
 #include "types.hpp"
 #include "item.hpp"
 #include "items/or.hpp"
@@ -13,18 +14,18 @@ namespace calc {
 
   class RefDepth {
    private:
-    Map<std::string, items::Or*>* map_;
+    RuleManager* rule_man_;
 
     size_t num_changes_;
-    Set<std::string> pruned_;
+    Set<size_t> pruned_;
     Set<std::string> tmp_new_rules_;
-    Set<std::string> tmp_to_prune_;
-    Map<std::string, size_t> depths_;
+    Set<size_t> tmp_to_prune_;
+    Map<size_t /*rule_idx*/, size_t /*depth*/> depths_;
 
    public:
     static const size_t INF_DEPTH = std::numeric_limits<size_t>::max();
 
-    RefDepth(Map<std::string, items::Or*>* map);
+    RefDepth(RuleManager* rule_man);
     ~RefDepth();
 
     void Calc();
