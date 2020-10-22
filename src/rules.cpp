@@ -13,20 +13,10 @@ namespace resmack {
   Rules::Rules(): Rules(NULL) {}
   Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {}
 
-  Rules::~Rules() {
-    for (auto it = this->map_.begin(); it != this->map_.end(); it++) {
-      std::string key = it->first;
-      items::Or* val = it->second;
-      delete val;
-    }
-  }
+  Rules::~Rules() {}
 
   Rules* Rules::AddRule(std::string name, Item* item) {
-    if (!this->map_.contains(name)) {
-      this->map_.emplace(name, new items::Or());
-    }
-    this->map_[name]->AddItem(item);
-
+    this->rule_man_.Ensure(name)->AddItem(item);
     return this;
   }
 
@@ -43,7 +33,28 @@ namespace resmack {
     return this->Build(rule_name, &ctx);
   }
 
+  /**
+   * Return true if the rule was successfully built
+   */
+  bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand) {
+    BuildContext ctx {
+      .rules = NULL,
+      .pre_output = NULL,
+      .output = output,
+      .rand = rand,
+    };
+    return this->Build(rule_idx, &ctx);
+  }
+
   bool Rules::Build(std::string rule_name, BuildContext* ctx) {
+    size_t rule_idx;
+    if (!this->rule_man_.IndexOf(rule_name, &rule_idx)) {
+      return false;
+    }
+    return this->Build(rule_idx, ctx);
+  }
+
+  bool Rules::Build(size_t rule_idx, BuildContext *ctx) {
     if (!this->finalized_) {
       this->Finalize();
     }
@@ -55,11 +66,11 @@ namespace resmack {
     if (ctx->pre_output == NULL) {
       ctx->pre_output = &tmp_pre_output;
     }
-    if (!this->map_.contains(rule_name)) {
-      return false;
-    }
-    this->map_[rule_name]->Build(ctx);
 
+    items::Or* rule = this->rule_man_.GetRule(rule_idx);
+    if (NULL == rule) { return false; }
+
+    rule->Build(ctx);
     return true;
   }
 
@@ -68,8 +79,8 @@ namespace resmack {
   }
 
   void Rules::Finalize() {
-    calc::Reach reach_calc(&this->map_);
-    calc::RefDepth ref_depth(&this->map_);
+    calc::Reach reach_calc(&this->rule_man_);
+    calc::RefDepth ref_depth(&this->rule_man_);
 
     while (1) {
       reach_calc.Calc();

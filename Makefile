@@ -59,7 +59,7 @@ run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record -g $(RELEASE_PATH)-syms/resmack || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/resmack || true
 
 
 # -----------------------------------------------------------------------------

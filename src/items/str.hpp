@@ -13,6 +13,7 @@ class Str: public resmack::Item {
  private:
   uint32_t min_;
   uint32_t max_;
+  uint32_t range_;
   std::string charset_;
 
  public:

@@ -3,7 +3,7 @@
 namespace resmack {
 namespace calc {
 
-  RefDepth::RefDepth(Map<std::string, items::Or*>* map): map_(map) {}
+  RefDepth::RefDepth(RuleManager* rule_man): rule_man_(rule_man) {}
   RefDepth::~RefDepth() {}
 
   void RefDepth::Calc() {
@@ -12,39 +12,44 @@ namespace calc {
 
     this->num_changes_ = 0;
 
+    Vector<items::Or*>* rules = this->rule_man_->GetRules();
     do {
       changed = false;
       this->tmp_to_prune_.clear();
 
-      for (auto it = this->map_->begin(); it != this->map_->end(); it++) {
-        std::string rule_name = it->first;
-        items::Or* rule_or = it->second;
+      for (size_t rule_idx = 0; rule_idx < rules->size(); rule_idx++) {
+        items::Or* rule = (*rules)[rule_idx];
+        if (NULL == rule) { continue; }
         // it has been finalized and officially pruned, so ignore it
-        if (this->pruned_.contains(rule_name)) { continue; }
+        if (this->pruned_.contains(rule_idx)) { continue; }
 
-        before_options = rule_or->NumShortestItems();
-        size_t depth = rule_or->CalcRefDepth(this);
-        this->depths_[rule_name] = depth;
+        before_options = rule->NumShortestItems();
+        size_t depth = rule->CalcRefDepth(this);
+        this->depths_[rule_idx] = depth;
 
-        if (before_options != rule_or->NumShortestItems()) {
+        if (before_options != rule->NumShortestItems()) {
           changed = true;
         }
 
-        if (depth == RefDepth::INF_DEPTH && !rule_or->ShouldKeep()) {
-          this->tmp_to_prune_.emplace(rule_name);
+        if (depth == RefDepth::INF_DEPTH && !rule->ShouldKeep()) {
+          this->tmp_to_prune_.emplace(rule_idx);
           this->num_changes_ += 1;
         }
       }
     } while(changed);
 
-    for (auto rule_name: this->tmp_to_prune_) {
-      this->map_->erase(rule_name);
+    for (size_t rule_idx: this->tmp_to_prune_) {
+      this->rule_man_->Prune(rule_idx);
     }
   }
 
   size_t RefDepth::DepthOf(std::string rule_name) {
-    if (this->depths_.contains(rule_name)) {
-      return this->depths_[rule_name];
+    size_t rule_idx;
+    if (!this->rule_man_->IndexOf(rule_name, &rule_idx)) {
+      return this->INF_DEPTH;
+    }
+    if (this->depths_.contains(rule_idx)) {
+      return this->depths_[rule_idx];
     }
     return this->INF_DEPTH;
   }

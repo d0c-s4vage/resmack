@@ -61,19 +61,24 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     ->AddRule("TestRule2", new items::Raw("---World"));
 
   std::string output;
-  //output.reserve(0x1000);
+  output.reserve(0x1000);
   uint64_t total_bytes = 0;
   uint64_t count = 0;
   float start = clock() / (float)CLOCKS_PER_SEC;
+
+  size_t rule_idx = 0;
+  if (!rules.rule_man_.IndexOf("TestRule2", &rule_idx)) {
+    return 0;
+  }
 
   while (true) {
     count += 1;
 
     output.clear();
-    rules.Build("TestRule2", &output, &rand);
+    rules.Build(rule_idx, &output, &rand);
     total_bytes += output.size();
 
-    if (count % 0x100000 == 0) {
+    if (count % 0x800000 == 0) {
       std::cout << "Output: " << output << std::endl;
       float curr = clock() / (float)CLOCKS_PER_SEC;
       float totalMibs = (float)total_bytes / (1024.0f * 1024.0f);

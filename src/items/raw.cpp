@@ -4,11 +4,9 @@
 namespace resmack {
 namespace items {
 
-  Raw::Raw(char* data) : data_(data) {
-  }
-
-  Raw::Raw(const char* data) : data_((char *)data) {
-  }
+  Raw::Raw(std::string data) : data_(data) {}
+  Raw::Raw(char* data) : data_(data) {}
+  Raw::Raw(const char* data) : data_((char *)data) {}
 
   Raw::~Raw() {
   }
@@ -18,7 +16,7 @@ namespace items {
   }
 
   void Raw::Build(BuildContext *ctx) {
-   ctx->output->append(this->data_);
+    *ctx->output += this->data_;
   }
 
 }

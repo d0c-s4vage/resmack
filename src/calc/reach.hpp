@@ -3,32 +3,33 @@
 
 #include <string>
 
-#include "../types.hpp"
-#include "../item.hpp"
-#include "../items/or.hpp"
-#include "../items/ref.hpp"
+#include "types.hpp"
+#include "rule_man.hpp"
+#include "item.hpp"
+#include "items/or.hpp"
+#include "items/ref.hpp"
 
 namespace resmack {
 namespace calc {
 
   class Reach {
    public:
-    Map<std::string, items::Or*>* map_;
+    RuleManager* rule_man_;
 
     Set<std::string> unresolved_refs_;
-    Set<std::string> pruned_;
+    Set<size_t> pruned_;
 
     Set<std::string> tmp_new_rules_;
-    Set<std::string> tmp_to_prune_;
+    Set<size_t> tmp_to_prune_;
     size_t num_changes_;
 
-    Reach(Map<std::string, items::Or*>* map);
+    Reach(RuleManager* rule_man);
     ~Reach();
 
     void Calc();
     size_t NumChanges();
     bool CalcItem(Item* item);
-    bool RuleExists(std::string rule_name);
+    bool IndexOf(std::string rule_name, size_t* out);
   };
 
 }

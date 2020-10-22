@@ -13,6 +13,7 @@ class Int: public resmack::Item {
  private:
   int64_t min_;
   int64_t max_;
+  int64_t range_;
 
  public:
   Int();

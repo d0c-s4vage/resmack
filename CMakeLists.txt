@@ -18,7 +18,7 @@ option(BUILD_TEST "Build the unit tests" OFF)
 # flags
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 
 # files
 set(CMAKE_CXX_STANDARD 20)
@@ -37,12 +37,15 @@ file(GLOB CALCS
     ${PROJECT_SOURCE_DIR}/src/calc/*.hpp
     ${PROJECT_SOURCE_DIR}/src/calc/*.cpp)
 
+file(GLOB ROOT_FILES
+    ${PROJECT_SOURCE_DIR}/src/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
 set(MAIN_SOURCES
-            ${PROJECT_SOURCE_DIR}/src/rules.cpp
-            ${PROJECT_SOURCE_DIR}/src/rules.hpp
-            ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp
-            ${ITEMS}
-            ${CALCS})
+    ${ROOT_FILES}
+    ${ITEMS}
+    ${CALCS}
+    ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp)
 
 # target
 add_executable(resmack ${PROJECT_SOURCE_DIR}/src/main.cpp ${MAIN_SOURCES})
