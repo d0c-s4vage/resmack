@@ -28,6 +28,10 @@ namespace resmack {
     return false;
   }
 
+  bool RuleManager::IndexExists(size_t rule_idx) {
+    return this->NameOf(rule_idx, NULL);
+  }
+
   // A null value for `out` is allowed
   bool RuleManager::NameOf(size_t rule_idx, std::string* out) {
     if (this->rule_idx_to_name_.contains(rule_idx)) {
@@ -43,8 +47,16 @@ namespace resmack {
     return this->IndexOf(rule_name, NULL);
   }
 
-  bool RuleManager::IndexExists(size_t rule_idx) {
-    return this->NameOf(rule_idx, NULL);
+  bool RuleManager::ValidRule(size_t rule_idx) {
+    return this->IndexExists(rule_idx) && this->rules_[rule_idx] != NULL;
+  }
+
+  bool RuleManager::ValidRule(std::string rule_name) {
+    size_t rule_idx;
+    if (!this->IndexOf(rule_name, &rule_idx)) {
+      return false;
+    }
+    return this->ValidRule(rule_idx);
   }
 
   items::Or* RuleManager::Ensure(std::string rule_name) {

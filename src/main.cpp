@@ -79,7 +79,6 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     total_bytes += output.size();
 
     if (count % 0x800000 == 0) {
-      std::cout << "Output: " << output << std::endl;
       float curr = clock() / (float)CLOCKS_PER_SEC;
       float totalMibs = (float)total_bytes / (1024.0f * 1024.0f);
       printf("%08lx | %0.2f iters/s | %0.2f MiB/s\n",

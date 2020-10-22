@@ -20,10 +20,16 @@ namespace resmack {
     ~RuleManager();
 
     Vector<items::Or*>* GetRules();
+
     bool IndexOf(std::string rule_name, size_t* out);
+    bool IndexExists(size_t rule_idx);
+
     bool NameOf(size_t rule_idx, std::string* out);
     bool NameExists(std::string rule_name);
-    bool IndexExists(size_t rule_idx);
+
+    bool ValidRule(size_t rule_idx);
+    bool ValidRule(std::string rule_name);
+
     items::Or* Ensure(std::string rule_name);
     void Prune(std::string rule_name);
     void Prune(size_t rule_idx);

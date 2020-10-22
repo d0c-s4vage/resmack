@@ -40,6 +40,7 @@ file(GLOB CALCS
 file(GLOB ROOT_FILES
     ${PROJECT_SOURCE_DIR}/src/*.hpp
     ${PROJECT_SOURCE_DIR}/src/*.cpp)
+list(REMOVE_ITEM ROOT_FILES ${PROJECT_SOURCE_DIR}/src/main.cpp)
 
 set(MAIN_SOURCES
     ${ROOT_FILES}

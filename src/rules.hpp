@@ -26,6 +26,7 @@ namespace resmack {
     ~Rules();
 
     Rules* AddRule(std::string name, Item* item);
+    RuleManager* GetRuleMan() { return &this->rule_man_; }
     bool Build(std::string rule_name,
                std::string *output,
                Rand *rand);
