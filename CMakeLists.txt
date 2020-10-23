@@ -27,7 +27,8 @@ set(CMAKE_CXX_STANDARD 20)
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/libs)
+    ${PROJECT_SOURCE_DIR}/libs
+    ${PROJECT_SOURCE_DIR}/libs/fmt/include)
 
 file(GLOB ITEMS
     ${PROJECT_SOURCE_DIR}/src/items/*.hpp
@@ -52,8 +53,12 @@ set(MAIN_SOURCES
 add_executable(resmack ${PROJECT_SOURCE_DIR}/src/main.cpp ${MAIN_SOURCES})
 
 # https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
-# add_subdirectory(./libs/json)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/libs/json)
 # target_link_libraries(resmack json)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
+target_link_libraries(resmack fmt)
+
 
 if(BUILD_TEST)
   add_subdirectory(test)
