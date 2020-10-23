@@ -18,5 +18,6 @@ add_executable(test_${PROJECT_NAME}
 
 target_link_libraries(test_${PROJECT_NAME}
   ${GTEST_LIB_DIR}/libgtest.a
+  fmt
   pthread
 )

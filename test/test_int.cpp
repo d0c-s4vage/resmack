@@ -1,7 +1,9 @@
 #include <string>
 
+#include <fmt/compile.h>
 #include "gtest/gtest.h"
 
+#include "fmt/format.h"
 #include "types.hpp"
 #include "items/int.hpp"
 

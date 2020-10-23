@@ -1,3 +1,5 @@
+#include <fmt/compile.h>
+
 #include "../item.hpp"
 #include "../utils.hpp"
 #include "int.hpp"
@@ -23,8 +25,7 @@ namespace items {
 
   void Int::Build(BuildContext *ctx) {
    int64_t res = this->min_ + (ctx->rand->Next() % this->range_);
-   // maybe use https://github.com/fmtlib/fmt? Should be much faster
-   *ctx->output += std::to_string(res);
+   *ctx->output += fmt::format_int(res).c_str();
   }
 
 }
