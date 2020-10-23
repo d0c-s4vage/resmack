@@ -9,19 +9,20 @@
 namespace resmack {
 namespace items {
 
-class Raw: public resmack::Item {
- private:
-   std::string data_;
+  class Raw: public resmack::Item {
+   private:
+     std::string data_;
 
- public:
-  Raw(char* data);
-  Raw(const char* data);
-  Raw(std::string data);
-  ~Raw();
+   public:
+    Raw(char* data);
+    Raw(const char* data);
+    Raw(std::string data);
+    ~Raw();
 
-  ItemType Type();
-  void Build(BuildContext *ctx);
-};
+    ItemType Type();
+    void Build(BuildContext *ctx);
+    std::string ToString();
+  };
 
 }
 }

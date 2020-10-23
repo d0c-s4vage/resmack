@@ -21,6 +21,7 @@ namespace items {
     void Build(BuildContext *ctx);
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_calc);
+    std::string ToString();
   };
 
 }

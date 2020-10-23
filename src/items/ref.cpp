@@ -14,7 +14,9 @@ namespace items {
   }
 
   void Ref::Build(BuildContext *ctx) {
+    ctx->IncDepth();
     ctx->rules->Build(this->rule_idx_, ctx);
+    ctx->DecDepth();
   }
 
   bool Ref::CalcReachability(calc::Reach* reach_calc) {
@@ -27,6 +29,13 @@ namespace items {
       return res;
     }
     return res + 1;
+  }
+
+  std::string Ref::ToString() {
+    return std::string("<REF ")
+      + this->rule_name_
+      + " (" + std::to_string(this->rule_idx_)
+      + ")>";
   }
 
 }

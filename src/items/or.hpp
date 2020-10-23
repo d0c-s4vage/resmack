@@ -1,9 +1,9 @@
 #ifndef RESMACK_ITEM_OR
 #define RESMACK_ITEM_OR
 
-#include <vector>
 #include <iostream>
 
+#include "../types.hpp"
 #include "../item.hpp"
 #include "../rand.hpp"
 #include "build_context.hpp"
@@ -19,9 +19,9 @@ namespace items {
 
   class Or: public resmack::Item {
    private:
-    std::vector<resmack::Item*> items_;
-    std::vector<size_t> choice_indices_;
-    std::vector<size_t> shortest_indices_;
+    Vector<resmack::Item*> items_;
+    Vector<size_t> choice_indices_;
+    Vector<size_t> shortest_indices_;
     bool keep_;
 
    public:
@@ -44,6 +44,8 @@ namespace items {
 
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_calc);
+
+    std::string ToString();
   };
 
 }
