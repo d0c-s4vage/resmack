@@ -24,12 +24,19 @@ namespace items {
 
   void Or::Build(BuildContext* ctx) {
     size_t choice_idx;
-    if (this->choice_indices_.size() == 1) {
+    Vector<size_t> *choice_list;
+    if (ctx->DoShortest() && this->shortest_indices_.size() > 0) {
+      choice_list = &this->shortest_indices_;
+    } else {
+      choice_list = &this->choice_indices_;
+    }
+
+    if (choice_list->size() == 1) {
       choice_idx = 0;
     } else {
-      choice_idx = (ctx->rand->Next() % this->choice_indices_.size());
+      choice_idx = (ctx->rand->Next() % choice_list->size());
     }
-    size_t chosen_idx = this->choice_indices_[choice_idx];
+    size_t chosen_idx = (*choice_list)[choice_idx];
     this->items_[chosen_idx]->Build(ctx);
   }
 
@@ -89,6 +96,30 @@ namespace items {
     }
 
     return shortest_len;
+  }
+
+  std::string Or::ToString() {
+    std::string res = "<OR";
+
+    res += " choices=[";
+    for (auto idx: this->choice_indices_) {
+      res += std::to_string(idx) + ",";
+    }
+    res[res.size()-1] = ']';
+
+    res += " shortest=[";
+    for (auto idx: this->shortest_indices_) {
+      res += std::to_string(idx) + ",";
+    }
+    res[res.size()-1] = ']';
+
+    res += " items=[";
+    for (auto item: this->items_) {
+      res += item->ToString() + ",";
+    }
+    res[res.size()-1] = ']';
+
+    return res + ">";
   }
 
 }

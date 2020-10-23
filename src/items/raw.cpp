@@ -19,5 +19,9 @@ namespace items {
     *ctx->output += this->data_;
   }
 
+  std::string Raw::ToString() {
+    return std::string("<RAW ") + this->data_ + ">";
+  }
+
 }
 }

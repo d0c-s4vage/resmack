@@ -30,10 +30,17 @@ namespace resmack {
     bool Build(std::string rule_name,
                std::string *output,
                Rand *rand);
+    bool Build(std::string rule_name,
+               std::string *output,
+               Rand *rand,
+               size_t max_depth);
     bool Build(size_t rule_idx,
                std::string *output,
                Rand *rand);
-    bool Build(std::string rule_name, BuildContext *ctx);
+    bool Build(size_t rule_idx,
+               std::string *output,
+               Rand *rand,
+               size_t max_depth);
     bool Build(size_t rule_idx, BuildContext *ctx);
     Rules* NewChild();
     void Finalize();
