@@ -71,9 +71,6 @@ namespace resmack {
     items::Or* rule = this->rule_man_.GetRule(rule_idx);
     if (NULL == rule) { return false; }
 
-    std::string rule_name;
-    this->rule_man_.NameOf(rule_idx, &rule_name);
-
     rule->Build(ctx);
     return true;
   }
