@@ -3,6 +3,7 @@
 
 #define AND(...) ((new resmack::items::And())->AddItems(__VA_ARGS__, NULL))
 
+#include <string>
 #include <stdint.h>
 #include <vector>
 #include <iostream>
@@ -37,6 +38,7 @@ namespace items {
      * as the final argument as a sentinel value
      **/
     And* AddItems(Item* item, .../*Item* item, .., NULL sentinel value*/);
+    And* AddItems(const char* item, .../*Item* item, ..., NULL sentinel value*/);
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_depth);
   };

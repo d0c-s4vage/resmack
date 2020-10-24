@@ -15,6 +15,11 @@ namespace resmack {
 
   Rules::~Rules() {}
 
+  Rules* Rules::AddRule(std::string name, std::string data) {
+    this->rule_man_.Ensure(name)->AddItem(new items::Raw(data));
+    return this;
+  }
+
   Rules* Rules::AddRule(std::string name, Item* item) {
     this->rule_man_.Ensure(name)->AddItem(item);
     return this;

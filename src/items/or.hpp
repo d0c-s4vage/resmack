@@ -39,6 +39,7 @@ namespace items {
      * as the final argument as a sentinel value
      **/
     Or* AddItems(Item* item, .../*Item* item, .., NULL sentinel value*/);
+    Or* AddItems(const char* item, .../*const char* item, .., NULL sentinel value*/);
     size_t NumItems() { return this->items_.size(); }
     size_t NumChoicesItems() { return this->choice_indices_.size(); }
     size_t NumShortestItems() { return this->shortest_indices_.size(); }

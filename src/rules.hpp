@@ -9,6 +9,7 @@
 #include "calc/ref_depth.hpp"
 #include "build_context.hpp"
 #include "items/or.hpp"
+#include "items/raw.hpp"
 
 namespace resmack {
 
@@ -26,6 +27,7 @@ namespace resmack {
     ~Rules();
 
     Rules* AddRule(std::string name, Item* item);
+    Rules* AddRule(std::string name, std::string data);
     RuleManager* GetRuleMan() { return &this->rule_man_; }
     bool Build(std::string rule_name,
                std::string *output,

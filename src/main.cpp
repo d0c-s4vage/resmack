@@ -22,10 +22,10 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   Rand rand;
   Rules rules;
 
-  rules.AddRule("PruneMe", new items::Ref("unresolvable"))
-    ->AddRule("PruneMeToo", new items::Ref("PruneMe"))
-    ->AddRule("Special", new items::Raw("SPECIAL ONE"))
-    ->AddRule("RefdRule", OR(V("Hello"), V("Blah"), V("Special")))
+  rules.AddRule("PruneMe", REF("unresolvable"))
+    ->AddRule("PruneMeToo", REF("PruneMe"))
+    ->AddRule("Special", "SPECIAL ONE")
+    ->AddRule("RefdRule", OR("Hello", "Blah", "Special"))
     ->AddRule("RefdRule", OR(V("Hello"), V("Blah"), V("Special"), REF("TestRule")))
     ->AddRule("TestRule", AND(REF("RefdRule"), V("World")))
     ->AddRule("TestRule2", AND(REF("TestRule"), V("World")))
@@ -34,8 +34,8 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     ->AddRule("TestRule2", AND(OR(
       V("1"), V("2"), V("3"), V("4"), V("5"), STR(5, 10, "abcdefg")
     )))
-    ->AddRule("TestRule2", AND(V("1000.5")))
-    ->AddRule("TestRule2", V("---World"));
+    ->AddRule("TestRule2", "1000.5")
+    ->AddRule("TestRule2", "---World");
 
   std::string output;
   output.reserve(0x1000);

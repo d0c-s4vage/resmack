@@ -1,6 +1,7 @@
 #include <cstdarg>
 
 #include "../item.hpp"
+#include "raw.hpp"
 #include "and.hpp"
 
 namespace resmack {
@@ -46,6 +47,19 @@ namespace items {
       if (next == NULL) { break; }
       this->items_.push_back(next);
       next = va_arg(args, Item*);
+    }
+    return this;
+  }
+
+  And* And::AddItems(const char* first, .../*std:;string item, .., NULL sentinel value*/) {
+    va_list args;
+    va_start(args, first);
+    const char* next = first;
+
+    while (NULL != next) {
+      if (next == NULL) { break; }
+      this->items_.push_back(new items::Raw(std::string(next)));
+      next = va_arg(args, const char*);
     }
     return this;
   }
