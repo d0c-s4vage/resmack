@@ -1,6 +1,9 @@
 #ifndef RESMACK_ITEM_RAW
 #define RESMACK_ITEM_RAW
 
+#define RAW(VAL) (new resmack::items::Raw(VAL))
+#define V(VAL) RAW(VAL)
+
 #include <cstdlib>
 #include <iostream>
 

@@ -25,40 +25,17 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   rules.AddRule("PruneMe", new items::Ref("unresolvable"))
     ->AddRule("PruneMeToo", new items::Ref("PruneMe"))
     ->AddRule("Special", new items::Raw("SPECIAL ONE"))
-    ->AddRule("RefdRule", (new items::Or())->AddItems(
-      new items::Raw("Hello"),
-      new items::Raw("Blah"),
-      new items::Ref("Special"),
-      NULL))
-    ->AddRule("RefdRule", (new items::Or())->AddItems(
-      new items::Raw("Hello"),
-      new items::Raw("Blah"),
-      new items::Ref("Special"),
-      new items::Ref("TestRule"),
-      NULL))
-    ->AddRule("TestRule", (new items::And())->AddItems(
-      new items::Ref("RefdRule"),
-      new items::Raw("World"),
-      NULL))
-    ->AddRule("TestRule2", (new items::And())->AddItems(
-      new items::Ref("TestRule"),
-      new items::Raw("World"),
-      NULL))
-    ->AddRule("TestRule2", (new items::And())->AddItems(
-      new items::Ref("TestRule"),
-      new items::Raw("World"),
-      NULL))
-    ->AddRule("TestRule2", (new items::Int(5, 1337)))
-    ->AddRule("TestRule2", (new items::And())->AddItem((new items::Or())->AddItems(
-      new items::Raw("1"),
-      new items::Raw("2"),
-      new items::Raw("3"),
-      new items::Raw("4"),
-      new items::Raw("5"),
-      new items::Str(5, 10, "abcdefg"),
-      NULL)))
-    ->AddRule("TestRule2", (new items::And())->AddItem(new items::Raw("1000.5")))
-    ->AddRule("TestRule2", new items::Raw("---World"));
+    ->AddRule("RefdRule", OR(V("Hello"), V("Blah"), V("Special")))
+    ->AddRule("RefdRule", OR(V("Hello"), V("Blah"), V("Special"), REF("TestRule")))
+    ->AddRule("TestRule", AND(REF("RefdRule"), V("World")))
+    ->AddRule("TestRule2", AND(REF("TestRule"), V("World")))
+    ->AddRule("TestRule2", AND(REF("TestRule"), V("World")))
+    ->AddRule("TestRule2", INT(5, 1337))
+    ->AddRule("TestRule2", AND(OR(
+      V("1"), V("2"), V("3"), V("4"), V("5"), STR(5, 10, "abcdefg")
+    )))
+    ->AddRule("TestRule2", AND(V("1000.5")))
+    ->AddRule("TestRule2", V("---World"));
 
   std::string output;
   output.reserve(0x1000);

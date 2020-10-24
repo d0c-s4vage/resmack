@@ -1,6 +1,11 @@
 #ifndef RESMACK_ITEM_STR
 #define RESMACK_ITEM_STR
 
+#define STR(...) OVERLOADED_MACRO(STR, __VA_ARGS__)
+
+#define STR2(MIN, MAX) (new resmack::items::Str(MIN, MAX))
+#define STR3(MIN, MAX, CHARSET) (new resmack::items::Str(MIN, MAX, CHARSET))
+
 #include <cstdlib>
 #include <iostream>
 

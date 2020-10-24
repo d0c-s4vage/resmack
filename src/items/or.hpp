@@ -1,6 +1,8 @@
 #ifndef RESMACK_ITEM_OR
 #define RESMACK_ITEM_OR
 
+#define OR(...) ((new resmack::items::Or())->AddItems(__VA_ARGS__, NULL))
+
 #include <iostream>
 
 #include "../types.hpp"
