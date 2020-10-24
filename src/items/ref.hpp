@@ -1,6 +1,8 @@
 #ifndef RESMACK_ITEM_REF
 #define RESMACK_ITEM_REF
 
+#define REF(NAME) (new resmack::items::Ref(NAME))
+
 #include <string>
 
 #include "../item.hpp"

@@ -1,6 +1,8 @@
 #ifndef RESMACK_ITEM_INT
 #define RESMACK_ITEM_INT
 
+#define INT(MIN, MAX) (new resmack::items::Int(MIN, MAX))
+
 #include <cstdlib>
 #include <iostream>
 

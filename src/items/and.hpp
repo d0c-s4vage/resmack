@@ -1,6 +1,8 @@
 #ifndef RESMACK_ITEM_AND
 #define RESMACK_ITEM_AND
 
+#define AND(...) ((new resmack::items::And())->AddItems(__VA_ARGS__, NULL))
+
 #include <stdint.h>
 #include <vector>
 #include <iostream>
