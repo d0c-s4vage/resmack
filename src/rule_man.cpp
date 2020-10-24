@@ -101,4 +101,17 @@ namespace resmack {
     if (rule_idx >= this->rules_.size()) { return NULL; }
     return this->rules_[rule_idx];
   }
+
+  void RuleManager::DebugPrint() {
+    std::cout << "Rules:" << std::endl;
+    for (size_t idx = 0; idx < this->rules_.size(); idx++) {
+      std::cout << "  " << idx << ": " << this->rule_idx_to_name_[idx] << ": ";
+      items::Or* rule = this->rules_[idx];
+      if (rule == NULL) {
+        std::cout << "NULL" << std::endl;
+      } else {
+        std::cout << rule->ToString() << std::endl;
+      }
+    }
+  }
 }

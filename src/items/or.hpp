@@ -33,6 +33,7 @@ namespace items {
 
     ItemType Type();
     void SetKeep(bool val) { this->keep_ = val; }
+    bool Keep() { return this->keep_; }
     void Build(BuildContext* ctx);
     Or* AddItem(Item *item);
     /**

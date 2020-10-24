@@ -11,7 +11,7 @@ namespace items {
   PreId::~PreId() {}
 
   ItemType PreId::Type() {
-    return ItemType::REF;
+    return ItemType::PRE_ID;
   }
 
   void PreId::Build(BuildContext *ctx) {

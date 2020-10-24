@@ -90,5 +90,21 @@ namespace items {
     return max_len;
   }
 
+  std::string And::ToString() {
+    std::string res = "<AND";
+
+    res += " items=[";
+    for (auto item: this->items_) {
+      res += item->ToString() + ",";
+    }
+    if (this->items_.size() > 0) {
+      res[res.size()-1] = ']';
+    } else {
+      res += "]";
+    }
+
+    return res + ">";
+  }
+
 }
 }

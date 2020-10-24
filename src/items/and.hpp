@@ -41,6 +41,7 @@ namespace items {
     And* AddItems(const char* item, .../*Item* item, ..., NULL sentinel value*/);
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_depth);
+    std::string ToString();
   };
 
 }

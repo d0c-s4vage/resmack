@@ -37,6 +37,8 @@ namespace resmack {
     void Prune(size_t rule_idx);
     items::Or* GetRule(std::string rule_name);
     items::Or* GetRule(size_t rule_idx);
+
+    void DebugPrint();
   };
 
 }

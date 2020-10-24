@@ -19,6 +19,7 @@ namespace calc {
     Set<std::string> unresolved_refs_;
     Set<size_t> pruned_;
 
+    Set<std::string> tmp_new_rules_;
     Set<size_t> tmp_to_prune_;
     size_t num_changes_;
 
