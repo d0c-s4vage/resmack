@@ -30,6 +30,7 @@ namespace resmack {
     AND,
     REF,
     OPT,
+    PRE_ID,
   };
 
   static std::string ItemTypeName(ItemType type) {
@@ -54,6 +55,9 @@ namespace resmack {
         break;
       case ItemType::OPT:
         return "OPT";
+        break;
+      case ItemType::PRE_ID:
+        return "PRE_ID";
         break;
     };
     return "??";

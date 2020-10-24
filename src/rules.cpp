@@ -25,6 +25,11 @@ namespace resmack {
     return this;
   }
 
+  Rules* Rules::AddRule(size_t rule_idx, Item* item) {
+    this->rule_man_.GetRule(rule_idx)->AddItem(item);
+    return this;
+  }
+
   /**
    * Return true if the rule was successfully built
    */

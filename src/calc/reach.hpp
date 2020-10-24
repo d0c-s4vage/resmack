@@ -19,7 +19,6 @@ namespace calc {
     Set<std::string> unresolved_refs_;
     Set<size_t> pruned_;
 
-    Set<std::string> tmp_new_rules_;
     Set<size_t> tmp_to_prune_;
     size_t num_changes_;
 
@@ -30,6 +29,7 @@ namespace calc {
     size_t NumChanges();
     bool CalcItem(Item* item);
     bool IndexOf(std::string rule_name, size_t* out);
+    void Ensure(std::string rule_name, size_t* out);
   };
 
 }

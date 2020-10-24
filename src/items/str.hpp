@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../item.hpp"
+#include "item.hpp"
 
 namespace resmack {
 namespace items {

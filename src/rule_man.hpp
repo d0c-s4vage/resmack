@@ -21,6 +21,8 @@ namespace resmack {
 
     Vector<items::Or*>* GetRules();
 
+    size_t NumRules() { return this->rules_.size(); }
+
     bool IndexOf(std::string rule_name, size_t* out);
     bool IndexExists(size_t rule_idx);
 

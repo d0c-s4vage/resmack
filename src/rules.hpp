@@ -28,6 +28,7 @@ namespace resmack {
 
     Rules* AddRule(std::string name, Item* item);
     Rules* AddRule(std::string name, std::string data);
+    Rules* AddRule(size_t rule_idx, Item* item);
     RuleManager* GetRuleMan() { return &this->rule_man_; }
     bool Build(std::string rule_name,
                std::string *output,
