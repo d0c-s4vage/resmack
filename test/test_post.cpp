@@ -33,8 +33,9 @@ namespace items {
     rules.AddRule("decorated", AND(PRE(V("--> ")), POST(V(" <--"))))
       ->AddRule("wrapped", AND(V("WRAPPED"), REF("decorated")))
 
+      ->AddRule("Database", V("(new Database())"))
       ->AddRule("dbContext", AND(
-        PRE(V("(new Database()).open(function(e) { ")),
+        PRE(AND(REF("Database"), V(".open(function(e) { "))),
           V("e.target"),
         POST(V("})"))))
       ->AddRule("dbInner", AND(

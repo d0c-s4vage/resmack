@@ -91,10 +91,14 @@ namespace resmack {
     rule->Build(ctx);
 
     if (ctx->ref_depth == 0) {
-      (*ctx->pre_output) += *ctx->output;
-      (*ctx->pre_output) += *ctx->post_output;
-      ctx->post_output->clear();
-      ctx->output->clear();
+      if (ctx->output->size() > 0) {
+        (*ctx->pre_output) += *ctx->output;
+        ctx->output->clear();
+      }
+      if (ctx->post_output->size() > 0) {
+        (*ctx->pre_output) += *ctx->post_output;
+        ctx->post_output->clear();
+      }
     }
 
     return true;
