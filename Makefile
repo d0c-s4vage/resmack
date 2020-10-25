@@ -11,6 +11,10 @@ all: clean debug release
 .PHONY: debug
 debug: build/debug build/debug/resmack
 
+.PHONY: clean-debug
+clean-debug:
+	rm -rf build/debug
+
 run-debug: debug
 	build/debug/resmack
 
@@ -48,6 +52,10 @@ RELEASE_PATH=build/release$(RELEASE_SUFFIX)
 
 release:
 	$(MAKE) build-release
+
+.PHONY: clean-release
+clean-release:
+	rm -rf build/release
 
 run-release: release
 	$(RELEASE_PATH)/resmack
@@ -88,6 +96,10 @@ test: libs-test/google-test build/test/test_resmack
 
 run-test: test
 	build/test/test/test_resmack --gtest_filter=$(TEST)
+
+.PHONY: clean-test
+clean-test:
+	rm -rf build/test
 
 libs-test/google-test: libs-test/googletest/build/lib/libgtest_main.a
 

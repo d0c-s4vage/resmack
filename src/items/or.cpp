@@ -94,7 +94,7 @@ namespace items {
   }
 
   size_t Or::CalcRefDepth(calc::RefDepth* ref_depth) {
-    // will only happen for run-time added rule values with PreId, which
+    // will only happen for run-time added rule values with Id, which
     // will only be Raw values, not complex types with additional refs
     if (this->keep_) {
       return 0;

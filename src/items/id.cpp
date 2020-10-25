@@ -1,5 +1,5 @@
 #include "../item.hpp"
-#include "pre_id.hpp"
+#include "id.hpp"
 #include "raw.hpp"
 #include "utils.hpp"
 #include "str.hpp"
@@ -7,31 +7,31 @@
 namespace resmack {
 namespace items {
 
-  PreId::PreId(std::string rule_name) : rule_name_(rule_name) {}
-  PreId::~PreId() {}
+  Id::Id(std::string rule_name) : rule_name_(rule_name) {}
+  Id::~Id() {}
 
-  ItemType PreId::Type() {
-    return ItemType::PRE_ID;
+  ItemType Id::Type() {
+    return ItemType::ID;
   }
 
-  void PreId::Build(BuildContext *ctx) {
+  void Id::Build(BuildContext *ctx) {
     std::string new_id;
     utils::RandBytes(ctx->rand, Str::CHARSET_ALPHA, 10, &new_id);
     ctx->rules->AddRule(this->rule_idx_, new Raw(new_id));
     *ctx->output += new_id;
   }
 
-  bool PreId::CalcReachability(calc::Reach* reach_calc) {
+  bool Id::CalcReachability(calc::Reach* reach_calc) {
     reach_calc->Ensure(this->rule_name_, &this->rule_idx_);
     return true;
   }
 
-  size_t PreId::CalcRefDepth(__attribute__((unused)) calc::RefDepth* ref_calc) {
+  size_t Id::CalcRefDepth(__attribute__((unused)) calc::RefDepth* ref_calc) {
     return 0;
   }
 
-  std::string PreId::ToString() {
-    return std::string("<PreId ")
+  std::string Id::ToString() {
+    return std::string("<Id ")
       + this->rule_name_
       + " (" + std::to_string(this->rule_idx_)
       + ")>";

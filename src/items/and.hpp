@@ -2,6 +2,7 @@
 #define RESMACK_ITEM_AND
 
 #define AND(...) ((new resmack::items::And())->AddItems(__VA_ARGS__, NULL))
+#define AND_S(SEP, ...) ((new resmack::items::And(SEP))->AddItems(__VA_ARGS__, NULL))
 
 #include <string>
 #include <stdint.h>

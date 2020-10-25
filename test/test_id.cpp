@@ -6,7 +6,7 @@
 #include "rules.hpp"
 #include "rule_man.hpp"
 #include "item.hpp"
-#include "items/pre_id.hpp"
+#include "items/id.hpp"
 #include "items/raw.hpp"
 #include "items/and.hpp"
 #include "test_utils.hpp"
@@ -14,10 +14,10 @@
 namespace resmack {
 namespace items {
 
-  TEST(PreId, IsNotPruned)
+  TEST(Id, Works)
   {
     Rules rules;
-    rules.AddRule("test", AND(PRE_ID("new_rule"), V(" = "), REF("new_rule")));
+    rules.AddRule("test", AND(ID("new_rule"), V(" = "), REF("new_rule")));
 
     Rand rand(100);
     std::string output;

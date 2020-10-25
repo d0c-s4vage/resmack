@@ -11,7 +11,11 @@
 namespace resmack {
 
   Rules::Rules(): Rules(NULL) {}
-  Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {}
+  Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {
+    if (parent != NULL) {
+      this->rule_man_.SetParent(parent->GetRuleMan());
+    }
+  }
 
   Rules::~Rules() {}
 
@@ -45,9 +49,6 @@ namespace resmack {
     return this->Build(rule_idx, output, rand, max_depth);
   }
 
-  /**
-   * Return true if the rule was successfully built
-   */
   bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand) {
     return this->Build(rule_idx, output, rand, 10);
   }
@@ -55,8 +56,9 @@ namespace resmack {
   bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand, size_t max_depth) {
     BuildContext ctx {
       .rules = NULL,
-      .pre_output = NULL,
-      .output = output,
+      .pre_output = output,
+      .output = NULL,
+      .post_output = NULL,
       .rand = rand,
       .ref_depth = 0,
       .max_depth = max_depth,
@@ -73,15 +75,37 @@ namespace resmack {
       ctx->rules = this;
     }
 
-    std::string tmp_pre_output;
-    if (ctx->pre_output == NULL) {
-      ctx->pre_output = &tmp_pre_output;
+    std::string tmp_output;
+    if (ctx->output == NULL) {
+      ctx->output = &tmp_output;
     }
 
-    items::Or* rule = this->rule_man_.GetRule(rule_idx);
+    std::string tmp_post_output;
+    if (ctx->post_output == NULL) {
+      ctx->post_output = &tmp_post_output;
+    }
+
+    items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
     if (NULL == rule) { return false; }
 
     rule->Build(ctx);
+
+    std::string rule_name;
+    this->rule_man_.NameOf(rule_idx, &rule_name);
+    ctx->Message(std::string("Built: ") + rule_name);
+    ctx->Message(std::string("- pre_output:  ") + *ctx->pre_output);
+    ctx->Message(std::string("- output:      ") + *ctx->output);
+    ctx->Message(std::string("- post_output: ") + *ctx->post_output);
+
+    if (ctx->ref_depth == 0) {
+      (*ctx->pre_output) += *ctx->output;
+      (*ctx->pre_output) += *ctx->post_output;
+      ctx->post_output->clear();
+      ctx->output->clear();
+    }
+
+    ctx->Message(std::string("- final:       ") + *ctx->output);
+
     return true;
   }
 

@@ -19,6 +19,7 @@ class Rules;
     Rules *rules;
     std::string *pre_output;
     std::string *output;
+    std::string *post_output;
     Rand *rand;
     size_t ref_depth;
     size_t max_depth;

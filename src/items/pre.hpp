@@ -1,7 +1,7 @@
-#ifndef RESMACK_ITEM_PRE_ID
-#define RESMACK_ITEM_PRE_ID
+#ifndef RESMACK_PRE
+#define RESMACK_PRE
 
-#define PRE_ID(NAME) (new resmack::items::PreId(NAME))
+#define PRE(ITEM) (new resmack::items::Pre(ITEM))
 
 #include <string>
 
@@ -12,13 +12,13 @@
 namespace resmack {
 namespace items {
 
-  class PreId: public resmack::Item {
-   public:
-    std::string rule_name_;
-    size_t rule_idx_;
+  class Pre: public resmack::Item {
+   private:
+    Item* item_;
 
-    PreId(std::string rule_name);
-    ~PreId();
+   public:
+    Pre(Item* item);
+    ~Pre();
 
     ItemType Type();
     void Build(BuildContext *ctx);
