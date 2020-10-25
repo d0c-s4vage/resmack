@@ -30,6 +30,7 @@ namespace calc {
     size_t NumChanges();
     bool CalcItem(Item* item);
     bool IndexOf(std::string rule_name, size_t* out);
+    void Ensure(std::string rule_name, size_t* out);
   };
 
 }

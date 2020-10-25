@@ -3,7 +3,7 @@
 
 namespace resmack {
 
-  RuleManager::RuleManager() {}
+  RuleManager::RuleManager(): parent_(NULL) {}
   RuleManager::~RuleManager() {
     for (size_t idx = 0; idx < this->rules_.size(); idx++) {
       delete this->rules_[idx];
@@ -13,15 +13,31 @@ namespace resmack {
     }
   }
 
+  void RuleManager::Init() {
+    this->rule_idx_to_name_ = new Map<size_t, std::string>();
+    this->rule_name_to_idx_ = new Map<std::string, size_t>();
+  }
+
+  void RuleManager::SetParent(RuleManager* parent) {
+    this->rule_idx_to_name_ = parent->rule_idx_to_name_;
+    this->rule_name_to_idx_ = parent->rule_name_to_idx_;
+
+    size_t num_rules = parent->NumRules();
+    this->rules_.reserve(num_rules);
+    for (size_t i = 0; i < num_rules; i++) {
+      this->rules_.emplace_back((items::Or*)NULL);
+    }
+  }
+
   Vector<items::Or*>* RuleManager::GetRules() {
     return &this->rules_;
   }
 
   // A null value for `out` is allowed
   bool RuleManager::IndexOf(std::string rule_name, size_t* out) {
-    if (this->rule_name_to_idx_.contains(rule_name)) {
+    if (this->rule_name_to_idx_->contains(rule_name)) {
       if (out != NULL) {
-        *out = this->rule_name_to_idx_[rule_name];
+        *out = (*this->rule_name_to_idx_)[rule_name];
       }
       return true;
     }
@@ -34,9 +50,9 @@ namespace resmack {
 
   // A null value for `out` is allowed
   bool RuleManager::NameOf(size_t rule_idx, std::string* out) {
-    if (this->rule_idx_to_name_.contains(rule_idx)) {
+    if (this->rule_idx_to_name_->contains(rule_idx)) {
       if (out != NULL) {
-        *out = this->rule_idx_to_name_[rule_idx];
+        *out = (*this->rule_idx_to_name_)[rule_idx];
       }
       return true;
     }
@@ -63,13 +79,16 @@ namespace resmack {
     items::Or* res;
     size_t rule_idx;
 
-    if (this->rule_name_to_idx_.contains(rule_name)) {
-      rule_idx = this->rule_name_to_idx_[rule_name];
+    if (this->IndexOf(rule_name, &rule_idx)) {
       res = this->rules_[rule_idx];
+      if (res == NULL) {
+        res = new items::Or();
+        this->rules_[rule_idx] = res;
+      }
     } else {
       rule_idx = this->rules_.size();
-      this->rule_name_to_idx_[rule_name] = rule_idx;
-      this->rule_idx_to_name_[rule_idx] = rule_name;
+      (*this->rule_name_to_idx_)[rule_name] = rule_idx;
+      (*this->rule_idx_to_name_)[rule_idx] = rule_name;
       res = new items::Or();
       this->rules_.emplace_back(res);
     }
@@ -97,8 +116,38 @@ namespace resmack {
     return this->GetRule(rule_idx);
   }
 
+  items::Or* RuleManager::GetAnyRule(size_t rule_idx, Rand* rand) {
+    if (this->parent_ == NULL) {
+      return this->GetRule(rule_idx);
+    }
+    Vector<RuleManager*> options;
+    RuleManager* curr = this;
+    while (curr != NULL) {
+      if (curr->ValidRule(rule_idx)) {
+        options.emplace_back(curr);
+      }
+      curr = curr->parent_;
+    }
+
+    size_t idx = rand->Next() % options.size();
+    return options[idx]->GetRule(rule_idx);
+  }
+
   items::Or* RuleManager::GetRule(size_t rule_idx) {
     if (rule_idx >= this->rules_.size()) { return NULL; }
     return this->rules_[rule_idx];
+  }
+
+  void RuleManager::DebugPrint() {
+    std::cout << "Rules:" << std::endl;
+    for (size_t idx = 0; idx < this->rules_.size(); idx++) {
+      std::cout << "  " << idx << ": " << (*this->rule_idx_to_name_)[idx] << ": ";
+      items::Or* rule = this->rules_[idx];
+      if (rule == NULL) {
+        std::cout << "NULL" << std::endl;
+      } else {
+        std::cout << rule->ToString() << std::endl;
+      }
+    }
   }
 }

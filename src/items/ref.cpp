@@ -1,7 +1,6 @@
 #include "../item.hpp"
 #include "ref.hpp"
 #include "../rules.hpp"
-#include <regex.h>
 
 namespace resmack {
 namespace items {

@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "rand.hpp"
 #include "types.hpp"
 #include "item.hpp"
 #include "items/or.hpp"
@@ -12,14 +13,20 @@ namespace resmack {
   class RuleManager {
    private:
     Vector<items::Or*> rules_;
-    Map<size_t, std::string> rule_idx_to_name_;
-    Map<std::string, size_t> rule_name_to_idx_;
+    Map<size_t, std::string>* rule_idx_to_name_;
+    Map<std::string, size_t>* rule_name_to_idx_;
+    RuleManager* parent_;
 
    public:
     RuleManager();
     ~RuleManager();
 
+    void Init();
+
     Vector<items::Or*>* GetRules();
+
+    void SetParent(RuleManager* parent);
+    size_t NumRules() { return this->rules_.size(); }
 
     bool IndexOf(std::string rule_name, size_t* out);
     bool IndexExists(size_t rule_idx);
@@ -35,6 +42,10 @@ namespace resmack {
     void Prune(size_t rule_idx);
     items::Or* GetRule(std::string rule_name);
     items::Or* GetRule(size_t rule_idx);
+
+    items::Or* GetAnyRule(size_t rule_idx, Rand* rand);
+
+    void DebugPrint();
   };
 
 }

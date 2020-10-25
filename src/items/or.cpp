@@ -24,20 +24,27 @@ namespace items {
   }
 
   void Or::Build(BuildContext* ctx) {
-    size_t choice_idx;
+    size_t chosen_idx;
     Vector<size_t> *choice_list;
-    if (ctx->DoShortest() && this->shortest_indices_.size() > 0) {
-      choice_list = &this->shortest_indices_;
+
+    if (this->keep_) {
+      chosen_idx = (ctx->rand->Next() % this->items_.size());
     } else {
-      choice_list = &this->choice_indices_;
+      size_t choice_idx;
+      if (ctx->DoShortest() && this->shortest_indices_.size() > 0) {
+        choice_list = &this->shortest_indices_;
+      } else {
+        choice_list = &this->choice_indices_;
+      }
+
+      if (choice_list->size() == 1) {
+        choice_idx = 0;
+      } else {
+        choice_idx = (ctx->rand->Next() % choice_list->size());
+      }
+      chosen_idx = (*choice_list)[choice_idx];
     }
 
-    if (choice_list->size() == 1) {
-      choice_idx = 0;
-    } else {
-      choice_idx = (ctx->rand->Next() % choice_list->size());
-    }
-    size_t chosen_idx = (*choice_list)[choice_idx];
     this->items_[chosen_idx]->Build(ctx);
   }
 
@@ -83,10 +90,16 @@ namespace items {
     }
 
     // none of our options are reachable!
-    return this->choice_indices_.size() != 0;
+    return this->keep_ || this->choice_indices_.size() != 0;
   }
 
   size_t Or::CalcRefDepth(calc::RefDepth* ref_depth) {
+    // will only happen for run-time added rule values with Id, which
+    // will only be Raw values, not complex types with additional refs
+    if (this->keep_) {
+      return 0;
+    }
+
     this->shortest_indices_.clear();
     size_t shortest_len = std::numeric_limits<size_t>::max();
     Map<size_t, size_t> depths;
@@ -119,19 +132,31 @@ namespace items {
     for (auto idx: this->choice_indices_) {
       res += std::to_string(idx) + ",";
     }
-    res[res.size()-1] = ']';
+    if (this->choice_indices_.size() > 0) {
+      res[res.size()-1] = ']';
+    } else {
+      res += "]";
+    }
 
     res += " shortest=[";
     for (auto idx: this->shortest_indices_) {
       res += std::to_string(idx) + ",";
     }
-    res[res.size()-1] = ']';
+    if (this->shortest_indices_.size() > 0) {
+      res[res.size()-1] = ']';
+    } else {
+      res += "]";
+    }
 
     res += " items=[";
     for (auto item: this->items_) {
       res += item->ToString() + ",";
     }
-    res[res.size()-1] = ']';
+    if (this->items_.size() > 0) {
+      res[res.size()-1] = ']';
+    } else {
+      res += "]";
+    }
 
     return res + ">";
   }

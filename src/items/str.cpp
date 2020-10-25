@@ -1,6 +1,5 @@
-#include "../item.hpp"
-#include "../utils.hpp"
 #include "str.hpp"
+#include "../utils.hpp"
 
 namespace resmack {
 namespace items {
@@ -29,10 +28,7 @@ namespace items {
 
   void Str::Build(BuildContext *ctx) {
     uint32_t num_chars = this->min_ + (ctx->rand->Next() % this->range_);
-    for(uint32_t i = 0; i < num_chars; i++) {
-      char c = this->charset_[ctx->rand->Next() % this->charset_.size()];
-      ctx->output->push_back(c);
-    }
+    utils::RandBytes(ctx->rand, &this->charset_, num_chars, ctx->output);
   }
 
 }

@@ -36,6 +36,18 @@ namespace test_utils {
       (*counts)[output]++;
     }
   }
+
+  __attribute__((unused))
+  static void SplitStr(std::string input, std::string split, std::vector<std::string>* output) {
+    size_t last_idx = 0;
+    size_t split_idx = input.find(split, last_idx);
+    while (split_idx != std::string::npos) {
+      output->emplace_back(input.substr(last_idx, split_idx - last_idx));
+      last_idx = split_idx + split.size();
+      split_idx = input.find(" ", last_idx);
+    }
+    output->emplace_back(input.substr(last_idx, input.size() - last_idx));
+  }
 }
 
 #endif

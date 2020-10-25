@@ -44,9 +44,9 @@ file(GLOB ROOT_FILES
 list(REMOVE_ITEM ROOT_FILES ${PROJECT_SOURCE_DIR}/src/main.cpp)
 
 set(MAIN_SOURCES
-    ${ROOT_FILES}
     ${ITEMS}
     ${CALCS}
+    ${ROOT_FILES}
     ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp)
 
 # target
