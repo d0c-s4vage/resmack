@@ -28,7 +28,7 @@ namespace items {
 
   void Str::Build(BuildContext *ctx) {
     uint32_t num_chars = this->min_ + (ctx->rand->Next() % this->range_);
-    utils::RandBytes(ctx->rand, this->charset_, num_chars, ctx->output);
+    utils::RandBytes(ctx->rand, &this->charset_, num_chars, ctx->output);
   }
 
 }

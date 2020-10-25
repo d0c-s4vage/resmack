@@ -13,30 +13,15 @@ namespace resmack {
   class RuleManager {
    private:
     Vector<items::Or*> rules_;
-    Map<size_t, std::string> rule_idx_to_name_;
-    Map<std::string, size_t> rule_name_to_idx_;
-
+    Map<size_t, std::string>* rule_idx_to_name_;
+    Map<std::string, size_t>* rule_name_to_idx_;
     RuleManager* parent_;
-
-    inline Map<size_t, std::string>* RuleIdxMap() {
-      if (this->parent_) {
-        return this->parent_->RuleIdxMap();
-      } else {
-        return &this->rule_idx_to_name_;
-      }
-    }
-
-    inline Map<std::string, size_t>* RuleNameMap() {
-      if (this->parent_) {
-        return this->parent_->RuleNameMap();
-      } else {
-        return &this->rule_name_to_idx_;
-      }
-    }
 
    public:
     RuleManager();
     ~RuleManager();
+
+    void Init();
 
     Vector<items::Or*>* GetRules();
 

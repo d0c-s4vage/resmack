@@ -14,6 +14,8 @@ namespace resmack {
   Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {
     if (parent != NULL) {
       this->rule_man_.SetParent(parent->GetRuleMan());
+    } else {
+      this->rule_man_.Init();
     }
   }
 
@@ -56,8 +58,8 @@ namespace resmack {
   bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand, size_t max_depth) {
     BuildContext ctx {
       .rules = NULL,
-      .pre_output = output,
-      .output = NULL,
+      .pre_output = NULL,
+      .output = output,
       .post_output = NULL,
       .rand = rand,
       .ref_depth = 0,
@@ -75,9 +77,9 @@ namespace resmack {
       ctx->rules = this;
     }
 
-    std::string tmp_output;
-    if (ctx->output == NULL) {
-      ctx->output = &tmp_output;
+    std::string tmp_pre_output;
+    if (ctx->pre_output == NULL) {
+      ctx->pre_output = &tmp_pre_output;
     }
 
     std::string tmp_post_output;
@@ -91,12 +93,12 @@ namespace resmack {
     rule->Build(ctx);
 
     if (ctx->ref_depth == 0) {
-      if (ctx->output->size() > 0) {
-        (*ctx->pre_output) += *ctx->output;
-        ctx->output->clear();
+      if (ctx->pre_output->size() > 0) {
+        (*ctx->output) = *ctx->pre_output + *ctx->output;
+        ctx->pre_output->clear();
       }
       if (ctx->post_output->size() > 0) {
-        (*ctx->pre_output) += *ctx->post_output;
+        (*ctx->output) += *ctx->post_output;
         ctx->post_output->clear();
       }
     }

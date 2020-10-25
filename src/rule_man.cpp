@@ -13,7 +13,15 @@ namespace resmack {
     }
   }
 
+  void RuleManager::Init() {
+    this->rule_idx_to_name_ = new Map<size_t, std::string>();
+    this->rule_name_to_idx_ = new Map<std::string, size_t>();
+  }
+
   void RuleManager::SetParent(RuleManager* parent) {
+    this->rule_idx_to_name_ = parent->rule_idx_to_name_;
+    this->rule_name_to_idx_ = parent->rule_name_to_idx_;
+
     size_t num_rules = parent->NumRules();
     this->rules_.reserve(num_rules);
     for (size_t i = 0; i < num_rules; i++) {
@@ -27,10 +35,9 @@ namespace resmack {
 
   // A null value for `out` is allowed
   bool RuleManager::IndexOf(std::string rule_name, size_t* out) {
-    Map<std::string, size_t>* map = this->RuleNameMap();
-    if (map->contains(rule_name)) {
+    if (this->rule_name_to_idx_->contains(rule_name)) {
       if (out != NULL) {
-        *out = (*map)[rule_name];
+        *out = (*this->rule_name_to_idx_)[rule_name];
       }
       return true;
     }
@@ -43,10 +50,9 @@ namespace resmack {
 
   // A null value for `out` is allowed
   bool RuleManager::NameOf(size_t rule_idx, std::string* out) {
-    auto map = this->RuleIdxMap();
-    if (map->contains(rule_idx)) {
+    if (this->rule_idx_to_name_->contains(rule_idx)) {
       if (out != NULL) {
-        *out = (*map)[rule_idx];
+        *out = (*this->rule_idx_to_name_)[rule_idx];
       }
       return true;
     }
@@ -81,8 +87,8 @@ namespace resmack {
       }
     } else {
       rule_idx = this->rules_.size();
-      this->rule_name_to_idx_[rule_name] = rule_idx;
-      this->rule_idx_to_name_[rule_idx] = rule_name;
+      (*this->rule_name_to_idx_)[rule_name] = rule_idx;
+      (*this->rule_idx_to_name_)[rule_idx] = rule_name;
       res = new items::Or();
       this->rules_.emplace_back(res);
     }
@@ -135,7 +141,7 @@ namespace resmack {
   void RuleManager::DebugPrint() {
     std::cout << "Rules:" << std::endl;
     for (size_t idx = 0; idx < this->rules_.size(); idx++) {
-      std::cout << "  " << idx << ": " << this->rule_idx_to_name_[idx] << ": ";
+      std::cout << "  " << idx << ": " << (*this->rule_idx_to_name_)[idx] << ": ";
       items::Or* rule = this->rules_[idx];
       if (rule == NULL) {
         std::cout << "NULL" << std::endl;
