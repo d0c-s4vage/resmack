@@ -71,6 +71,11 @@
 },
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs -I/home/saitama/ws/dev/resmack_c11/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/resmack.dir/src/build_context.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/build_context.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/build_context.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs -I/home/saitama/ws/dev/resmack_c11/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/resmack.dir/src/rule_man.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/rule_man.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/src/rule_man.cpp"
 },
@@ -158,6 +163,11 @@
   "directory": "/home/saitama/ws/dev/resmack_c11/build/test/test",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs -I/home/saitama/ws/dev/resmack_c11/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/test -I/home/saitama/ws/dev/resmack_c11/libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_resmack.dir/__/src/calc/ref_depth.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/calc/ref_depth.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/src/calc/ref_depth.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/include -I/home/saitama/ws/dev/resmack_c11/src -I/home/saitama/ws/dev/resmack_c11/libs -I/home/saitama/ws/dev/resmack_c11/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/test -I/home/saitama/ws/dev/resmack_c11/libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_resmack.dir/__/src/build_context.cpp.o -c /home/saitama/ws/dev/resmack_c11/src/build_context.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/src/build_context.cpp"
 },
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/test/test",

@@ -13,17 +13,15 @@ namespace items {
 
   void Post::Build(BuildContext *ctx) {
     std::string tmp_post_output;
-    std::string *orig_pre = ctx->pre_output;
+    std::string *orig_output = ctx->output;
 
-    ctx->pre_output = ctx->output;
     ctx->output = ctx->post_output;
     ctx->post_output = &tmp_post_output;
 
     this->item_->Build(ctx);
 
     ctx->post_output = ctx->output;
-    ctx->output = ctx->pre_output;;
-    ctx->pre_output = orig_pre;
+    ctx->output = orig_output;
 
     (*ctx->post_output) += tmp_post_output;
   }

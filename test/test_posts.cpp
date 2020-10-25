@@ -41,15 +41,21 @@ namespace items {
         PRE(AND(REF("dbContext"), V(".operation(function(f) { "))),
           V("f.target"),
         POST(V("})"))))
-      ->AddRule("dbContext.Test()", AND(REF("dbInner"), V(".Test()")));
+      ->AddRule("dbContext.Test()", AND(REF("dbInner"), V(".Test()")))
+
+      ->AddRule("l1", AND(PRE(V("l1[")), V("VAL"), POST(V("]"))))
+      ->AddRule("l2", AND(PRE(REF("l1")), V(".l2"), POST(V(">"))))
+      ->AddRule("l3", AND(PRE(REF("l2")), V(".l3"), POST(V("*"))))
+      ->AddRule("l4", AND(REF("l3"), V(".test()")));
 
     Rand rand(100);
     std::string output;
     //rules.Build("wrapped", &output, &rand);
 
-    EXPECT_EQ(output, "--> WRAPPED <--");
+    //EXPECT_EQ(output, "--> WRAPPED <--");
 
     output.clear();
+    // l1[VAL]
     rules.Build("dbContext.Test()", &output, &rand);
     std::cout << output << std::endl;
   }

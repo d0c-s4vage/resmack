@@ -90,21 +90,12 @@ namespace resmack {
 
     rule->Build(ctx);
 
-    std::string rule_name;
-    this->rule_man_.NameOf(rule_idx, &rule_name);
-    ctx->Message(std::string("Built: ") + rule_name);
-    ctx->Message(std::string("- pre_output:  ") + *ctx->pre_output);
-    ctx->Message(std::string("- output:      ") + *ctx->output);
-    ctx->Message(std::string("- post_output: ") + *ctx->post_output);
-
     if (ctx->ref_depth == 0) {
       (*ctx->pre_output) += *ctx->output;
       (*ctx->pre_output) += *ctx->post_output;
       ctx->post_output->clear();
       ctx->output->clear();
     }
-
-    ctx->Message(std::string("- final:       ") + *ctx->output);
 
     return true;
   }
