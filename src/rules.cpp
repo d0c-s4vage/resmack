@@ -90,9 +90,17 @@ namespace resmack {
     items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
     if (NULL == rule) { return false; }
 
+    if (ctx->rand->ShouldRecord()) {
+      ctx->rand->SnapshotState(ctx->ref_depth);
+    }
+
     rule->Build(ctx);
 
     if (ctx->ref_depth == 0) {
+      if (ctx->rand->ShouldRecord()) {
+        ctx->rand->SnapshotClear();
+      }
+
       if (ctx->pre_output->size() > 0) {
         (*ctx->output) = *ctx->pre_output + *ctx->output;
         ctx->pre_output->clear();
