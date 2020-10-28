@@ -53,7 +53,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
     count += 1;
 
     output.clear();
-    rules.Build(rule_idx, &output, &rand);
+    rules.Build(rule_idx, &output, &rand, 10);
     total_bytes += output.size();
 
     if (count % 0x800000 == 0) {

@@ -1,15 +1,13 @@
 #include "rand.hpp"
 #include <cstddef>
+#include <cstring>
 
 
 namespace resmack {
 
   RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t state[]) {
     this->ref_depth = ref_depth;
-    this->state[0] = state[0];
-    this->state[1] = state[1];
-    this->state[2] = state[2];
-    this->state[3] = state[3];
+    memcpy(this->state, state, sizeof(uint32_t) * 4);
   }
 
   Rand::Rand() {
@@ -60,6 +58,10 @@ namespace resmack {
     s_[1] = gen();
     s_[2] = gen();
     s_[3] = gen();
+  }
+
+  void Rand::SetState(uint32_t state[]) {
+    memcpy(this->s_, state, sizeof(uint32_t) * 4);
   }
 
   inline uint32_t Rand::Rotl(const uint32_t x, int k) {

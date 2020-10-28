@@ -23,6 +23,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 # files
 set(CMAKE_CXX_STANDARD 20)
 
+# vars
+set(RESMACK_LIB resmack)
+set(RESMACK_EXE resmack_main)
+
 # include
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
@@ -50,16 +54,19 @@ set(MAIN_SOURCES
     ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp)
 
 # target
-add_executable(resmack ${PROJECT_SOURCE_DIR}/src/main.cpp ${MAIN_SOURCES})
+add_library(${RESMACK_LIB} STATIC ${MAIN_SOURCES})
 
 # https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
 # add_subdirectory(${PROJECT_SOURCE_DIR}/libs/json)
 # target_link_libraries(resmack json)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
-target_link_libraries(resmack fmt)
+target_link_libraries(${RESMACK_LIB} fmt)
 
 
 if(BUILD_TEST)
   add_subdirectory(test)
+else()
+  target_link_libraries(${RESMACK_EXE} ${RESMACK_LIB})
+  add_executable(${RESMACK_EXE} ${PROJECT_SOURCE_DIR}/src/main.cpp)
 endif()
