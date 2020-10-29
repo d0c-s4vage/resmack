@@ -4,24 +4,24 @@ clean:
 
 all: clean debug release
 
-RESMACK_EXE=resmack_main
+RESMACK_PERF_EXE=resmack_perf
 
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 .PHONY: debug
-debug: build/debug build/debug/$(RESMACK_EXE)
+debug: build/debug build/debug/$(RESMACK_PERF_EXE)
 
 .PHONY: clean-debug
 clean-debug:
 	rm -rf build/debug
 
 run-debug: debug
-	build/debug/$(RESMACK_EXE)
+	build/debug/$(RESMACK_PERF_EXE)
 
 gdb-debug: debug
-	gdb -ex run build/debug/$(RESMACK_EXE)
+	gdb -ex run build/debug/$(RESMACK_PERF_EXE)
 
 gdb-test: test
 	gdb -ex run build/test/test/test_resmack
@@ -32,8 +32,8 @@ build/debug:
 	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-.PHONY: build/debug/$(RESMACK_EXE)
-build/debug/$(RESMACK_EXE):
+.PHONY: build/debug/$(RESMACK_PERF_EXE)
+build/debug/$(RESMACK_PERF_EXE):
 	cd build/debug ; \
 	make -j $(nproc)
 
@@ -50,7 +50,7 @@ RELEASE_PATH=build/release$(RELEASE_SUFFIX)
 	release-syms \
 	build-release \
 	perf-release-inner \
-	$(RELEASE_PATH)/$(RESMACK_EXE)
+	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 release:
 	$(MAKE) build-release
@@ -60,26 +60,26 @@ clean-release:
 	rm -rf build/release
 
 run-release: release
-	$(RELEASE_PATH)/$(RESMACK_EXE)
+	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
 gdb-release: release-syms
-	gdb -ex run $(RELEASE_PATH)-syms/$(RESMACK_EXE)
+	gdb -ex run $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/$(RESMACK_EXE) || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE) || true
 
 
 # -----------------------------------------------------------------------------
 
-build-release: $(RELEASE_PATH)/$(RESMACK_EXE)
+build-release: $(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
-$(RELEASE_PATH)/$(RESMACK_EXE): $(RELEASE_PATH)
+$(RELEASE_PATH)/$(RESMACK_PERF_EXE): $(RELEASE_PATH)
 	cd $(RELEASE_PATH) ; \
 	make -j $(nproc)
 

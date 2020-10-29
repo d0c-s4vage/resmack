@@ -25,27 +25,26 @@ set(CMAKE_CXX_STANDARD 20)
 
 # vars
 set(RESMACK_LIB resmack)
-set(RESMACK_EXE resmack_main)
+set(RESMACK_PERF_EXE resmack_perf)
 
 # include
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/src/lib
     ${PROJECT_SOURCE_DIR}/libs
     ${PROJECT_SOURCE_DIR}/libs/fmt/include)
 
 file(GLOB ITEMS
-    ${PROJECT_SOURCE_DIR}/src/items/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/items/*.cpp)
+    ${PROJECT_SOURCE_DIR}/src/lib/items/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/lib/items/*.cpp)
 
 file(GLOB CALCS
-    ${PROJECT_SOURCE_DIR}/src/calc/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/calc/*.cpp)
+    ${PROJECT_SOURCE_DIR}/src/lib/calc/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/lib/calc/*.cpp)
 
 file(GLOB ROOT_FILES
-    ${PROJECT_SOURCE_DIR}/src/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/*.cpp)
-list(REMOVE_ITEM ROOT_FILES ${PROJECT_SOURCE_DIR}/src/main.cpp)
+    ${PROJECT_SOURCE_DIR}/src/lib/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/lib/*.cpp)
 
 set(MAIN_SOURCES
     ${ITEMS}
@@ -67,6 +66,6 @@ target_link_libraries(${RESMACK_LIB} fmt)
 if(BUILD_TEST)
   add_subdirectory(test)
 else()
-  add_executable(${RESMACK_EXE} ${PROJECT_SOURCE_DIR}/src/main.cpp)
-  target_link_libraries(${RESMACK_EXE} ${RESMACK_LIB})
+  add_executable(${RESMACK_PERF_EXE} ${PROJECT_SOURCE_DIR}/src/mains/perf.cpp)
+  target_link_libraries(${RESMACK_PERF_EXE} ${RESMACK_LIB})
 endif()
