@@ -12,12 +12,11 @@ include_directories(
 file(GLOB TESTS *.cpp)
 add_executable(test_${PROJECT_NAME}
   ./main.cpp
-  ${MAIN_SOURCES}
   ${TESTS}
 )
 
 target_link_libraries(test_${PROJECT_NAME}
+  ${RESMACK_LIB}
   ${GTEST_LIB_DIR}/libgtest.a
-  fmt
   pthread
 )

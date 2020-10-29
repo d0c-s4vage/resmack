@@ -1,6 +1,7 @@
 #ifndef RESMACK_TYPES
 #define RESMACK_TYPES
 
+#include <list>
 #include <set>
 #include <map>
 #include <vector>
@@ -15,6 +16,9 @@ namespace resmack {
 
   template<class T>
   using Set = std::set<T>;
+
+  template<class T>
+  using List = std::list<T>;
 }
 
 #endif

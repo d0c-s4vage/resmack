@@ -4,22 +4,24 @@ clean:
 
 all: clean debug release
 
+RESMACK_PERF_EXE=resmack_perf
+
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 .PHONY: debug
-debug: build/debug build/debug/resmack
+debug: build/debug build/debug/$(RESMACK_PERF_EXE)
 
 .PHONY: clean-debug
 clean-debug:
 	rm -rf build/debug
 
 run-debug: debug
-	build/debug/resmack
+	build/debug/$(RESMACK_PERF_EXE)
 
 gdb-debug: debug
-	gdb -ex run build/debug/resmack
+	gdb -ex run build/debug/$(RESMACK_PERF_EXE)
 
 gdb-test: test
 	gdb -ex run build/test/test/test_resmack
@@ -30,10 +32,10 @@ build/debug:
 	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-.PHONY: build/debug/resmack
-build/debug/resmack:
+.PHONY: build/debug/$(RESMACK_PERF_EXE)
+build/debug/$(RESMACK_PERF_EXE):
 	cd build/debug ; \
-	make -j $(proc)
+	make -j $(nproc)
 
 # -----------------------------------------------------------------------------
 # RELEASE ---------------------------------------------------------------------
@@ -48,7 +50,7 @@ RELEASE_PATH=build/release$(RELEASE_SUFFIX)
 	release-syms \
 	build-release \
 	perf-release-inner \
-	$(RELEASE_PATH)/resmack
+	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 release:
 	$(MAKE) build-release
@@ -58,28 +60,28 @@ clean-release:
 	rm -rf build/release
 
 run-release: release
-	$(RELEASE_PATH)/resmack
+	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
 gdb-release: release-syms
-	gdb -ex run $(RELEASE_PATH)-syms/resmack
+	gdb -ex run $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/resmack || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE) || true
 
 
 # -----------------------------------------------------------------------------
 
-build-release: $(RELEASE_PATH)/resmack
+build-release: $(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
-$(RELEASE_PATH)/resmack: $(RELEASE_PATH)
+$(RELEASE_PATH)/$(RESMACK_PERF_EXE): $(RELEASE_PATH)
 	cd $(RELEASE_PATH) ; \
-	make -j $(proc)
+	make -j $(nproc)
 
 $(RELEASE_PATH):
 	mkdir -p $(RELEASE_PATH) ; \
@@ -92,16 +94,17 @@ $(RELEASE_PATH):
 
 TEST="*"
 
-test: libs-test/google-test build/test/test_resmack
+.PHONY: test test_resmack clean-test libs-test/googletest build/test/test/test_resmack
+
+test: libs-test/googletest build/test/test/test_resmack
 
 run-test: test
 	build/test/test/test_resmack --gtest_filter=$(TEST)
 
-.PHONY: clean-test
 clean-test:
 	rm -rf build/test
 
-libs-test/google-test: libs-test/googletest/build/lib/libgtest_main.a
+libs-test/googletest: libs-test/googletest/build/lib/libgtest_main.a
 
 libs-test/googletest/build/lib/libgtest_main.a:
 	mkdir -p libs-test
@@ -118,7 +121,6 @@ build/test:
 	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-.PHONY: build/test/test_resmack
-build/test/test_resmack: build/test
+build/test/test/test_resmack: build/test
 	cd build/test ; \
 	make -j $(nproc)
