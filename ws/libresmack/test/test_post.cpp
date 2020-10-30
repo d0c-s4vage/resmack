@@ -4,11 +4,12 @@
 
 #include "resmack/rand.hpp"
 #include "resmack/rules.hpp"
+#include "resmack/items/and.hpp"
+#include "resmack/items/id.hpp"
 #include "resmack/items/post.hpp"
 #include "resmack/items/pre.hpp"
 #include "resmack/items/raw.hpp"
-#include "resmack/items/and.hpp"
-#include "resmack/items/id.hpp"
+#include "resmack/items/ref.hpp"
 
 #include "test_utils.hpp"
 

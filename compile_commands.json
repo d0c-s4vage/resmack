@@ -1,101 +1,161 @@
 [
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/build_context.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/build_context.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/build_context.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/calc/reach.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/calc/reach.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/calc/reach.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/calc/ref_depth.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/calc/ref_depth.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/calc/ref_depth.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/and.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/and.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/and.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/id.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/id.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/id.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/int.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/int.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/int.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/opt.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/opt.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/opt.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/or.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/or.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/or.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/post.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/post.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/post.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/pre.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/pre.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/pre.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/raw.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/raw.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/raw.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/ref.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/ref.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/ref.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/scope.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/scope.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/scope.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/str.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/str.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/str.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/rand.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rand.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rand.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/rule_man.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rule_man.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rule_man.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/rules.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rules.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/rules.cpp"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack/libs/fmt",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/libs/fmt",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/fmt.dir/src/format.cc.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/src/format.cc",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/src/format.cc"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack/libs/fmt",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/libs/fmt",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/fmt.dir/src/os.cc.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/src/os.cc",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/src/os.cc"
 },
 {
-  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/resmack-perf",
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/main.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/main.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/main.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_and.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_and.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_and.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_id.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_id.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_id.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_int.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_int.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_int.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_opt.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_opt.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_opt.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_or.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_or.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_or.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_post.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_post.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_post.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_pre.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_pre.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_pre.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_rand.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_rand.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_rand.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_ref.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_ref.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_ref.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_scope.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_scope.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_scope.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/libresmack/test",
+  "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/test -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_str.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_str.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/test/test_str.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/test/ws/resmack-perf",
   "command": "/usr/bin/c++   -I/home/saitama/ws/dev/resmack_c11/ws/resmack-perf/../libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/resmack-perf.dir/main.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/resmack-perf/main.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/resmack-perf/main.cpp"
 }

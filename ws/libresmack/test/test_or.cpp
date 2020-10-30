@@ -10,6 +10,7 @@
 #include "resmack/items/ref.hpp"
 
 #include "calc/reach.hpp"
+#include "calc/ref_depth.hpp"
 
 #include "test_utils.hpp"
 

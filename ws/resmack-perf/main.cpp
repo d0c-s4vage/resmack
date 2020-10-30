@@ -14,9 +14,6 @@
 #include "resmack/items/id.hpp"
 #include "resmack/rand.hpp"
 
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 using namespace resmack;
 
 int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {

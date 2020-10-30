@@ -1,15 +1,13 @@
 #ifndef RESMACK_RULES_H
 #define RESMACK_RULES_H
 
-#include "types.hpp"
-#include "rule_man.hpp"
-#include "rand.hpp"
-#include "item.hpp"
-#include "calc/reach.hpp"
-#include "calc/ref_depth.hpp"
-#include "build_context.hpp"
-#include "items/or.hpp"
-#include "items/raw.hpp"
+#include "resmack/types.hpp"
+#include "resmack/rule_man.hpp"
+#include "resmack/rand.hpp"
+#include "resmack/item.hpp"
+#include "resmack/build_context.hpp"
+#include "resmack/items/or.hpp"
+#include "resmack/items/raw.hpp"
 
 namespace resmack {
 

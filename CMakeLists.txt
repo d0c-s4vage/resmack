@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+project(resmack-main)
+
 # Generate compile_commands.json:
 # cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 

@@ -4,27 +4,27 @@ clean:
 
 all: clean debug release
 
-RESMACK_PERF_EXE=resmack_perf
+RESMACK_PERF_EXE=resmack-perf
 
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 .PHONY: debug
-debug: build/debug build/debug/$(RESMACK_PERF_EXE)
+debug: build/debug build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
 
 .PHONY: clean-debug
 clean-debug:
 	rm -rf build/debug
 
 run-debug: debug
-	build/debug/$(RESMACK_PERF_EXE)
+	build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
 
 gdb-debug: debug
-	gdb -ex run build/debug/$(RESMACK_PERF_EXE)
+	gdb -ex run build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
 
 gdb-test: test
-	gdb -ex run build/test/test/test_resmack
+	gdb -ex run build/test/ws/libresmack/test/test_libresmack
 
 build/debug:
 	mkdir -p build/debug ; \
@@ -32,8 +32,8 @@ build/debug:
 	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-.PHONY: build/debug/$(RESMACK_PERF_EXE)
-build/debug/$(RESMACK_PERF_EXE):
+.PHONY: build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
+build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE):
 	cd build/debug ; \
 	make -j $(nproc)
 
@@ -57,22 +57,22 @@ release:
 
 .PHONY: clean-release
 clean-release:
-	rm -rf build/release
+	rm -rf build/release*
 
 run-release: release
-	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
+	$(RELEASE_PATH)/ws/resmack-perf/$(RESMACK_PERF_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
 gdb-release: release-syms
-	gdb -ex run $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE)
+	gdb -ex run $(RELEASE_PATH)-syms/ws/resmack-perf/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE) || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/ws/resmack-perf/$(RESMACK_PERF_EXE) || true
 
 
 # -----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ TEST="*"
 test: libs-test/googletest build/test/test/test_resmack
 
 run-test: test
-	build/test/test/test_resmack --gtest_filter=$(TEST)
+	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
 
 clean-test:
 	rm -rf build/test
@@ -121,6 +121,6 @@ build/test:
 	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-build/test/test/test_resmack: build/test
+build/test/ws/libresmack/test/test_libresmack: build/test
 	cd build/test ; \
 	make -j $(nproc)

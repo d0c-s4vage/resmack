@@ -8,6 +8,7 @@
 #include "resmack/items/raw.hpp"
 #include "resmack/items/and.hpp"
 #include "resmack/items/id.hpp"
+#include "resmack/items/ref.hpp"
 
 #include "test_utils.hpp"
 
