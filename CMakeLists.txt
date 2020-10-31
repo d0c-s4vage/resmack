@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+project(resmack-main)
+
 # Generate compile_commands.json:
 # cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 
@@ -10,62 +12,5 @@ cmake_minimum_required(VERSION 3.0)
 ## or cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-project(resmack)
-
-# options
-option(BUILD_TEST "Build the unit tests" OFF)
-
-# flags
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
-
-# files
-set(CMAKE_CXX_STANDARD 20)
-
-# vars
-set(RESMACK_LIB resmack)
-set(RESMACK_PERF_EXE resmack_perf)
-
-# include
-include_directories(
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src/lib
-    ${PROJECT_SOURCE_DIR}/libs
-    ${PROJECT_SOURCE_DIR}/libs/fmt/include)
-
-file(GLOB ITEMS
-    ${PROJECT_SOURCE_DIR}/src/lib/items/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/lib/items/*.cpp)
-
-file(GLOB CALCS
-    ${PROJECT_SOURCE_DIR}/src/lib/calc/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/lib/calc/*.cpp)
-
-file(GLOB ROOT_FILES
-    ${PROJECT_SOURCE_DIR}/src/lib/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/lib/*.cpp)
-
-set(MAIN_SOURCES
-    ${ITEMS}
-    ${CALCS}
-    ${ROOT_FILES}
-    ${PROJECT_SOURCE_DIR}/libs/nlohmann/json.hpp)
-
-# target
-add_library(${RESMACK_LIB} STATIC ${MAIN_SOURCES})
-
-# https://medium.com/heuristics/c-application-development-part-3-cmakelists-txt-from-scratch-7678253e5e24
-# add_subdirectory(${PROJECT_SOURCE_DIR}/libs/json)
-# target_link_libraries(resmack json)
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
-target_link_libraries(${RESMACK_LIB} fmt)
-
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-else()
-  add_executable(${RESMACK_PERF_EXE} ${PROJECT_SOURCE_DIR}/src/mains/perf.cpp)
-  target_link_libraries(${RESMACK_PERF_EXE} ${RESMACK_LIB})
-endif()
+add_subdirectory(ws/libresmack)
+add_subdirectory(ws/resmack_perf)
