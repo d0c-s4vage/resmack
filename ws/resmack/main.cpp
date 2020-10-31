@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     char* to_compile = argv[2];
     const char* clang_argv[] = {
       "-fsanitize-coverage=trace-pc-guard,trace-cmp,trace-div,indirect-calls",
-      "-lresmack_fuzz_main",
+      "-lresmack_fuzz",
       "-o",
       "output",
       to_compile,

@@ -13,4 +13,4 @@ project(resmack-main)
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 add_subdirectory(ws/libresmack)
-add_subdirectory(ws/resmack-perf)
+add_subdirectory(ws/resmack_perf)

@@ -4,24 +4,24 @@ clean:
 
 all: clean debug release
 
-RESMACK_PERF_EXE=resmack-perf
+RESMACK_PERF_EXE=resmack_perf
 
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 .PHONY: debug
-debug: build/debug build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
+debug: build/debug build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 .PHONY: clean-debug
 clean-debug:
 	rm -rf build/debug
 
 run-debug: debug
-	build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
+	build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 gdb-debug: debug
-	gdb -ex run build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
+	gdb -ex run build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 gdb-test: test
 	gdb -ex run build/test/ws/libresmack/test/test_libresmack
@@ -32,8 +32,8 @@ build/debug:
 	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
 
-.PHONY: build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE)
-build/debug/ws/resmack-perf/$(RESMACK_PERF_EXE):
+.PHONY: build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
+build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE):
 	cd build/debug ; \
 	make -j $(nproc)
 
@@ -60,19 +60,19 @@ clean-release:
 	rm -rf build/release*
 
 run-release: release
-	$(RELEASE_PATH)/ws/resmack-perf/$(RESMACK_PERF_EXE)
+	$(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
 gdb-release: release-syms
-	gdb -ex run $(RELEASE_PATH)-syms/ws/resmack-perf/$(RESMACK_PERF_EXE)
+	gdb -ex run $(RELEASE_PATH)-syms/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/ws/resmack-perf/$(RESMACK_PERF_EXE) || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/ws/resmack_perf/$(RESMACK_PERF_EXE) || true
 
 
 # -----------------------------------------------------------------------------
