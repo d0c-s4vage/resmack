@@ -96,7 +96,7 @@ TEST="*"
 
 .PHONY: test test_resmack clean-test libs-test/googletest build/test/test/test_resmack
 
-test: libs-test/googletest build/test/test/test_resmack
+test: libs-test/googletest build/test/ws/libresmack/test/test_libresmack
 
 run-test: test
 	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)

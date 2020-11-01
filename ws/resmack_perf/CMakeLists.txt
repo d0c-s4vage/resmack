@@ -9,8 +9,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 
 find_package(libresmack)
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}/../libresmack/include)
+if(NOT BUILD_TEST)
+    include_directories(
+        ${PROJECT_SOURCE_DIR}/../libresmack/include)
 
-add_executable(resmack_perf main.cpp)
-target_link_libraries(resmack_perf libresmack)
+    add_executable(resmack_perf main.cpp)
+    target_link_libraries(resmack_perf libresmack)
+endif()
