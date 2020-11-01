@@ -100,6 +100,7 @@ test: libs-test/googletest build/test/ws/libresmack/test/test_libresmack
 
 run-test: test
 	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
+	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 clean-test:
 	rm -rf build/test
