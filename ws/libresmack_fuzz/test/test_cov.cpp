@@ -3,7 +3,7 @@
 namespace resmack {
 namespace items {
 
-  TEST(Int, CorrectLength) {
+  TEST(Fuzz, Coverage) {
     EXPECT_EQ(true, true);
   }
 

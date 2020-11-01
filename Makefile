@@ -94,16 +94,30 @@ $(RELEASE_PATH):
 
 TEST="*"
 
-.PHONY: test test_resmack clean-test libs-test/googletest build/test/test/test_resmack
+.PHONY: tests clean-tests test-libresmack-fuzz test-libresmack libs-test/googletest
 
-test: libs-test/googletest build/test/ws/libresmack/test/test_libresmack
+tests: libs-test/googletest build/test/ws/libresmack/test/test_libresmack test-libresmack-fuzz
 
-run-test: test
+run-tests: test
 	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
 	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
-clean-test:
+clean-tests:
 	rm -rf build/test
+
+test-libresmack-fuzz:
+	cd build/test/ws/libresmack_fuzz/test ; \
+	make -j $(nproc)
+
+run-test-libresmack-fuzz: test-libresmack-fuzz
+	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+
+test-libresmack:
+	cd build/test/ws/libresmack/test ; \
+	make -j $(nproc)
+
+run-test-libresmack: test-libresmack
+	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
 
 libs-test/googletest: libs-test/googletest/build/lib/libgtest_main.a
 
@@ -121,7 +135,3 @@ build/test:
 	cd build/test ; \
 	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
-
-build/test/ws/libresmack/test/test_libresmack: build/test
-	cd build/test ; \
-	make -j $(nproc)
