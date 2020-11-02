@@ -29,12 +29,14 @@ namespace resmack {
      Rand();
      Rand(uint32_t seed);
      uint32_t Next();
+     Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
      bool Maybe();
      void SnapshotState(size_t ref_depth);
      void SnapshotClear();
      inline void SetShouldRecord(bool val) { this->should_record_ = val; }
      inline bool ShouldRecord() { return this->should_record_; }
      void SetState(uint32_t state[]);
+     void FetchState(uint32_t state[]);
 
     private:
      void Init(uint32_t seed);

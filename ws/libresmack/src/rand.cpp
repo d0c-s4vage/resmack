@@ -65,6 +65,10 @@ namespace resmack {
     memcpy(this->s_, state, sizeof(uint32_t) * 4);
   }
 
+  void Rand::FetchState(uint32_t state[]) {
+    memcpy(state, this->s_, sizeof(uint32_t) * 4);
+  }
+
   inline uint32_t Rand::Rotl(const uint32_t x, int k) {
     return (x << k) | (x >> (32 - k));
   }

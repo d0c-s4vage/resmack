@@ -105,7 +105,7 @@ run-tests: test
 clean-tests:
 	rm -rf build/test
 
-test-libresmack-fuzz:
+test-libresmack-fuzz: build/test
 	cd build/test/ws/libresmack_fuzz/test ; \
 	make -j $(nproc)
 
