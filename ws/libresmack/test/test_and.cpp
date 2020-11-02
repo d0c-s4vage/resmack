@@ -15,10 +15,11 @@ namespace items {
   {
     And* and_ = (new And("-"))\
       ->AddItem(new Raw("hello"))\
+      ->AddItem(new Raw("hello"))\
       ->AddItem(new Raw("world"));
 
     std::string built = test_utils::BuildItem(and_);
-    EXPECT_EQ(built, "hello-world");
+    EXPECT_EQ(built, "hello-hello-world");
   }
 
   TEST(And, NoSep)

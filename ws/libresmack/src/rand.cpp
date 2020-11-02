@@ -65,7 +65,7 @@ namespace resmack {
     memcpy(this->s_, state, sizeof(uint32_t) * 4);
   }
 
-  void Rand::FetchState(uint32_t state[]) {
+  void Rand::CopyState(uint32_t state[]) {
     memcpy(state, this->s_, sizeof(uint32_t) * 4);
   }
 

@@ -9,10 +9,11 @@
 #include <string>
 
 #include "resmack/rand.hpp"
+#include "resmack/types.hpp"
 
 namespace resmack {
 
-class Rules;
+  class Rules;
 
   class BuildContext {
    public:
@@ -23,6 +24,15 @@ class Rules;
     Rand *rand;
     size_t ref_depth;
     size_t max_depth;
+
+    Vector<RandSnapshot>* replay;
+    size_t replay_idx;
+    bool did_replay;
+
+    BuildContext(std::string* output, Rand* rand, size_t max_depth);
+
+    void MaybeDoRandReplay(uint32_t tmp_state[]);
+    void MaybeUndoRandReplay(uint32_t tmp_state[]);
 
     bool DoShortest();
     size_t IncDepth();

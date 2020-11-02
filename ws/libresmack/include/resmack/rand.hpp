@@ -36,7 +36,8 @@ namespace resmack {
      inline void SetShouldRecord(bool val) { this->should_record_ = val; }
      inline bool ShouldRecord() { return this->should_record_; }
      void SetState(uint32_t state[]);
-     void FetchState(uint32_t state[]);
+     uint32_t* GetState() { return this->s_; }
+     void CopyState(uint32_t state[]);
 
     private:
      void Init(uint32_t seed);

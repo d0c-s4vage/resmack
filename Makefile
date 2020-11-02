@@ -23,7 +23,7 @@ run-debug: debug
 gdb-debug: debug
 	gdb -ex run build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
-gdb-test: test
+gdb-test-libresmack: test-libresmack
 	gdb -ex run build/test/ws/libresmack/test/test_libresmack
 
 build/debug:
@@ -98,7 +98,7 @@ TEST="*"
 
 tests: libs-test/googletest build/test/ws/libresmack/test/test_libresmack test-libresmack-fuzz
 
-run-tests: test
+run-tests: test-libresmack test-libresmack-fuzz
 	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
 	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
@@ -112,7 +112,7 @@ test-libresmack-fuzz: build/test
 run-test-libresmack-fuzz: test-libresmack-fuzz
 	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
-test-libresmack:
+test-libresmack: build/test
 	cd build/test/ws/libresmack/test ; \
 	make -j $(nproc)
 

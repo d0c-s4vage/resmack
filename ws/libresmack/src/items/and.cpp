@@ -25,11 +25,11 @@ namespace items {
    uint32_t count = 0;
    bool add_sep = (this->sep_.size() > 0);
    for (Item* item: this->items_) {
-      item->Build(ctx);
-      count += 1;
-      if (add_sep && count++ > 0 && count <= this->items_.size()) {
+      if (add_sep && count > 0 && count <= this->items_.size()) {
         *ctx->output += this->sep_;
       }
+      count++;
+      item->Build(ctx);
    }
   }
 

@@ -44,7 +44,7 @@ namespace test_utils {
     while (split_idx != std::string::npos) {
       output->emplace_back(input.substr(last_idx, split_idx - last_idx));
       last_idx = split_idx + split.size();
-      split_idx = input.find(" ", last_idx);
+      split_idx = input.find(split, last_idx);
     }
     output->emplace_back(input.substr(last_idx, input.size() - last_idx));
   }

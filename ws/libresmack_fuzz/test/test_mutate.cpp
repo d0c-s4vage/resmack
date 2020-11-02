@@ -31,17 +31,19 @@ namespace fuzz {
       { 1u, 3u },
       { 2u, 3u },
       { 3u, 4u },
-      { 4u, 5u }
+      { 4u, 5u },
     };
 
     for (const auto& test: tests) {
+      size_t cascade_idx = test[0];
+      size_t returned_idx = test[1];
       new_state_tree.clear();
       size_t res_idx = CascadeMutatedState(tmp_state,
-                                           &(*orig_state_tree)[test[0]],
-                                           test[0],
+                                           &(*orig_state_tree)[cascade_idx],
+                                           cascade_idx,
                                            orig_state_tree,
                                            &new_state_tree);
-      EXPECT_EQ(res_idx, test[1]);
+      EXPECT_EQ(res_idx, returned_idx);
     }
   }
 

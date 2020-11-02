@@ -1,6 +1,47 @@
+#include <cstring>
+
 #include "resmack/build_context.hpp"
+#include "resmack/rand.hpp"
 
 namespace resmack {
+
+  BuildContext::BuildContext(std::string* output, Rand* rand, size_t max_depth):
+      rules(NULL),
+      pre_output(NULL),
+      output(output),
+      post_output(NULL),
+      rand(rand),
+      ref_depth(0),
+      max_depth(max_depth),
+      replay(NULL),
+      replay_idx(0),
+      did_replay(false)
+  {
+  }
+
+  void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[]) {
+    if (NULL == this->replay || this->replay_idx >= this->replay->size()) {
+      this->did_replay = false;
+      return;
+    }
+
+    RandSnapshot& snapshot = (*this->replay)[this->replay_idx];
+    if (this->ref_depth != snapshot.ref_depth) {
+      this->did_replay = false;
+      return;
+    }
+
+    this->did_replay = true;
+    this->rand->CopyState(tmp_state);
+    this->rand->SetState(snapshot.state);
+    this->replay_idx++;
+  }
+
+  void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[]) {
+    if (!this->did_replay) { return; }
+
+    this->rand->SetState(tmp_state);
+  }
 
   bool BuildContext::DoShortest() {
     return this->ref_depth >= this->max_depth;
@@ -8,7 +49,7 @@ namespace resmack {
 
   size_t BuildContext::IncDepth() {
     if (this->ref_depth == std::numeric_limits<size_t>::max()) {
-      throw std::overflow_error("Attempted to incremenet ref depth past size_t max");
+      throw std::overflow_error("Attempted to increment ref depth past size_t max");
     }
     return this->ref_depth++;
   }

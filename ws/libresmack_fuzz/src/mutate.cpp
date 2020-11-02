@@ -25,15 +25,13 @@ namespace fuzz {
   void MutateRandSnapshot(Rand* rand,
                           Vector<RandSnapshot>* orig_ss,
                           Vector<RandSnapshot>* new_ss) {
-    uint32_t tmp_state[4];
     size_t curr_idx = 0;
     RandSnapshot* curr = NULL;
 
     while (curr_idx < orig_ss->size()) {
       curr = &(*orig_ss)[curr_idx];
       if (rand->Maybe()) {
-        rand->FetchState(tmp_state);
-        curr_idx = CascadeMutatedState(tmp_state, curr, curr_idx, orig_ss, new_ss);
+        curr_idx = CascadeMutatedState(rand->GetState(), curr, curr_idx, orig_ss, new_ss);
       } else {
         new_ss->emplace_back(curr->ref_depth, curr->state);
         curr_idx += 1;

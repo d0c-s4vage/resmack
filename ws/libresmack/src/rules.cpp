@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <cstring>
 
 #include "resmack/types.hpp"
 #include "resmack/items/or.hpp"
@@ -57,15 +58,7 @@ namespace resmack {
   }
 
   bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand, size_t max_depth) {
-    BuildContext ctx {
-      .rules = NULL,
-      .pre_output = NULL,
-      .output = output,
-      .post_output = NULL,
-      .rand = rand,
-      .ref_depth = 0,
-      .max_depth = max_depth,
-    };
+    BuildContext ctx(output, rand, max_depth);
     return this->Build(rule_idx, &ctx);
   }
 
@@ -91,17 +84,18 @@ namespace resmack {
     items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
     if (NULL == rule) { return false; }
 
-    if (ctx->rand->ShouldRecord()) {
-      ctx->rand->SnapshotState(ctx->ref_depth);
-    }
-
-    rule->Build(ctx);
-
-    if (ctx->ref_depth == 0) {
+    uint32_t tmp_rand_state[4];
+    ctx->MaybeDoRandReplay(tmp_rand_state);
+    {
       if (ctx->rand->ShouldRecord()) {
-        ctx->rand->SnapshotClear();
+        ctx->rand->SnapshotState(ctx->ref_depth);
       }
 
+      rule->Build(ctx);
+    }
+    ctx->MaybeUndoRandReplay(tmp_rand_state);
+
+    if (ctx->ref_depth == 0) {
       if (ctx->pre_output->size() > 0) {
         (*ctx->output) = *ctx->pre_output + *ctx->output;
         ctx->pre_output->clear();
