@@ -19,6 +19,10 @@ namespace resmack {
   {
   }
 
+  void BuildContext::Reset() {
+    this->replay_idx = 0;
+  }
+
   void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[]) {
     if (NULL == this->replay || this->replay_idx >= this->replay->size()) {
       this->did_replay = false;

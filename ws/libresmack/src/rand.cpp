@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 
 #include "resmack/rand.hpp"
 

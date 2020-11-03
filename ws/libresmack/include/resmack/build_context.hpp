@@ -31,6 +31,8 @@ namespace resmack {
 
     BuildContext(std::string* output, Rand* rand, size_t max_depth);
 
+    // reset replay and other state fields
+    void Reset();
     void MaybeDoRandReplay(uint32_t tmp_state[]);
     void MaybeUndoRandReplay(uint32_t tmp_state[]);
 
