@@ -4,6 +4,42 @@
 #include "item.hpp"
 #include <cstring>
 
+void fuzz() {
+  Rules* rules;
+  LoadGrammar(&rules, ...);
+
+  Feedback feedback;
+  Target target;
+  Rand rand(100);
+
+  Corpus corpus = NULL;
+
+  std::string output;
+  output.reserve(0x1000);
+
+  size_t start_rule_idx = rules.GetRuleMan()->IndexOf("main");
+  size_t max_ref_depth = 10;
+  BuildContext ctx(&output, &rand, max_ref_depth);
+
+  while (true) {
+    rand.SnapshotClear();
+    if (rand.Maybe()) {
+      ctx.SetReplay(corpus.Fetch(&rand));
+    } else {
+      // build a new one from scratch
+      ctx.SetReplay(NULL);
+    }
+    rules.Build(start_rule_idx, &ctx);
+
+    target.Launch(&output, &feedback);
+
+    FeedbackStats stats = feedback.GetStats();
+    if (corpus.IsNew(&stats) {
+      corpus.Save(stats, rand.GetSnapshots());
+    }
+  }
+}
+
 int main(int argc, char** argv) {
   // cc:
   //   * forward all arguments to clang, adding

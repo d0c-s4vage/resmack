@@ -19,7 +19,8 @@ namespace resmack {
   {
   }
 
-  void BuildContext::Reset() {
+  void BuildContext::SetReplay(Vector<RandSnapshot>* replay) {
+    this->replay = replay;
     this->replay_idx = 0;
   }
 

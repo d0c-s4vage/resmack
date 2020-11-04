@@ -61,8 +61,7 @@ namespace items {
     // new rand state for generating the inner value, the 'numbers|letters'
     // snapshot
     rand.CopyState(replay[2].state);
-    ctx.replay = &replay;
-
+    ctx.SetReplay(&replay);
     rand.SnapshotClear();
 
     output.clear();
@@ -78,9 +77,8 @@ namespace items {
     Vector<RandSnapshot> replay2(*rand.GetSnapshots());
     // should be able to replay the exact same thing as when using the mutated
     // replay
-    ctx.replay = &replay2;
+    ctx.SetReplay(&replay2);
     output.clear();
-    ctx.Reset();
     rules.Build(rule_idx, &ctx);
 
     std::vector<std::string> new_splits2;
