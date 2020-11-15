@@ -12,9 +12,23 @@ namespace items {
   }
 
   void Opt::Build(BuildContext* ctx) {
-   if (ctx->rand->Maybe()) {
+   if (!ctx->DoShortest() && ctx->rand->Maybe()) {
      this->item_->Build(ctx);
    }
+  }
+
+  bool Opt::CalcReachability(calc::Reach* reach_calc) {
+    // Always reachable, but we still need to calculate reachability
+    // of the item
+    this->item_->CalcReachability(reach_calc);
+    return true;
+  }
+
+  size_t Opt::CalcRefDepth(calc::RefDepth *calc) {
+    // minimum reference depth for this is 0, but we still need to calculate ref
+    // depth of the item
+    this->item_->CalcRefDepth(calc);
+    return 0;
   }
 
 }

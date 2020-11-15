@@ -1,0 +1,2 @@
+
+EXT_FUNC(LLVMFuzzerTestOneInput, int, (const uint8_t*, size_t), false);

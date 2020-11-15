@@ -1,0 +1,24 @@
+#ifndef RESMACK_FUZZ_FEEDBACK_H
+#define RESMACK_FUZZ_FEEDBACK_H
+
+#include <cstddef>
+#include <stdint.h>
+
+namespace resmack {
+namespace fuzz {
+
+  struct FeedbackStats {
+    size_t key;
+  };
+
+  class Feedback {
+   public:
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
+    virtual FeedbackStats GetStats() = 0;
+  };
+
+}
+}
+
+#endif

@@ -43,8 +43,11 @@ namespace resmack {
   }
 
   void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[]) {
-    if (!this->did_replay) { return; }
+    if (!this->did_replay) {
+      return;
+    }
 
+    uint32_t* curr_state = this->rand->GetState();
     this->rand->SetState(tmp_state);
   }
 

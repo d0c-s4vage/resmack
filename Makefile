@@ -26,6 +26,9 @@ gdb-debug: debug
 gdb-test-libresmack: test-libresmack
 	gdb -ex run build/test/ws/libresmack/test/test_libresmack
 
+gdb-test-libresmack-fuzz: test-libresmack-fuzz
+	gdb -ex run build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz
+
 build/debug:
 	mkdir -p build/debug ; \
 	cd build/debug ; \
@@ -135,3 +138,9 @@ build/test:
 	cd build/test ; \
 	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
 	cp -u compile_commands.json ../../
+
+# -----------------------------------------------------------------------------
+# RESMACK MAIN LIB ------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+

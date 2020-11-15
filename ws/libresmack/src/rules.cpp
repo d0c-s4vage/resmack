@@ -84,7 +84,7 @@ namespace resmack {
     items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
     if (NULL == rule) { return false; }
 
-    uint32_t tmp_rand_state[4];
+    uint32_t tmp_rand_state[4] = { 0, 0, 0, 0 };
     ctx->MaybeDoRandReplay(tmp_rand_state);
     {
       if (ctx->rand->ShouldRecord()) {

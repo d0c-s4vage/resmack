@@ -31,7 +31,7 @@ void fuzz() {
     }
     rules.Build(start_rule_idx, &ctx);
 
-    target.Launch(&output, &feedback);
+    TargetStats stats = target.Launch(&output, &feedback);
 
     FeedbackStats stats = feedback.GetStats();
     if (corpus.IsNew(&stats) {

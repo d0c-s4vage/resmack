@@ -14,4 +14,5 @@ project(resmack-main)
 
 add_subdirectory(ws/libresmack)
 add_subdirectory(ws/libresmack_fuzz)
+add_subdirectory(ws/libresmack_fuzz_main)
 add_subdirectory(ws/resmack_perf)

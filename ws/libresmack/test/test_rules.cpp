@@ -19,6 +19,85 @@
 namespace resmack {
 namespace items {
 
+  TEST(Rules, SnapshotCopying) {
+    Rules rules;
+    rules.AddRule("test", OR("hello", "there"));
+
+    Rand rand(100);
+    rand.SetShouldRecord(true);
+
+    std::string output;
+    BuildContext ctx(&output, &rand, 10);
+
+    size_t rule_idx = 0;
+    EXPECT_TRUE(rules.GetRuleMan()->IndexOf("test", &rule_idx));
+
+    rules.Build(rule_idx, &ctx);
+
+    Vector<RandSnapshot> replay(*rand.GetSnapshots());
+    RandSnapshot* snap = &replay[0];
+    snap->state[0] = 0u;
+    snap->state[1] = 1u;
+    snap->state[2] = 2u;
+    snap->state[3] = 3u;
+
+    Vector<RandSnapshot>* orig = rand.GetSnapshots();
+    EXPECT_NE(0u, (*orig)[0].state[0]);
+    EXPECT_NE(1u, (*orig)[0].state[1]);
+    EXPECT_NE(2u, (*orig)[0].state[2]);
+    EXPECT_NE(3u, (*orig)[0].state[3]);
+  }
+
+  TEST(Rules, StateRestoreAfterSnapshot) {
+    Rules rules;
+    rules
+      .AddRule("num", OR(V("1"), V("2"), V("3"), V("4"), V("5"), REF("alpha")))
+      ->AddRule("alpha", OR("a", "b", "c", "d", "e", "f", "g"))
+      ->AddRule("test", OR(REF("alpha"), REF("num")));
+
+    Rand rand(104);
+    rand.SetShouldRecord(true);
+
+    std::string output;
+    BuildContext ctx(&output, &rand, 10);
+
+    size_t rule_idx = 0;
+    EXPECT_TRUE(rules.GetRuleMan()->IndexOf("test", &rule_idx));
+
+    // initial build
+    rules.Build(rule_idx, &ctx);
+
+    Vector<RandSnapshot> replay(*rand.GetSnapshots());
+    std::cout << "NUM ITEMS IN RAND SNAPSHOT: " << rand.GetSnapshots()->size() << std::endl;
+    std::cout << "output0: " << output << std::endl;
+
+    ctx.SetReplay(&replay);
+    output.clear();
+    rules.Build(rule_idx, &ctx);
+    uint32_t val1 = rand.Next();
+    std::cout << "val1: " << val1 << std::endl;
+    std::cout << "output1: " << output << std::endl;
+
+    ctx.SetReplay(NULL);
+    output.clear();
+    rules.Build(rule_idx, &ctx);
+    uint32_t val2 = rand.Next();
+    std::cout << "val2: " << val2 << std::endl;
+    std::cout << "output2: " << output << std::endl;
+
+    ctx.SetReplay(&replay);
+    output.clear();
+    rules.Build(rule_idx, &ctx);
+    uint32_t val3 = rand.Next();
+    std::cout << "val3: " << val3 << std::endl;
+    std::cout << "output3: " << output << std::endl;
+
+    rand.SnapshotClear();
+    ctx.SetReplay(&replay);
+
+    std::cout << "NUM ITEMS IN SNAPSHOT: " << replay.size() << std::endl;
+  }
+
   TEST(Rules, ReplayRandState) {
     Rules rules;
 
