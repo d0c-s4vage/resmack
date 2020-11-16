@@ -43,7 +43,7 @@ bool parseFruitList(std::vector<std::string>* parts, size_t* curr_idx) {
     }
   }
 
-  if (fruits.size() == 4 && fruits[0] == "apples" && fruits[1] == "grapes" && fruits[2] != "pears" ) {
+  if (fruits.size() == 4 && fruits[0] == "apples" && fruits[1] == "grapes" && fruits[2] != "pears") {
     return true;
   }
   return false;
