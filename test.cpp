@@ -29,6 +29,9 @@ bool parseFruitList(std::vector<std::string>* parts, size_t* curr_idx) {
   bool expect_fruit = false;
 
   while (*curr_idx < parts->size()) {
+    if (fruits.size() == 4) {
+      break;
+    }
     expect_fruit = !expect_fruit;
     next_part = &(*parts)[(*curr_idx)++];
     if (expect_fruit) {
@@ -81,7 +84,14 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (!parseFruitList(&parts, &curr_idx)) {
     return false;
   }
-  return true;
+  if (parts.size() - curr_idx != 4) {
+    return false;
+  }
+  if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
+    return true;
+  }
+
+  return false;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
