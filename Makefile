@@ -4,6 +4,7 @@ clean:
 
 all: clean debug release
 
+RESMACK_EXE=resmack
 RESMACK_PERF_EXE=resmack_perf
 
 # -----------------------------------------------------------------------------
@@ -17,10 +18,10 @@ debug: build/debug build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 clean-debug:
 	rm -rf build/debug
 
-run-debug: debug
+run-perf-debug: debug
 	build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
-gdb-debug: debug
+gdb-perf-debug: debug
 	gdb -ex run build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 gdb-test-libresmack: test-libresmack
@@ -62,13 +63,29 @@ release:
 clean-release:
 	rm -rf build/release*
 
-run-release: release
-	$(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
+run-resmack: run-resmack-release
+
+run-resmack-release: release
+	$(RELEASE_PATH)/ws/resmack/$(RESMACK_EXE)
+
+run-resmack-debug: debug
+	$(RELEASE_PATH)/ws/resmack/$(RESMACK_EXE)
+
+gdb-resmack: debug
+	gdb -ex run $(RELEASE_PATH)/ws/debug/resmack/$(RESMACK_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
 
-gdb-release: release-syms
+# --- PERF EXE ---
+
+run-perf-release: release
+	$(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
+
+gdb-perf-release: release
+	gdb -ex run $(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
+
+gdb-perf: release-syms
 	gdb -ex run $(RELEASE_PATH)-syms/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
