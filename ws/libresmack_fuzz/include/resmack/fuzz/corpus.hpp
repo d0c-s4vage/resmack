@@ -7,11 +7,8 @@ namespace resmack {
 namespace fuzz {
 
   class ICorpus {
-    virtual void AddItem() = 0;
+    virtual void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int num) = 0;
     virtual void GetItem(Rand* rand) = 0;
-  };
-
-  class Corpus : ICorpus {
   };
 
 }

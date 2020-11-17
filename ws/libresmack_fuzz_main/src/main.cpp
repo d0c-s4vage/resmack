@@ -104,7 +104,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     size_t cov_key = cov.GetStats().key;
 
     if (!seen_covs.contains(cov_key)) {
-      std::cout << "New coverage with: " << output << ", key: " << cov_key << std::endl;
+      std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << std::endl;
       corpus.emplace_back(*build_rand.GetSnapshots());
       seen_covs.emplace(cov_key);
     }

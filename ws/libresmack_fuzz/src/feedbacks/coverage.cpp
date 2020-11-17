@@ -1,5 +1,6 @@
 #include <cstring>
 #include <stdio.h>
+#include <iostream>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
@@ -17,6 +18,7 @@ extern "C" void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* s
     NUM_COV_FLAGS++;
   }
   COV_FLAGS = new uint32_t[NUM_COV_FLAGS];
+  printf("NUM FLAGS: %lu\n", GUARD_COUNTER);
 }
 
 extern "C" void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
@@ -26,6 +28,12 @@ extern "C" void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
     uint_no++;
   }
   COV_FLAGS[uint_no] |= (1 << bit_no);
+}
+
+size_t _NumBits(uint32_t val) {
+   val = val - ((val >> 1) & 0x55555555);
+   val = (val & 0x33333333) + ((val >> 2) & 0x33333333);
+   return (((val + (val >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
 namespace resmack {
@@ -51,7 +59,15 @@ namespace fuzz {
   }
 
   FeedbackStats Coverage::GetStats() {
-    return { this->hash };
+    size_t num_bits = 0;
+    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+      num_bits += _NumBits(COV_FLAGS[idx]);
+    }
+
+    return {
+      .key = this->hash,
+      .num = num_bits,
+    };
   }
 
 }

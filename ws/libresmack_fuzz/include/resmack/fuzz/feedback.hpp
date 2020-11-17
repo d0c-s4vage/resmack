@@ -9,6 +9,8 @@ namespace fuzz {
 
   struct FeedbackStats {
     size_t key;
+    // total number of BBs hit
+    size_t num;
   };
 
   class Feedback {
