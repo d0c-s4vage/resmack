@@ -46,6 +46,10 @@ namespace compile {
 
   int Run(int argc, char** argv) {
     CompileOpts opts;
+
+    ParseOpts(argc, argv, &opts);
+
+    return 0;
   }
 
 }

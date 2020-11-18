@@ -33,7 +33,6 @@ namespace root {
 
       switch (c) {
         case 0:
-          printf("option %s\n", long_options[opt_index].name);
           break;
         case 'h':
           opts->help = true;
@@ -54,7 +53,17 @@ namespace root {
       return 1;
     }
 
-    if (opts.help) {
+    if (argc == 1 || opts.help || optind == argc) {
+      PrintHelp();
+      return 1;
+    }
+
+    std::string sub_command(argv[optind]);
+
+    if (sub_command == "cc") {
+      std::cerr << "Compiling" << std::endl;
+    } else {
+      std::cerr << "Unknown sub-command: " << sub_command << std::endl << std::endl;
       PrintHelp();
       return 1;
     }
