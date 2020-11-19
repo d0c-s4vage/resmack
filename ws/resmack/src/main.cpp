@@ -3,6 +3,9 @@
 #include <iostream>
 #include "getopt.h"
 
+#include "banner.hpp"
+#include "compile.hpp"
+
 namespace resmack {
 namespace cli {
 namespace root {
@@ -12,10 +15,11 @@ namespace root {
   };
 
   void PrintHelp() {
-    const char* banner = "reSMACK";
-    std::cout << banner << std::endl << std::endl;
+    PrintBanner();
 
-    std::cout << "Sub-Commands:" << std::endl << std::endl;
+    std::cout << "Available sub-commands. Each has their own --help" << std::endl << std::endl;
+    std::cout << "  cc  - Compilation" << std::endl;
+    std::cout << "  gen - Grammar generation" << std::endl;
   }
 
   bool ParseOpts(int argc, char** argv, MainOpts* opts) {
@@ -48,22 +52,16 @@ namespace root {
       .help = false,
     };
 
+    if (strncmp(argv[1], "cc", strlen("cc")) == 0) {
+      return resmack::cli::compile::Run(argc, argv);
+    }
+
     if (!ParseOpts(argc, argv, &opts)) {
       std::cerr << "Error: Could not parse command-line arguments" << std::endl;
       return 1;
     }
 
     if (argc == 1 || opts.help || optind == argc) {
-      PrintHelp();
-      return 1;
-    }
-
-    std::string sub_command(argv[optind]);
-
-    if (sub_command == "cc") {
-      std::cerr << "Compiling" << std::endl;
-    } else {
-      std::cerr << "Unknown sub-command: " << sub_command << std::endl << std::endl;
       PrintHelp();
       return 1;
     }

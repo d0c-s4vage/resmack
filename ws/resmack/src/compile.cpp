@@ -3,6 +3,8 @@
 #include <iostream>
 #include "getopt.h"
 
+#include "banner.hpp"
+
 namespace resmack {
 namespace cli {
 namespace compile {
@@ -12,10 +14,10 @@ namespace compile {
   };
 
   void PrintHelp() {
-    const char* banner = "reSMACK";
-    std::cout << banner << std::endl << std::endl;
+    PrintBanner();
 
-    std::cout << "Sub-Commands:" << std::endl << std::endl;
+    std::cout << "resmack cc" << std::endl << std::endl;
+    std::cout << "  Compile a fuzz harness into a stand-alone binary" << std::endl << std::endl;
   }
 
   bool ParseOpts(int argc, char** argv, CompileOpts* opts) {
@@ -33,7 +35,6 @@ namespace compile {
 
       switch (c) {
         case 0:
-          printf("option %s\n", long_options[opt_index].name);
           break;
         case 'h':
           opts->help = true;
@@ -48,6 +49,10 @@ namespace compile {
     CompileOpts opts;
 
     ParseOpts(argc, argv, &opts);
+    if (opts.help) {
+      PrintHelp();
+      return 1;
+    }
 
     return 0;
   }
