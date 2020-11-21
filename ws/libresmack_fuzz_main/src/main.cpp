@@ -22,28 +22,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 
   resmack::Rules rules = new resmack::Rules();
-  rules.AddRule("fruit", OR("apples", "bananas", "grapes", "pears", "peaches"))
-    ->AddRule("conjunction", OR("or", "and", "with", "without"))
-    ->AddRule("fruit-list", AND_S(" ",
-      REF("fruit"),
-      OPT(AND_S(" ", REF("conjunction"), REF("fruit-list")))
-    ))
-    ->AddRule("verb", OR(
-      "eat", "throw", "stomp on", "enjoy", "purchase", "stare at", "saute",
-      "devour", "mock", "ridicule", "praise", "return", "investigate",
-      "detest", "abhor", "congratulate"
-    ))
-    ->AddRule("subject", OR("I", "we", "you"))
-    ->AddRule("sentence", AND_S(" ", REF("subject"), REF("verb"), REF("fruit-list")))
-    ->AddRule("run-on-sentence", AND(
-      REF("sentence"),
-      OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence")))
-    ));
-  size_t rule_idx;
-  if (!rules.GetRuleMan()->IndexOf("run-on-sentence", &rule_idx)) {
-    std::cout << "Invalid rules" << std::endl;
-    return 1;
-  }
+  size_t rule_idx = EF.ResmackGrammarInit(&rules);
 
   resmack::fuzz::Coverage cov;
   resmack::fuzz::NoopCoverage noop_cov;

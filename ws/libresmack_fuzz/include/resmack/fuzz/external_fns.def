@@ -1,3 +1,2 @@
-
 EXT_FUNC(LLVMFuzzerTestOneInput, int, (const uint8_t*, size_t), false);
-EXT_FUNC(ResmackGrammarInit, int, (const uint8_t*, size_t), false);
+EXT_FUNC_CPP(ResmackGrammarInit, size_t, (resmack::Rules* rules), true);

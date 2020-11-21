@@ -1,6 +1,7 @@
 #ifndef RESMACK_FUZZ_EXTERNAL
 #define RESMACK_FUZZ_EXTERNAL
 
+#include "resmack/rules.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -13,10 +14,13 @@ namespace fuzz {
 
 #define EXT_FUNC(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
   RETURN_TYPE(*NAME) FUNC_SIG = nullptr
+#define EXT_FUNC_CPP(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
+  RETURN_TYPE(*NAME) FUNC_SIG = nullptr
 
 #include "external_fns.def"
 
 #undef EXT_FUNC
+#undef EXT_FUNC_CPP
   };
 
 }
