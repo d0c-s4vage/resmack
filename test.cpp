@@ -9,6 +9,7 @@
 #include <string>
 
 #include "resmack/rules.hpp"
+#include "resmack/item.hpp"
 #include "resmack/items/and.hpp"
 #include "resmack/items/or.hpp"
 #include "resmack/items/raw.hpp"
@@ -93,6 +94,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
+    *((char *)1-1) = 'a';
     return true;
   }
 
@@ -104,8 +106,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 }
 
 size_t ResmackGrammarInit(resmack::Rules* rules) {
-  printf("Adding rules!\n");
-
   rules->AddRule("fruit", OR("apples", "bananas", "grapes", "pears", "peaches"))
     ->AddRule("conjunction", OR("or", "and", "with", "without"))
     ->AddRule("fruit-list", AND_S(" ",

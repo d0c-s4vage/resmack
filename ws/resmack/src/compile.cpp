@@ -89,13 +89,13 @@ namespace compile {
       "-fsanitize=address",
     });
 
-    options.emplace_back(FindLib("libresmack.a"));
-    options.emplace_back(FindLib("libresmack_fuzz.a"));
-    options.emplace_back(FindLib("libresmack_fuzz_main.a"));
-
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);
     }
+    // these go last!
+    options.emplace_back("build/release/ws/libresmack_fuzz_main/libresmack_fuzz_main.a");
+    options.emplace_back("build/release/ws/libresmack_fuzz/libresmack_fuzz.a");
+    options.emplace_back("build/release/ws/libresmack/libresmack.a");
     options.emplace_back((const char*)NULL);
 
     std::cout << "Executing: " << std::endl << std::endl;
@@ -107,7 +107,6 @@ namespace compile {
 
     if (fork() == 0) {
       execvp("clang++", (char* const*)options.data());
-      std::exit(0);
     } else {
       wait(NULL);
     }

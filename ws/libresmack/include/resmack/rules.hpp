@@ -19,7 +19,6 @@ namespace resmack {
     Rules* parent_;
     RuleManager rule_man_;
 
-   public:
     Rules();
     Rules(Rules *parent);
     ~Rules();

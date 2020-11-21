@@ -3,8 +3,9 @@
 
 CMD=(
     build/release/ws/resmack/resmack cc --
-        -Ofast
-        -march=native
+        #-Ofast
+        #-march=native
+        -I ws/libresmack/include
         test.cpp
 )
 "${CMD[@]}"

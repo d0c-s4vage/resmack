@@ -18,6 +18,8 @@
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 #include "resmack/fuzz/feedbacks/noop.hpp"
 
+extern "C" int __lsan_is_turned_off() { return 1; }
+
 __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 

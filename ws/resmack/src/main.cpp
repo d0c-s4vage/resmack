@@ -52,10 +52,14 @@ namespace root {
       .help = false,
     };
 
-    if (strncmp(argv[1], "cc", strlen("cc")) == 0) {
+    bool has_args = argc > 1;
+
+    if (has_args && strncmp(argv[1], "cc", strlen("cc")) == 0) {
       return resmack::cli::compile::Run(argc - 1, &argv[1]);
+      printf("DONE COMPILING\n");
     }
 
+    printf("WHY ARE WE PARSING OPTIONS\n");
     if (!ParseOpts(argc, argv, &opts)) {
       std::cerr << "Error: Could not parse command-line arguments" << std::endl;
       return 1;
