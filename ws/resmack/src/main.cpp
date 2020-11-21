@@ -53,7 +53,7 @@ namespace root {
     };
 
     if (strncmp(argv[1], "cc", strlen("cc")) == 0) {
-      return resmack::cli::compile::Run(argc, argv);
+      return resmack::cli::compile::Run(argc - 1, &argv[1]);
     }
 
     if (!ParseOpts(argc, argv, &opts)) {
