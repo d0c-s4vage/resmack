@@ -33,7 +33,25 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
       V("1"), V("2"), V("3"), V("4"), V("5"), STR(5, 10, "abcdefg")
     )))
     ->AddRule("TestRule2", "1000.5")
-    ->AddRule("TestRule2", "---World");
+    ->AddRule("TestRule2", "---World")
+    // run-on-sentence grammar
+    ->AddRule("fruit", OR("apples", "bananas", "grapes", "pears", "peaches"))
+    ->AddRule("conjunction", OR("or", "and", "with", "without"))
+    ->AddRule("fruit-list", AND_S(" ",
+      REF("fruit"),
+      OPT(AND_S(" ", REF("conjunction"), REF("fruit-list")))
+    ))
+    ->AddRule("verb", OR(
+      "eat", "throw", "stomp on", "enjoy", "purchase", "stare at", "saute",
+      "devour", "mock", "ridicule", "praise", "return", "investigate",
+      "detest", "abhor", "congratulate"
+    ))
+    ->AddRule("subject", OR("I", "we", "you"))
+    ->AddRule("sentence", AND_S(" ", REF("subject"), REF("verb"), REF("fruit-list")))
+    ->AddRule("run-on-sentence", AND(
+      REF("sentence"),
+      OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence")))
+    ));
 
   std::string output;
   output.reserve(0x1000);
@@ -42,7 +60,7 @@ int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) 
   float start = clock() / (float)CLOCKS_PER_SEC;
 
   size_t rule_idx = 0;
-  if (!rules.rule_man_.IndexOf("TestRule2", &rule_idx)) {
+  if (!rules.rule_man_.IndexOf("run-on-sentence", &rule_idx)) {
     return 0;
   }
 

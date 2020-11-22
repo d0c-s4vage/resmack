@@ -12,8 +12,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 #set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
 
-find_package(libresmack)
-find_package(libresmack_fuzz)
+#find_package(libresmack)
+#find_package(libresmack_fuzz)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src

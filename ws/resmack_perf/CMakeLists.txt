@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 
-find_package(libresmack)
+#find_package(libresmack)
 
 if(NOT BUILD_TEST)
     include_directories(

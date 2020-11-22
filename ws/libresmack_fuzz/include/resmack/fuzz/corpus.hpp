@@ -6,7 +6,7 @@
 namespace resmack {
 namespace fuzz {
 
-  class ICorpus {
+  class Corpus {
     virtual void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int num) = 0;
     virtual void GetItem(Rand* rand) = 0;
   };

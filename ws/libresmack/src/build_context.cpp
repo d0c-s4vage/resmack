@@ -47,7 +47,6 @@ namespace resmack {
       return;
     }
 
-    uint32_t* curr_state = this->rand->GetState();
     this->rand->SetState(tmp_state);
   }
 

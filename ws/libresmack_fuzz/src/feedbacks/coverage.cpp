@@ -18,7 +18,6 @@ extern "C" void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* s
     NUM_COV_FLAGS++;
   }
   COV_FLAGS = new uint32_t[NUM_COV_FLAGS];
-  printf("NUM FLAGS: %lu\n", GUARD_COUNTER);
 }
 
 extern "C" void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {

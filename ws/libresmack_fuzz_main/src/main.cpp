@@ -1,3 +1,4 @@
+#include <ctime>
 #include <string>
 #include <set>
 
@@ -17,17 +18,22 @@
 #include "resmack/fuzz/targets/direct.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 #include "resmack/fuzz/feedbacks/noop.hpp"
+#include "resmack/fuzz/states/mmap.hpp"
 
 extern "C" int __lsan_is_turned_off() { return 1; }
 
 __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 
+  resmack::fuzz::states::MmapState state("/tmp/resmack.state");
+
   resmack::Rules rules = new resmack::Rules();
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
 
   resmack::fuzz::Coverage cov;
   resmack::fuzz::NoopCoverage noop_cov;
+
+  bool main_proc = (fork() != 0);
 
   //resmack::fuzz::Corpus corpus;
   resmack::Rand meta_rand;
@@ -40,12 +46,13 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats;
-  resmack::BuildContext ctx(&output, &build_rand, 100);
+  resmack::BuildContext ctx(&output, &build_rand, 10);
 
   std::set<size_t> seen_covs;
   resmack::Vector<resmack::Vector<resmack::RandSnapshot>> corpus;
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
+  float start = clock() / (float)CLOCKS_PER_SEC;
 
   size_t counts = 0;
   while (true) {
@@ -77,7 +84,18 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     output.clear();
     build_rand.SnapshotClear();
     rules.Build(rule_idx, &ctx);
+    state.IncNumIterations();
     counts++;
+
+    if (main_proc && (counts % 0x100000) == 0) {
+      float curr = clock() / (float)CLOCKS_PER_SEC;
+      uint64_t num_iters = state.GetNumIterations();
+      printf(
+        "Iters: %lu | %0.2f iters/s\n",
+        num_iters,
+        (float)num_iters / (curr - start)
+      );
+    }
 
     stats.Tick();
     target.Launch(&cov, &output, &settings, &stats);
@@ -85,7 +103,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     size_t cov_key = cov.GetStats().key;
 
     if (!seen_covs.contains(cov_key)) {
-      std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << std::endl;
+      std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
       corpus.emplace_back(*build_rand.GetSnapshots());
       seen_covs.emplace(cov_key);
     }

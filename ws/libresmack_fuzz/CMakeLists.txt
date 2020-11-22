@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 #set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
 
-find_package(libresmack)
+#find_package(libresmack)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
@@ -25,7 +25,9 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/targets/*.cpp
     ${PROJECT_SOURCE_DIR}/src/targets/*.hpp
     ${PROJECT_SOURCE_DIR}/src/feedbacks/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/feedbacks/*.hpp)
+    ${PROJECT_SOURCE_DIR}/src/feedbacks/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/states/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/states/*.hpp)
 
 add_library(${RESMACK_FUZZ_LIB} STATIC ${LIBRESMACK_FUZZ_SOURCES})
 target_link_libraries(${RESMACK_FUZZ_LIB} libresmack)

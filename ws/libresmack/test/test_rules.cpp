@@ -68,34 +68,21 @@ namespace items {
     rules.Build(rule_idx, &ctx);
 
     Vector<RandSnapshot> replay(*rand.GetSnapshots());
-    std::cout << "NUM ITEMS IN RAND SNAPSHOT: " << rand.GetSnapshots()->size() << std::endl;
-    std::cout << "output0: " << output << std::endl;
 
     ctx.SetReplay(&replay);
     output.clear();
     rules.Build(rule_idx, &ctx);
-    uint32_t val1 = rand.Next();
-    std::cout << "val1: " << val1 << std::endl;
-    std::cout << "output1: " << output << std::endl;
 
     ctx.SetReplay(NULL);
     output.clear();
     rules.Build(rule_idx, &ctx);
-    uint32_t val2 = rand.Next();
-    std::cout << "val2: " << val2 << std::endl;
-    std::cout << "output2: " << output << std::endl;
 
     ctx.SetReplay(&replay);
     output.clear();
     rules.Build(rule_idx, &ctx);
-    uint32_t val3 = rand.Next();
-    std::cout << "val3: " << val3 << std::endl;
-    std::cout << "output3: " << output << std::endl;
 
     rand.SnapshotClear();
     ctx.SetReplay(&replay);
-
-    std::cout << "NUM ITEMS IN SNAPSHOT: " << replay.size() << std::endl;
   }
 
   TEST(Rules, ReplayRandState) {
