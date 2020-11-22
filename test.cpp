@@ -8,14 +8,6 @@
 #include <set>
 #include <string>
 
-#include "resmack/rules.hpp"
-#include "resmack/item.hpp"
-#include "resmack/items/and.hpp"
-#include "resmack/items/or.hpp"
-#include "resmack/items/raw.hpp"
-#include "resmack/items/ref.hpp"
-#include "resmack/items/opt.hpp"
-
 void splitStr(std::string* input, std::string split, std::vector<std::string>* output) {
   size_t last_idx = 0;
   size_t split_idx = input->find(split, last_idx);
@@ -81,13 +73,17 @@ bool parseSentence(const uint8_t* data, size_t size) {
   splitStr(&input, " ", &parts);
   size_t curr_idx = 0;
 
-  if (!parseSubject(&parts, &curr_idx)) {
+  if (parts.size() == 0) {
     return false;
   }
-  if (!parseVerb(&parts, &curr_idx)) {
+
+  if (curr_idx >= parts.size() || !parseSubject(&parts, &curr_idx)) {
     return false;
   }
-  if (!parseFruitList(&parts, &curr_idx)) {
+  if (curr_idx >= parts.size() || !parseVerb(&parts, &curr_idx)) {
+    return false;
+  }
+  if (curr_idx >= parts.size() || !parseFruitList(&parts, &curr_idx)) {
     return false;
   }
   if (parts.size() - curr_idx != 4) {
@@ -105,30 +101,3 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   return parseSentence(data, size) ? 1 : 0;
 }
 
-size_t ResmackGrammarInit(resmack::Rules* rules) {
-  rules->AddRule("fruit", OR("apples", "bananas", "grapes", "pears", "peaches"))
-    ->AddRule("conjunction", OR("or", "and", "with", "without"))
-    ->AddRule("fruit-list", AND_S(" ",
-      REF("fruit"),
-      OPT(AND_S(" ", REF("conjunction"), REF("fruit-list")))
-    ))
-    ->AddRule("verb", OR(
-      "eat", "throw", "stomp on", "enjoy", "purchase", "stare at", "saute",
-      "devour", "mock", "ridicule", "praise", "return", "investigate",
-      "detest", "abhor", "congratulate"
-    ))
-    ->AddRule("subject", OR("I", "we", "you"))
-    ->AddRule("sentence", AND_S(" ", REF("subject"), REF("verb"), REF("fruit-list")))
-    ->AddRule("run-on-sentence", AND(
-      REF("sentence"),
-      OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence")))
-    ));
-
-  size_t rule_idx;
-  if (!rules->GetRuleMan()->IndexOf("run-on-sentence", &rule_idx)) {
-    std::cout << "Invalid rules" << std::endl;
-    std::exit(1);
-  }
-
-  return rule_idx;
-}
