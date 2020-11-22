@@ -46,7 +46,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats;
-  resmack::BuildContext ctx(&output, &build_rand, 10);
+  resmack::BuildContext ctx(&output, &build_rand, 5);
 
   std::set<size_t> seen_covs;
   resmack::Vector<resmack::Vector<resmack::RandSnapshot>> corpus;
