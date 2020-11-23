@@ -35,7 +35,17 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
   this->Sync();
 }
 
-void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int num) {
+bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, uint32_t feedback_key) {
+  if (this->SeenFeedback(feedback_key)) {
+    return false;
+  }
+
+  this->AddRandSnapshot(snapshot, feedback_key);
+
+  return true;
+}
+
+void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, uint32_t feedback_key) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
       this->SyncInner();
 
@@ -44,6 +54,7 @@ void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int nu
         (sizeof(MmapCorpusRandState) * snapshot->size());
       this->next_item->num_states = snapshot->size();
       this->next_item->size = total_size;
+      this->next_item->feedback_key = feedback_key;
       
       MmapCorpusRandState* curr_state = (MmapCorpusRandState*)(
         (char*)this->next_item + sizeof(MmapCorpusItemHeader)
@@ -63,6 +74,7 @@ void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int nu
   });
 
   this->snapshots.emplace_back(*snapshot);
+  this->seen_keys.emplace(feedback_key);
 }
 
 void MmapCorpus::Sync() {
@@ -96,6 +108,7 @@ void MmapCorpus::SyncInner() {
 
   size_t snapshot_idx = this->next_item_index;
   MmapCorpusItemHeader* curr = this->next_item;
+  this->seen_keys.emplace(curr->feedback_key);
 
   for(; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
     Vector<RandSnapshot>* snapshot = &this->snapshots.emplace_back();

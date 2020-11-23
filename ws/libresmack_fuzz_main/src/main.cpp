@@ -129,13 +129,11 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
     stats.Tick();
     target.Launch(&cov, &output, &settings, &stats);
+    //target.Launch(&noop_cov, &output, &settings, &stats);
     size_t cov_key = cov.GetStats().key;
 
-    if (!seen_covs.contains(cov_key)) {
+    if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
       std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
-      //corpus.emplace_back(*build_rand.GetSnapshots());
-      corpus->AddRandSnapshot(build_rand.GetSnapshots(), 0);
-      seen_covs.emplace(cov_key);
     }
 
     if (stats.crashed) {

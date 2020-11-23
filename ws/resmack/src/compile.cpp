@@ -85,6 +85,7 @@ namespace compile {
       "clang++",
       "-Ofast",
       "-march=native",
+      "-lpthread",
       "-fsanitize-coverage=trace-pc-guard",
       //"-fsanitize=address",
     });

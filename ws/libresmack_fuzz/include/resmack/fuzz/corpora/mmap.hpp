@@ -21,6 +21,7 @@ struct MmapCorpusItemHeader {
   uint32_t num_states;
   // total size of item including the header (header + rand state array)
   uint32_t size;
+  uint32_t feedback_key;
   uint32_t reserved1;
   uint32_t reserved2;
 };
@@ -36,8 +37,9 @@ class MmapCorpus : public Corpus {
  private:
   void* corpus_map;
   size_t max_corpus_size;
-  Vector<Vector<RandSnapshot>> snapshots;
   sem_t* corpus_lock;
+  Vector<Vector<RandSnapshot>> snapshots;
+  Set<uint32_t> seen_keys;
 
   MmapMetadata* meta;
   size_t next_item_index;
@@ -50,11 +52,14 @@ class MmapCorpus : public Corpus {
   ~MmapCorpus();
 
   void Init(void* corpus_map, size_t max_corpus_size);
-  size_t NumItems() { return this->snapshots.size(); }
-  void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, int num);
+  void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, uint32_t key);
+  bool AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, uint32_t key);
   Vector<RandSnapshot>* GetItem(Rand* rand);
   void Sync();
   void SyncInner();
+
+  bool SeenFeedback(uint32_t key) { return this->seen_keys.contains(key); }
+  size_t NumItems() { return this->snapshots.size(); }
 };
 
 }
