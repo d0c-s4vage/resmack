@@ -35,7 +35,7 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
   this->Sync();
 }
 
-bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, uint32_t feedback_key) {
+bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   if (this->SeenFeedback(feedback_key)) {
     return false;
   }
@@ -45,7 +45,7 @@ bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapsho
   return true;
 }
 
-void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, uint32_t feedback_key) {
+void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
       this->SyncInner();
 
