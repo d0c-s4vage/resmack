@@ -117,8 +117,8 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     rules.Build(rule_idx, &ctx);
     counts++;
 
-    if ((counts % 0x100000) == 0) {
-      state.IncNumIterations(0x100000);
+    if ((counts % 0x10000) == 0) {
+      state.IncNumIterations(0x10000);
     }
 
     stats.Tick();
