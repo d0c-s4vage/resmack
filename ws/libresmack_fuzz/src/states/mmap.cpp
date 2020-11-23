@@ -6,6 +6,9 @@
 #include "sys/stat.h"
 
 #include "resmack/fuzz/states/mmap.hpp"
+#include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/corpora/mmap.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -37,6 +40,9 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
   }
 
   this->metadata = (StateMetadata*)this->state_map;
+
+  size_t meta_size = sizeof(StateMetadata);
+  this->corpus.Init((void*)((char*)this->state_map + meta_size), state_max_size - meta_size);
 
   //if ((this->state_lock = sem_open(this->state_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
   if ((this->state_lock = sem_open("/ttest12345", O_CREAT, 0660, 1)) == SEM_FAILED) {
@@ -73,6 +79,10 @@ void MmapState::IncNumCrashes(uint64_t amt) {
   WITH_LOCK(this->state_lock, IncNumCrashes, {
     this->metadata->crashes += amt;
   });
+}
+
+Corpus* MmapState::GetCorpus() {
+  return &this->corpus;
 }
 
 }

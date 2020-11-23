@@ -88,7 +88,7 @@ namespace resmack {
     ctx->MaybeDoRandReplay(tmp_rand_state);
     {
       if (ctx->rand->ShouldRecord()) {
-        ctx->rand->SnapshotState(ctx->ref_depth);
+        ctx->rand->SnapshotState(ctx->ref_depth, rule_idx);
       }
 
       rule->Build(ctx);

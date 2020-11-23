@@ -11,25 +11,14 @@
 
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/corpora/mmap.hpp"
 #include <bits/stdint-uintn.h>
-
-#define WITH_LOCK(LOCK, MSG, STATEMENTS) { \
-  if (sem_wait(LOCK) == -1) { \
-    perror("MSG (sem_wait)"); \
-    std::exit(1); \
-  } \
-  STATEMENTS\
-  if (sem_post(LOCK) == -1) { \
-    perror("MSG (sem_post)"); \
-    std::exit(1); \
-  } \
-}
 
 namespace resmack {
 namespace fuzz {
 namespace states {
 
-struct __attribute__ ((packed)) StateMetadata {
+struct StateMetadata {
   uint64_t iterations;
   uint64_t crashes;
   uint64_t reserved1;
@@ -58,6 +47,8 @@ class MmapState {
 
   void* state_map;
   StateMetadata* metadata;
+
+  corpora::MmapCorpus corpus;
 
  public:
   MmapState(const char* statePath);

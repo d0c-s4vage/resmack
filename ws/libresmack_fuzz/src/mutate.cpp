@@ -12,7 +12,7 @@ namespace fuzz {
                           size_t item_idx,
                           const Vector<RandSnapshot>* orig_ss,
                           Vector<RandSnapshot>* new_ss) {
-    new_ss->emplace_back(item->ref_depth, new_state);
+    new_ss->emplace_back(item->ref_depth, item->rule_idx, new_state);
 
     size_t idx;
     for (idx = item_idx + 1; idx < orig_ss->size(); idx++) {
@@ -36,7 +36,7 @@ namespace fuzz {
       if (rand->Maybe()) {
         curr_idx = CascadeMutatedState(rand->GetState(), curr, curr_idx, orig_ss, new_ss);
       } else {
-        new_ss->emplace_back(curr->ref_depth, (uint32_t* )curr->state);
+        new_ss->emplace_back(curr->ref_depth, curr->rule_idx, (uint32_t* )curr->state);
         curr_idx += 1;
       }
     }

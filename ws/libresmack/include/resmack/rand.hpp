@@ -14,9 +14,10 @@ namespace resmack {
   class RandSnapshot {
     public:
       size_t ref_depth;
+      uint32_t rule_idx;
       uint32_t state[4];
 
-      RandSnapshot(size_t ref_depth, uint32_t state[]);
+      RandSnapshot(size_t ref_depth, uint32_t rule_idx, uint32_t state[]);
   };
 
   class Rand {
@@ -31,7 +32,7 @@ namespace resmack {
      uint32_t Next();
      Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
      bool Maybe();
-     void SnapshotState(size_t ref_depth);
+     void SnapshotState(size_t ref_depth, uint32_t rule_idx);
      void SnapshotClear();
      inline void SetShouldRecord(bool val) { this->should_record_ = val; }
      inline bool ShouldRecord() { return this->should_record_; }

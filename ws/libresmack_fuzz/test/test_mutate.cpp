@@ -10,17 +10,17 @@ namespace fuzz {
     Rand rand(100);
     rand.SnapshotClear();
     rand.Next();
-    rand.SnapshotState(0);
+    rand.SnapshotState(0, 0);
     rand.Next();
-    rand.SnapshotState(1);
+    rand.SnapshotState(1, 0);
     rand.Next();
-    rand.SnapshotState(2);
+    rand.SnapshotState(2, 0);
     rand.Next();
-    rand.SnapshotState(1);
+    rand.SnapshotState(1, 0);
     rand.Next();
-    rand.SnapshotState(0);
+    rand.SnapshotState(0, 0);
     rand.Next();
-    rand.SnapshotState(0);
+    rand.SnapshotState(0, 0);
 
     Vector<RandSnapshot> new_state_tree;
     Vector<RandSnapshot>* orig_state_tree = rand.GetSnapshots();

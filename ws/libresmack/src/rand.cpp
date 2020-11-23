@@ -7,8 +7,10 @@
 
 namespace resmack {
 
-  RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t state[]) {
-    this->ref_depth = ref_depth;
+  RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t rule_idx, uint32_t state[]) :
+    ref_depth(ref_depth),
+    rule_idx(rule_idx)
+  {
     memcpy(this->state, state, sizeof(uint32_t) * 4);
   }
 
@@ -42,8 +44,8 @@ namespace resmack {
     return this->Next() % 2 == 0;
   }
 
-  void Rand::SnapshotState(size_t ref_depth) {
-    this->snapshots_.emplace_back(ref_depth, this->s_);
+  void Rand::SnapshotState(size_t ref_depth, uint32_t rule_idx) {
+    this->snapshots_.emplace_back(ref_depth, rule_idx, this->s_);
   }
 
   void Rand::SnapshotClear() {
