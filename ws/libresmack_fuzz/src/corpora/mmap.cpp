@@ -40,6 +40,12 @@ bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapsho
     return false;
   }
 
+  this->Sync();
+
+  if (this->SeenFeedback(feedback_key)) {
+    return false;
+  }
+
   this->AddRandSnapshot(snapshot, feedback_key);
 
   return true;
@@ -47,8 +53,6 @@ bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapsho
 
 void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
-      this->SyncInner();
-
       size_t total_size =
         sizeof(MmapCorpusItemHeader) +
         (sizeof(MmapCorpusRandState) * snapshot->size());
