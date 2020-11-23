@@ -1,6 +1,8 @@
-#include <ctime>
+#include <chrono>
 #include <string>
 #include <set>
+#include <ctime>
+#include <ratio>
 
 #include "resmack/build_context.hpp"
 #include "resmack/fuzz/feedbacks/noop.hpp"
@@ -22,6 +24,25 @@
 
 extern "C" int __lsan_is_turned_off() { return 1; }
 
+void LoopPrintStatus(resmack::fuzz::states::MmapState* state) {
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+  std::chrono::high_resolution_clock::time_point end;
+  //float start = clock() / (float)CLOCKS_PER_SEC;
+  int sleep_amt = 1;
+  while (true) {
+    sleep(sleep_amt++);
+    end = std::chrono::high_resolution_clock::now();
+    uint64_t num_iters = state->GetNumIterations();
+    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    printf(
+      "Iters: %lu | %0.2f iters/s | %0.2f seconds\n",
+      num_iters,
+      (float)num_iters / span.count(),
+      span.count()
+    );
+  }
+}
+
 __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 
@@ -33,8 +54,19 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::Coverage cov;
   resmack::fuzz::NoopCoverage noop_cov;
 
+  bool is_main_proc = true;
+
   //bool main_proc = true;
-  bool main_proc = (fork() != 0);
+  for (int i = 0; i < 2; i++ ) {
+    if (!fork()) {
+      is_main_proc = false;
+      break;
+    }
+  }
+
+  if (is_main_proc) {
+    LoopPrintStatus(&state);
+  }
 
   //resmack::fuzz::Corpus corpus;
   resmack::Rand meta_rand;
@@ -52,7 +84,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::Vector<resmack::Vector<resmack::RandSnapshot>> corpus;
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
-  float start = clock() / (float)CLOCKS_PER_SEC;
 
   size_t counts = 0;
   while (true) {
@@ -88,15 +119,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
     if ((counts % 0x100000) == 0) {
       state.IncNumIterations(0x100000);
-      if (main_proc) {
-        float curr = clock() / (float)CLOCKS_PER_SEC;
-        uint64_t num_iters = state.GetNumIterations();
-        printf(
-          "Iters: %lu | %0.2f iters/s\n",
-          num_iters,
-          (float)num_iters / (curr - start)
-        );
-      }
     }
 
     stats.Tick();
