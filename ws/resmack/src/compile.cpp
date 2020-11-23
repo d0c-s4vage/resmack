@@ -86,7 +86,7 @@ namespace compile {
       "-Ofast",
       "-march=native",
       "-fsanitize-coverage=trace-pc-guard",
-      "-fsanitize=address",
+      //"-fsanitize=address",
     });
 
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {

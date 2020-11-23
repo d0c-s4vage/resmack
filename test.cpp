@@ -90,7 +90,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    *((char *)1-1) = 'a';
     return true;
   }
 
@@ -98,7 +97,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  return 0;
   return parseSentence(data, size) ? 1 : 0;
 }
 

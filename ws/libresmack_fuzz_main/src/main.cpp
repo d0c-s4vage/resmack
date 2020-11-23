@@ -33,6 +33,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::Coverage cov;
   resmack::fuzz::NoopCoverage noop_cov;
 
+  //bool main_proc = true;
   bool main_proc = (fork() != 0);
 
   //resmack::fuzz::Corpus corpus;
@@ -41,12 +42,11 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   build_rand.SetShouldRecord(true);
 
   std::string output;
-  output.reserve(0x1000);
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats;
-  resmack::BuildContext ctx(&output, &build_rand, 5);
+  resmack::BuildContext ctx(&output, &build_rand, 10);
 
   std::set<size_t> seen_covs;
   resmack::Vector<resmack::Vector<resmack::RandSnapshot>> corpus;
@@ -84,22 +84,23 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     output.clear();
     build_rand.SnapshotClear();
     rules.Build(rule_idx, &ctx);
-    state.IncNumIterations();
     counts++;
 
-    if (main_proc && (counts % 0x100000) == 0) {
-      float curr = clock() / (float)CLOCKS_PER_SEC;
-      uint64_t num_iters = state.GetNumIterations();
-      printf(
-        "Iters: %lu | %0.2f iters/s\n",
-        num_iters,
-        (float)num_iters / (curr - start)
-      );
+    if ((counts % 0x100000) == 0) {
+      state.IncNumIterations(0x100000);
+      if (main_proc) {
+        float curr = clock() / (float)CLOCKS_PER_SEC;
+        uint64_t num_iters = state.GetNumIterations();
+        printf(
+          "Iters: %lu | %0.2f iters/s\n",
+          num_iters,
+          (float)num_iters / (curr - start)
+        );
+      }
     }
 
     stats.Tick();
     target.Launch(&cov, &output, &settings, &stats);
-    //target.Launch(&noop_cov, &output, &settings, &stats);
     size_t cov_key = cov.GetStats().key;
 
     if (!seen_covs.contains(cov_key)) {
@@ -109,7 +110,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     }
 
     if (stats.crashed) {
-      std::cout << "CRASH! with " << output << " and " << counts << " iters" << std::endl;
+      std::cout << "CRASH! with " << output << " and " << state.GetNumIterations() << " iters" << std::endl;
       break;
     }
   }
