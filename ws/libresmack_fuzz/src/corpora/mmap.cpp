@@ -36,46 +36,51 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
 }
 
 bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
-  if (this->SeenFeedback(feedback_key)) {
-    return false;
-  }
+  bool res = true;
 
-  this->Sync();
+  WITH_LOCK(this->corpus_lock, Adding if not seen, {
+    this->SyncInner();
 
-  if (this->SeenFeedback(feedback_key)) {
-    return false;
-  }
+    if (this->SeenFeedback(feedback_key)) {
+      res = false;
+      break;
+    }
 
-  this->AddRandSnapshot(snapshot, feedback_key);
+    this->AddRandSnapshotInner(snapshot, feedback_key);
+  });
 
-  return true;
+  return res;
 }
 
 void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
-      size_t total_size =
-        sizeof(MmapCorpusItemHeader) +
-        (sizeof(MmapCorpusRandState) * snapshot->size());
-      this->next_item->num_states = snapshot->size();
-      this->next_item->size = total_size;
-      this->next_item->feedback_key = feedback_key;
-      
-      MmapCorpusRandState* curr_state = (MmapCorpusRandState*)(
-        (char*)this->next_item + sizeof(MmapCorpusItemHeader)
-      );
-      for (RandSnapshot& item: *snapshot) {
-        curr_state->ref_depth = item.ref_depth;
-        curr_state->rule_idx = item.rule_idx;
-        memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
-
-        curr_state = (MmapCorpusRandState*)((char*)curr_state + sizeof(MmapCorpusRandState));
-      }
-
-      this->last_updated_seq = ++this->meta->updated_seq;
-      this->next_item_index = ++this->meta->num_entries;
-      // gets incremented to point at the "next" empty spot after the for loop
-      this->next_item = (MmapCorpusItemHeader*)((char*)curr_state);
+      this->AddRandSnapshotInner(snapshot, feedback_key);
   });
+}
+
+void MmapCorpus::AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+  size_t total_size =
+    sizeof(MmapCorpusItemHeader) +
+    (sizeof(MmapCorpusRandState) * snapshot->size());
+  this->next_item->num_states = snapshot->size();
+  this->next_item->size = total_size;
+  this->next_item->feedback_key = feedback_key;
+  
+  MmapCorpusRandState* curr_state = (MmapCorpusRandState*)(
+    (char*)this->next_item + sizeof(MmapCorpusItemHeader)
+  );
+  for (RandSnapshot& item: *snapshot) {
+    curr_state->ref_depth = item.ref_depth;
+    curr_state->rule_idx = item.rule_idx;
+    memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
+
+    curr_state = (MmapCorpusRandState*)((char*)curr_state + sizeof(MmapCorpusRandState));
+  }
+
+  this->last_updated_seq = ++this->meta->updated_seq;
+  this->next_item_index = ++this->meta->num_entries;
+  // gets incremented to point at the "next" empty spot after the for loop
+  this->next_item = (MmapCorpusItemHeader*)((char*)curr_state);
 
   this->snapshots.emplace_back(*snapshot);
   this->seen_keys.emplace(feedback_key);

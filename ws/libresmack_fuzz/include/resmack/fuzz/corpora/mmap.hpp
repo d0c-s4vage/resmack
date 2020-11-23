@@ -52,6 +52,7 @@ class MmapCorpus : public Corpus {
   ~MmapCorpus();
 
   void Init(void* corpus_map, size_t max_corpus_size);
+  void AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
   void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
   bool AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
   Vector<RandSnapshot>* GetItem(Rand* rand);

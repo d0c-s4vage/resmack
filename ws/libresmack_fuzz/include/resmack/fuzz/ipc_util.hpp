@@ -6,7 +6,10 @@
     perror("#MSG (sem_wait)"); \
     std::exit(1); \
   } \
-  STATEMENTS\
+  while (1) { \
+    STATEMENTS\
+    break; \
+  } \
   if (sem_post(LOCK) == -1) { \
     perror("#MSG (sem_post)"); \
     std::exit(1); \
