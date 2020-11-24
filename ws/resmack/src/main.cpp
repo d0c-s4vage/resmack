@@ -3,7 +3,7 @@
 #include <iostream>
 #include "getopt.h"
 
-#include "banner.hpp"
+#include "resmack/logo.hpp"
 #include "compile.hpp"
 
 namespace resmack {
@@ -15,7 +15,7 @@ namespace root {
   };
 
   void PrintHelp() {
-    PrintBanner();
+    std::cout << GetResmackLogo() << std::endl;
 
     std::cout << "Available sub-commands. Each has their own --help" << std::endl << std::endl;
     std::cout << "  cc  - Compilation" << std::endl;
@@ -59,7 +59,6 @@ namespace root {
       printf("DONE COMPILING\n");
     }
 
-    printf("WHY ARE WE PARSING OPTIONS\n");
     if (!ParseOpts(argc, argv, &opts)) {
       std::cerr << "Error: Could not parse command-line arguments" << std::endl;
       return 1;

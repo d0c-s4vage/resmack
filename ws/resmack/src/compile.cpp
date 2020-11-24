@@ -6,9 +6,10 @@
 #include "sys/wait.h"
 #include <vector>
 
-#include "banner.hpp"
+#include "resmack/logo.hpp"
 
 namespace resmack {
+
 namespace cli {
 namespace compile {
 
@@ -17,7 +18,7 @@ namespace compile {
   };
 
   void PrintHelp() {
-    PrintBanner();
+    std::cout << GetResmackLogo() << std::endl;
 
     std::cout << "resmack cc" << std::endl << std::endl;
     std::cout << "  Compile a fuzz harness into a stand-alone binary" << std::endl << std::endl;
@@ -41,7 +42,7 @@ namespace compile {
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hi:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hs", long_options, &opt_index);
       if (c == -1) {
         break;
       }

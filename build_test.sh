@@ -2,7 +2,9 @@
 
 
 CMD=(
-    build/release/ws/resmack/resmack cc --
+    build/release/ws/resmack/resmack cc
+      $@
+      --
         -std=c++20
         -I ws/libresmack/include
         test.cpp

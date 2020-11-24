@@ -4,9 +4,10 @@
 #include <set>
 #include <ctime>
 #include <ratio>
+#include "getopt.h"
 
+#include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
-#include "resmack/fuzz/feedbacks/noop.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/types.hpp"
 #include "resmack/rules.hpp"
@@ -25,6 +26,71 @@
 #include "resmack/fuzz/corpus.hpp"
 
 extern "C" int __lsan_is_turned_off() { return 1; }
+
+void PrintHelp(char* prog_name) {
+  std::cout << resmack::GetResmackLogo() << std::endl;
+
+  std::cout << prog_name << std::endl << std::endl;
+  std::cout << "  Fuzz the compiled target" << std::endl << std::endl;
+  std::cout << prog_name << " [-d MAX_DEPTH] [-n NPROCS] [-s] [-i INTERVAL] [--help]"  << std::endl << std::endl;
+  std::cout << "          --help, -h            Show this help message" << std::endl;
+  std::cout << "        --nprocs, -n NPROCS     Number of times to fork" << std::endl;
+  std::cout << "     --max-depth, -d MAX_DEPTH  Maximum grammar depth during recursion" << std::endl;
+  std::cout << "    --show-stats, -s            Show stat percentages" << std::endl;
+  std::cout << "--stats-interval, -i INTERVAL   Collect stats on every Nth iteration" << std::endl;
+  std::cout << std::endl;
+  std::cout << "Example:" << std::endl << std::endl;
+  std::cout << prog_name << " -n 3 --show-stats" << std::endl;
+}
+
+struct FuzzOptions {
+  int help;
+  size_t nprocs;
+  size_t max_depth;
+  int show_stats;
+  size_t stats_interval;
+};
+
+bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
+    static struct option long_options[] = {
+      { "help", no_argument, &opts->help, 'h' },
+      { "show-stats", no_argument, &opts->show_stats, 's' },
+      { "max-depth", optional_argument, 0, 'd' },
+      { "nprocs", optional_argument, 0, 'n' },
+      { "stats-interval", optional_argument, 0, 'i' },
+      { 0, 0, 0, 0 },
+    };
+    int opt_index = 0;
+
+    while (true) {
+      int c = getopt_long(argc, argv, "hsd:n:", long_options, &opt_index);
+      if (c == -1) {
+        break;
+      }
+
+      switch (c) {
+        case 0:
+          break;
+        case 'h':
+          opts->help = true;
+          break;
+        case 's':
+          opts->show_stats = true;
+          break;
+        case 'd':
+          opts->max_depth = atoi(optarg);
+          break;
+        case 'n':
+          opts->nprocs = atoi(optarg);
+          break;
+        case 'i':
+          opts->stats_interval = atoi(optarg);
+          break;
+      }
+    }
+
+    return true;
+}
 
 void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
@@ -67,6 +133,19 @@ void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
 }
 
 __attribute__((visibility("default"))) int main(int argc, char** argv) {
+  FuzzOptions opts {
+    .help = false,
+    .nprocs = 1,
+    .max_depth = 10,
+    .show_stats = false,
+    .stats_interval = 0x1000,
+  };
+  ParseOptions(argc, argv, &opts);
+  if (opts.help) {
+    PrintHelp(argv[0]);
+    return 1;
+  }
+
   resmack::fuzz::ExternalFunctions EF;
 
   resmack::fuzz::states::MmapState state("/tmp/resmack.state");
@@ -81,7 +160,8 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   bool is_main_proc = true;
 
   int child_num;
-  for (child_num = 0; child_num < 2; child_num++ ) {
+  std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
+  for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
     if (!fork()) {
       is_main_proc = false;
       break;
@@ -89,7 +169,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   }
 
   if (is_main_proc) {
-    LoopPrintStatus(&state, true);
+    LoopPrintStatus(&state, opts.show_stats);
   }
 
   resmack::Rand meta_rand;
@@ -100,8 +180,8 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
-  resmack::fuzz::TargetStats stats(0x1000);
-  resmack::BuildContext ctx(&output, &build_rand, 10);
+  resmack::fuzz::TargetStats stats(opts.stats_interval);
+  resmack::BuildContext ctx(&output, &build_rand, opts.max_depth);
 
   std::set<size_t> seen_covs;
 
@@ -109,6 +189,14 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   size_t counts = 0;
   while (true) {
+    counts++;
+    if ((counts % opts.stats_interval) == 0) {
+      state.IncNumIterations(opts.stats_interval);
+      state.SyncStats(&stats);
+      stats.Clear();
+    }
+    stats.Tick();
+
     if (corpus->NumItems() > 0 && meta_rand.Maybe()) {
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
@@ -128,14 +216,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules.Build(rule_idx, &ctx);
     });
-    counts++;
 
-    if ((counts % 0x1000) == 0) {
-      state.IncNumIterations(0x1000);
-      state.SyncStats(&stats);
-    }
-
-    stats.Tick();
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(&cov, &output, &settings, &stats);
     });

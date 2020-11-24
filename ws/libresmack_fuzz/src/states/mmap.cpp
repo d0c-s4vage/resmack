@@ -17,12 +17,14 @@ namespace states {
 MmapState::MmapState(const char* state_path) : state_path(state_path) {
   this->state_max_size = 0x400 * 0x400 * 100; // 100 MB
   struct stat info;
+  bool is_new = false;
 
   if (stat(this->state_path, &info) == 0) {
     this->state_file = fopen(this->state_path, "r+b");
   } else {
     this->state_file = fopen(this->state_path, "w+b");
     ftruncate(fileno(this->state_file), this->state_max_size);
+    is_new = true;
   }
 
   this->state_map = mmap(
@@ -40,6 +42,9 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
   }
 
   this->metadata = (StateMetadata*)this->state_map;
+  if (is_new) {
+    this->InitNewStats();
+  }
 
   size_t meta_size = sizeof(StateMetadata);
   this->corpus.Init((void*)((char*)this->state_map + meta_size), state_max_size - meta_size);
@@ -57,13 +62,20 @@ MmapState::~MmapState() {
   sem_close(this->state_lock);
 }
 
+void MmapState::InitNewStats() {
+#define STAT(NAME) this->metadata->stats.duration_##NAME = 0;
+#include "resmack/fuzz/stats.def"
+#undef STAT
+}
+
 void MmapState::SyncStats(TargetStats* stats) {
   if (sem_wait(this->state_lock) == -1) {
     perror("SyncStats (sem_wait)");
     std::exit(1);
   }
 
-#define STAT(NAME) this->metadata->stats.duration_##NAME += stats->duration_##NAME;
+#define STAT(NAME) \
+  this->metadata->stats.duration_##NAME += stats->duration_##NAME;
 #include "resmack/fuzz/stats.def"
 #undef STAT
 

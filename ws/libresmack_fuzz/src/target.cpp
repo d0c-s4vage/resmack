@@ -10,7 +10,13 @@ namespace fuzz {
 #define SAMPLED \
   if (this->stats_sample_interval == 0 || (this->sample_ticks % this->stats_sample_interval) != 0) { return; }
 
-  TargetStats::TargetStats(size_t interval): stats_sample_interval(interval) {}
+  TargetStats::TargetStats(size_t interval):
+#define STAT(NAME) duration_##NAME(0),
+#include "resmack/fuzz/stats.def"
+#undef STAT
+    stats_sample_interval(interval)
+  {
+  }
 
   void TargetStats::Reset() {
     this->exit_code = -1;
@@ -22,11 +28,8 @@ namespace fuzz {
   void TargetStats::Clear() {
     this->Reset();
 
-#define STAT(NAME) \
-      this->duration_##NAME = 0;
-
+#define STAT(NAME) this->duration_##NAME = 0;
 #include "resmack/fuzz/stats.def"
-
 #undef STAT
   }
 
