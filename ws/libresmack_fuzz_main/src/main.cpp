@@ -57,7 +57,8 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   bool is_main_proc = true;
 
-  for (int i = 0; i < 2; i++ ) {
+  int child_num;
+  for (child_num = 0; child_num < 2; child_num++ ) {
     if (!fork()) {
       is_main_proc = false;
       break;

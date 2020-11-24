@@ -37,9 +37,7 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
 
 bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   bool res = true;
-  if (
-      this->last_updated_seq == this->meta->updated_seq
-      && this->SeenFeedback(feedback_key)) {
+  if (this->SeenFeedback(feedback_key)) {
     return false;
   }
 
