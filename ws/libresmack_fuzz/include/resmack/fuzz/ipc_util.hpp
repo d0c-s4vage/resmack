@@ -7,7 +7,7 @@
     std::exit(1); \
   } \
   while (1) { \
-    STATEMENTS\
+    STATEMENTS \
     break; \
   } \
   if (sem_post(LOCK) == -1) { \

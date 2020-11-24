@@ -90,26 +90,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     //size_t corpus_len = corpus.size();
     if (corpus->NumItems() > 0 && meta_rand.Maybe()) {
       resmack::Vector<resmack::RandSnapshot>* replay = corpus->GetItem(&meta_rand);
-    /*
-    if (corpus->corpus_len > 0 && meta_rand.Maybe()) {
-      size_t rand_idx;
-      if (corpus_len > 4) {
-        size_t half_size = corpus_len >> 1;
-        size_t first_half = corpus_len - half_size;
-        // double the odds of the last half
-        size_t new_size = corpus_len + half_size;
-        size_t tmp = meta_rand.Next() % new_size;
-        if (tmp < first_half) {
-          rand_idx = tmp;
-        } else {
-          rand_idx = first_half + (tmp - first_half) / 2;
-        }
-      } else {
-        rand_idx = meta_rand.Next() % corpus_len;
-      }
-
-      resmack::Vector<resmack::RandSnapshot>* replay = &corpus[rand_idx];
-      */
       resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
       ctx.SetReplay(&mutated_replay);
     } else {
@@ -123,7 +103,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
     if ((counts % 0x10000) == 0) {
       state.IncNumIterations(0x10000);
-      corpus->Sync();
     }
 
     stats.Tick();
