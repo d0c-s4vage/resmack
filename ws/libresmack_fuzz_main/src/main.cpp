@@ -99,8 +99,11 @@ void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
   int sleep_amt = 1;
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
   resmack::fuzz::StateStats* stats = state->GetStats();
+
   while (true) {
     sleep(sleep_amt++);
+    corpus->Sync();
+
     end = std::chrono::high_resolution_clock::now();
     uint64_t num_iters = state->GetNumIterations();
     uint64_t session_iters = num_iters - start_iters;

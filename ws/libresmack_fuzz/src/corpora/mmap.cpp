@@ -153,7 +153,8 @@ Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
       rand_idx = first_half + (tmp - first_half) / 2;
     }
   } else {
-    rand_idx = rand->Next() % corpus_len;
+    uint32_t next = rand->Next();
+    rand_idx = next % corpus_len;
   }
   return &this->snapshots[rand_idx];
 }
