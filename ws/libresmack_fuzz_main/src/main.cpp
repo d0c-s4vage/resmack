@@ -28,7 +28,6 @@ extern "C" int __lsan_is_turned_off() { return 1; }
 void LoopPrintStatus(resmack::fuzz::states::MmapState* state) {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   std::chrono::high_resolution_clock::time_point end;
-  //float start = clock() / (float)CLOCKS_PER_SEC;
   int sleep_amt = 1;
   while (true) {
     sleep(sleep_amt++);
@@ -58,7 +57,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   bool is_main_proc = true;
 
-  //bool main_proc = true;
   for (int i = 0; i < 2; i++ ) {
     if (!fork()) {
       is_main_proc = false;
@@ -125,6 +123,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
     if ((counts % 0x10000) == 0) {
       state.IncNumIterations(0x10000);
+      corpus->Sync();
     }
 
     stats.Tick();

@@ -38,27 +38,15 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
 bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   bool res = true;
 
-  // nothing has been added, bail
-  if (this->meta->updated_seq == this->last_updated_seq) {
+  WITH_LOCK(this->corpus_lock, Maybe adding snapshot, {
+    this->SyncInner();
     if (this->SeenFeedback(feedback_key)) {
-      return false;
-    } else {
-      WITH_LOCK(this->corpus_lock, Adding snapshot, {
-        this->AddRandSnapshotInner(snapshot, feedback_key);
-      });
+      res = false;
+      break;
     }
-  } else {
-    WITH_LOCK(this->corpus_lock, Adding if not seen, {
-      this->SyncInner();
 
-      if (this->SeenFeedback(feedback_key)) {
-        res = false;
-        break;
-      }
-
-      this->AddRandSnapshotInner(snapshot, feedback_key);
-    });
-  }
+    this->AddRandSnapshotInner(snapshot, feedback_key);
+  });
 
   return res;
 }
