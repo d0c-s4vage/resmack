@@ -24,18 +24,18 @@ namespace fuzz {
                             TargetStats* stats) {
     stats->Reset();
 
-    //RECORD_STAT(stats, SampleTypes::SETUP, {
+    RECORD_STAT(stats, SampleTypes::SETUP, {
       feedback->Start();
-    //});
+    });
 
-    //RECORD_STAT(stats, SampleTypes::TARGET, {
+    RECORD_STAT(stats, SampleTypes::TARGET, {
       size_t res = EF.LLVMFuzzerTestOneInput((const uint8_t*)output->c_str(), output->size());
       stats->crashed = res == 1;
-    //});
+    });
 
-    //RECORD_STAT(stats, SampleTypes::TEARDOWN, {
+    RECORD_STAT(stats, SampleTypes::TEARDOWN, {
       feedback->Stop();
-    //});
+    });
   }
 
 }

@@ -78,7 +78,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
-  resmack::fuzz::TargetStats stats;
+  resmack::fuzz::TargetStats stats(0x1000);
   resmack::BuildContext ctx(&output, &build_rand, 10);
 
   std::set<size_t> seen_covs;

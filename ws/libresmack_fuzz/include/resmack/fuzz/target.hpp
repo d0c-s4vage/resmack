@@ -1,6 +1,8 @@
 #ifndef RESMACK_FUZZ_TARGET
 #define RESMACK_FUZZ_TARGET
 
+#include <chrono>
+#include <cstddef>
 #include <string>
 
 #include "resmack/fuzz/feedback.hpp"
@@ -12,6 +14,9 @@ namespace fuzz {
   };
 
   enum SampleTypes {
+    CORPUS,
+    MUTATE,
+    GENERATE,
     SETUP,
     TARGET,
     TEARDOWN,
@@ -32,14 +37,24 @@ namespace fuzz {
     // 
     size_t stats_sample_interval;
     size_t sample_ticks;
-    //
-    size_t mutate_duration;
-    size_t generate_duration;
-    size_t setup_duration;
-    size_t target_duration;
-    size_t teardown_duration;
 
-    TargetStats();
+    std::chrono::high_resolution_clock::time_point mutate_start;
+    double mutate_duration;
+
+    std::chrono::high_resolution_clock::time_point generate_start;
+    double generate_duration;
+
+    std::chrono::high_resolution_clock::time_point setup_start;
+    double setup_duration;
+
+    std::chrono::high_resolution_clock::time_point target_start;
+    double target_duration;
+
+    std::chrono::high_resolution_clock::time_point teardown_start;
+    double teardown_duration;
+
+
+    TargetStats(size_t intervalv);
     void Tick() { this->sample_ticks++; }
     void Reset();
     void Clear();
