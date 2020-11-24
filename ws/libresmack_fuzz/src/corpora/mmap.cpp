@@ -115,9 +115,9 @@ void MmapCorpus::SyncInner() {
 
   size_t snapshot_idx = this->next_item_index;
   MmapCorpusItemHeader* curr = this->next_item;
-  this->seen_keys.emplace(curr->feedback_key);
 
   for(; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
+    this->seen_keys.emplace(curr->feedback_key);
     Vector<RandSnapshot>* snapshot = &this->snapshots.emplace_back();
 
     size_t state_offset = 0;
