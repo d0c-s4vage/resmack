@@ -24,7 +24,7 @@ namespace fuzz {
                             TargetStats* stats) {
     stats->Reset();
 
-    RECORD_STAT(stats, SampleTypes::SETUP, {
+    RECORD_STAT(stats, SampleTypes::FEEDBACK, {
       feedback->Start();
     });
 
@@ -33,10 +33,14 @@ namespace fuzz {
       stats->crashed = res == 1;
     });
 
-    RECORD_STAT(stats, SampleTypes::TEARDOWN, {
+    RECORD_STAT(stats, SampleTypes::TARGET_RESET, {});
+
+    RECORD_STAT(stats, SampleTypes::FEEDBACK, {
       feedback->Stop();
     });
   }
+
+  void DirectTarget::Reset() {}
 
 }
 }

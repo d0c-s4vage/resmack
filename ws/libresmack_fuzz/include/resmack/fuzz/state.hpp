@@ -4,11 +4,21 @@
 #include "unistd.h"
 
 #include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/target.hpp"
 
 namespace resmack {
 namespace fuzz {
 
+struct StateStats {
+#define STAT(NAME) double duration_##NAME;
+#include "resmack/fuzz/stats.def"
+#undef STAT
+};
+
 class State {
+  virtual StateStats* GetStats() = 0;
+  virtual void SyncStats(TargetStats* stats) = 0;
+
   virtual uint64_t GetNumIterations() = 0;
   virtual void IncNumIterations() = 0;
   virtual void IncNumIterations(uint64_t amt) = 0;

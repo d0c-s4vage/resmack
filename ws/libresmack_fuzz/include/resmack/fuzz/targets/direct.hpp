@@ -14,6 +14,7 @@ namespace fuzz {
                 std::string* output,
                 TargetSettings* settings,
                 TargetStats* stats);
+    void Reset();
 
    private:
     void PtraceSelfIfNotAlready();

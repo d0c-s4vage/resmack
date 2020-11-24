@@ -57,6 +57,22 @@ MmapState::~MmapState() {
   sem_close(this->state_lock);
 }
 
+void MmapState::SyncStats(TargetStats* stats) {
+  if (sem_wait(this->state_lock) == -1) {
+    perror("SyncStats (sem_wait)");
+    std::exit(1);
+  }
+
+#define STAT(NAME) this->metadata->stats.duration_##NAME += stats->duration_##NAME;
+#include "resmack/fuzz/stats.def"
+#undef STAT
+
+  if (sem_post(this->state_lock) == -1) {
+    perror("SyncStats (sem_post)");
+    std::exit(1);
+  }
+}
+
 size_t MmapState::GetNumIterations() {
   return this->metadata->iterations;
 }

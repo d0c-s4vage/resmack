@@ -21,29 +21,27 @@ namespace fuzz {
   // Full reset
   void TargetStats::Clear() {
     this->Reset();
-    this->sample_ticks = 0;
-    this->mutate_duration = 0;
-    this->generate_duration = 0;
-    this->setup_duration = 0;
-    this->target_duration = 0;
-    this->teardown_duration = 0;
+
+#define STAT(NAME) \
+      this->duration_##NAME = 0;
+
+#include "resmack/fuzz/stats.def"
+
+#undef STAT
   }
 
   void TargetStats::StartSample(SampleTypes type) {
     SAMPLED
 
     switch (type) {
-      case SampleTypes::SETUP:
-        this->setup_start = std::chrono::high_resolution_clock::now();
+#define STAT(NAME) \
+      case SampleTypes::NAME: \
+        this->start_##NAME = std::chrono::high_resolution_clock::now(); \
         break;
-      case SampleTypes::TARGET:
-        this->target_start = std::chrono::high_resolution_clock::now();
-        break;
-      case SampleTypes::TEARDOWN:
-        this->teardown_start = std::chrono::high_resolution_clock::now();
-        break;
-      default:
-        break;
+
+#include "resmack/fuzz/stats.def"
+
+#undef STAT
     }
   }
 
@@ -53,15 +51,14 @@ namespace fuzz {
     std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 
     switch (type) {
-      case SampleTypes::SETUP:
-        this->setup_duration += std::chrono::duration_cast<std::chrono::duration<double>>(now - this->setup_start).count();
+#define STAT(NAME) \
+      case SampleTypes::NAME: \
+        this->duration_##NAME = std::chrono::duration_cast<std::chrono::duration<double>>(now - this->start_##NAME).count(); \
         break;
-      case SampleTypes::TARGET:
-        this->target_duration += std::chrono::duration_cast<std::chrono::duration<double>>(now - this->target_start).count();
-        break;
-      case SampleTypes::TEARDOWN:
-        this->teardown_duration += std::chrono::duration_cast<std::chrono::duration<double>>(now - this->teardown_start).count();
-        break;
+
+#include "resmack/fuzz/stats.def"
+
+#undef STAT
     }
   }
 

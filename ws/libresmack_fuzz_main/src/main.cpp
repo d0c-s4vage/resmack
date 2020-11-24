@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstddef>
 #include <string>
 #include <set>
 #include <ctime>
@@ -25,21 +26,43 @@
 
 extern "C" int __lsan_is_turned_off() { return 1; }
 
-void LoopPrintStatus(resmack::fuzz::states::MmapState* state) {
+void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   std::chrono::high_resolution_clock::time_point end;
+  uint64_t start_iters = state->GetNumIterations();
   int sleep_amt = 1;
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  resmack::fuzz::StateStats* stats = state->GetStats();
   while (true) {
     sleep(sleep_amt++);
     end = std::chrono::high_resolution_clock::now();
     uint64_t num_iters = state->GetNumIterations();
+    uint64_t session_iters = num_iters - start_iters;
     std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     printf(
-      "Iters: %lu | %0.2f iters/s | %0.2f seconds\n",
+      "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | %0.2f s\n",
       num_iters,
-      (float)num_iters / span.count(),
+      (float)session_iters / span.count(),
+      state->GetNumCrashes(),
+      corpus->NumItems(),
       span.count()
     );
+
+    if (!show_stats) {
+      continue;
+    }
+
+    double tmp = 0;
+    double total_time = 0;
+#define STAT(NAME) total_time += stats->duration_##NAME;
+#include "resmack/fuzz/stats.def"
+#undef STAT
+
+#define STAT(NAME) \
+    tmp = stats->duration_##NAME / total_time; \
+    printf("%5.2f%% - "#NAME"\n", tmp * 100);
+#include "resmack/fuzz/stats.def"
+#undef STAT
   }
 }
 
@@ -66,10 +89,9 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   }
 
   if (is_main_proc) {
-    LoopPrintStatus(&state);
+    LoopPrintStatus(&state, true);
   }
 
-  //resmack::fuzz::Corpus corpus;
   resmack::Rand meta_rand;
   resmack::Rand build_rand(meta_rand.Next());
   build_rand.SetShouldRecord(true);
@@ -82,16 +104,19 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::BuildContext ctx(&output, &build_rand, 10);
 
   std::set<size_t> seen_covs;
-  //resmack::Vector<resmack::Vector<resmack::RandSnapshot>> corpus;
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
   size_t counts = 0;
   while (true) {
-    //size_t corpus_len = corpus.size();
     if (corpus->NumItems() > 0 && meta_rand.Maybe()) {
-      resmack::Vector<resmack::RandSnapshot>* replay = corpus->GetItem(&meta_rand);
-      resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
+      resmack::Vector<resmack::RandSnapshot>* replay;
+      RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
+        replay = corpus->GetItem(&meta_rand);
+      });
+      RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
+        resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
+      });
       ctx.SetReplay(&mutated_replay);
     } else {
       ctx.SetReplay(NULL);
@@ -99,25 +124,35 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
     output.clear();
     build_rand.SnapshotClear();
-    rules.Build(rule_idx, &ctx);
+
+    RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
+      rules.Build(rule_idx, &ctx);
+    });
     counts++;
 
-    if ((counts % 0x10000) == 0) {
-      state.IncNumIterations(0x10000);
+    if ((counts % 0x1000) == 0) {
+      state.IncNumIterations(0x1000);
+      state.SyncStats(&stats);
     }
 
     stats.Tick();
-    target.Launch(&cov, &output, &settings, &stats);
-    //target.Launch(&noop_cov, &output, &settings, &stats);
+    RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
+      target.Launch(&cov, &output, &settings, &stats);
+    });
+    RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
+      target.Reset();
+    });
     size_t cov_key = cov.GetStats().key;
 
-    if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
-      std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
-    }
+    RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
+      if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
+        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
+      }
+    });
 
     if (stats.crashed) {
+      state.IncNumCrashes();
       std::cout << "CRASH! with " << output << " and " << state.GetNumIterations() << " iters" << std::endl;
-      break;
     }
   }
 }

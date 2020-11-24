@@ -60,7 +60,7 @@ class MmapCorpus : public Corpus {
   void SyncInner();
 
   bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
-  size_t NumItems() { return this->snapshots.size(); }
+  size_t NumItems() { return this->meta->num_entries; }
 };
 
 }

@@ -14,18 +14,17 @@ namespace fuzz {
   };
 
   enum SampleTypes {
-    CORPUS,
-    MUTATE,
-    GENERATE,
-    SETUP,
-    TARGET,
-    TEARDOWN,
+#define STAT(NAME) NAME,
+
+#include "resmack/fuzz/stats.def"
+
+#undef STAT
   };
 
 #define RECORD_STAT(STAT, SAMPLE_TYPE, BLOCK) { \
-  STAT->StartSample(SAMPLE_TYPE); \
+  (STAT)->StartSample(SAMPLE_TYPE); \
   { BLOCK } \
-  STAT->StopSample(SAMPLE_TYPE); \
+  (STAT)->StopSample(SAMPLE_TYPE); \
 }
 
   struct TargetStats {
@@ -38,21 +37,13 @@ namespace fuzz {
     size_t stats_sample_interval;
     size_t sample_ticks;
 
-    std::chrono::high_resolution_clock::time_point mutate_start;
-    double mutate_duration;
+#define STAT(NAME) \
+  std::chrono::high_resolution_clock::time_point start_##NAME; \
+  double duration_##NAME;
 
-    std::chrono::high_resolution_clock::time_point generate_start;
-    double generate_duration;
+#include "resmack/fuzz/stats.def"
 
-    std::chrono::high_resolution_clock::time_point setup_start;
-    double setup_duration;
-
-    std::chrono::high_resolution_clock::time_point target_start;
-    double target_duration;
-
-    std::chrono::high_resolution_clock::time_point teardown_start;
-    double teardown_duration;
-
+#undef STAT
 
     TargetStats(size_t intervalv);
     void Tick() { this->sample_ticks++; }
@@ -68,6 +59,7 @@ namespace fuzz {
                         std::string* output,
                         TargetSettings* settings,
                         TargetStats* stats) = 0;
+    virtual void Reset() = 0;
   };
 
 }

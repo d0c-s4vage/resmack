@@ -1,5 +1,5 @@
-#ifndef RESMACK_FUZZ_STATE_H
-#define RESMACK_FUZZ_STATE_H
+#ifndef RESMACK_FUZZ_MMAP_STATE_H
+#define RESMACK_FUZZ_MMAP_STATE_H
 
 #include "fcntl.h"
 #include "inttypes.h"
@@ -9,6 +9,8 @@
 #include "semaphore.h"
 #include "unistd.h"
 
+#include "resmack/fuzz/state.hpp"
+#include "resmack/fuzz/target.hpp"
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
@@ -21,6 +23,7 @@ namespace states {
 struct StateMetadata {
   uint64_t iterations;
   uint64_t crashes;
+  StateStats stats;
   uint64_t reserved1;
   uint64_t reserved2;
   uint64_t reserved3;
@@ -29,15 +32,9 @@ struct StateMetadata {
   uint64_t reserved6;
   uint64_t reserved7;
   uint64_t reserved8;
-  uint64_t reserved9;
-  uint64_t reserved10;
-  uint64_t reserved11;
-  uint64_t reserved12;
-  uint64_t reserved13;
-  uint64_t reserved14;
 };
 
-class MmapState {
+class MmapState : public State {
  private:
   const char* state_path;
   FILE* state_file;
@@ -53,6 +50,9 @@ class MmapState {
  public:
   MmapState(const char* statePath);
   ~MmapState();
+
+  StateStats* GetStats() { return &this->metadata->stats; };
+  void SyncStats(TargetStats* stats);
 
   uint64_t GetNumIterations();
   void IncNumIterations();
