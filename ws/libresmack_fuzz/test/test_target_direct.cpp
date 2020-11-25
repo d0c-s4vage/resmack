@@ -17,7 +17,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t data_size) {
   }
 
   // make sure it's longer than 0 clocks
-  for (size_t i = 0; i < 0x1000; i++) {
+  for (size_t i = 0; i < 0x1000000; i++) {
     if (data[0] == 'H') {
       if (data[1] == 'I') {
         if (data[2] == '!') {
@@ -39,16 +39,16 @@ namespace fuzz {
     DirectTarget target;
     Coverage feedback;
     TargetSettings settings;
-    TargetStats stats;
+    TargetStats stats(0x1);
     stats.stats_sample_interval = 1;
 
     std::string output = "Hello World";
     target.Launch(&feedback, &output, &settings, &stats);
 
     EXPECT_EQ(TEST_INPUT, output);
-    EXPECT_NE(stats.setup_duration, 0u);
-    EXPECT_NE(stats.target_duration, 0u);
-    EXPECT_NE(stats.teardown_duration, 0u);
+    EXPECT_NE(stats.duration_FEEDBACK, 0.0);
+    EXPECT_NE(stats.duration_TARGET, 0.0);
+    EXPECT_EQ(stats.duration_TARGET_RESET, 0.0);
     EXPECT_EQ(stats.crashed, false);
   }
 
