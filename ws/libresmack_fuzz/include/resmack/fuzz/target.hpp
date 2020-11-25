@@ -15,9 +15,7 @@ namespace fuzz {
 
   enum SampleTypes {
 #define STAT(NAME) NAME,
-
 #include "resmack/fuzz/stats.def"
-
 #undef STAT
   };
 
@@ -40,9 +38,7 @@ namespace fuzz {
 #define STAT(NAME) \
   std::chrono::high_resolution_clock::time_point start_##NAME; \
   double duration_##NAME;
-
 #include "resmack/fuzz/stats.def"
-
 #undef STAT
 
     TargetStats(size_t intervalv);
