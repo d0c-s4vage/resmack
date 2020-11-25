@@ -32,20 +32,16 @@ namespace fuzz {
     // timeout
     bool timedout;
     bool crashed;
-    // crash_info*
-    // 
-    size_t stats_sample_interval;
-    size_t sample_ticks;
 
 #define STAT(NAME) \
   std::chrono::high_resolution_clock::time_point start_##NAME; \
   double duration_##NAME;
-
 #include "resmack/fuzz/stats.def"
-
 #undef STAT
+    size_t stats_sample_interval;
+    size_t sample_ticks;
 
-    TargetStats(size_t intervalv);
+    TargetStats(size_t interval);
     void Tick() { this->sample_ticks++; }
     void Reset();
     void Clear();

@@ -164,7 +164,7 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   bool is_main_proc = true;
 
   if (opts.nprocs > 1) {
-    int child_num;
+    size_t child_num;
     std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
     for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
       if (!fork()) {

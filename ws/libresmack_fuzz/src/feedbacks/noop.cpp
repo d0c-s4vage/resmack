@@ -13,7 +13,7 @@ namespace fuzz {
   }
 
   FeedbackStats NoopCoverage::GetStats() {
-    return { 0 };
+    return { 0, 0 };
   }
 
 }

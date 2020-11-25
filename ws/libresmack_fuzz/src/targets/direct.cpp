@@ -20,7 +20,8 @@ namespace fuzz {
 
   void DirectTarget::Launch(Feedback* feedback,
                             std::string* output,
-                            TargetSettings* settings,
+                             __attribute__((unused))
+                             TargetSettings* settings,
                             TargetStats* stats) {
     stats->Reset();
 

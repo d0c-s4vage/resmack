@@ -14,7 +14,8 @@ namespace fuzz {
 #define STAT(NAME) duration_##NAME(0),
 #include "resmack/fuzz/stats.def"
 #undef STAT
-    stats_sample_interval(interval)
+    stats_sample_interval(interval),
+    sample_ticks(0)
   {
   }
 

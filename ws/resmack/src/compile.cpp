@@ -59,6 +59,7 @@ namespace compile {
     return true;
   }
 
+  /*
   char* FindLib(const char* lib_name) {
     const char* search_paths[] = {
       "/usr/lib/resmack",
@@ -70,6 +71,7 @@ namespace compile {
     //
     // if can't find the lib, print an error message and exit
   }
+  */
 
   int Run(int argc, char** argv) {
     CompileOpts opts {
