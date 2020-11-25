@@ -34,6 +34,7 @@ namespace resmack {
     SCOPE,
     PRE,
     POST,
+    CUSTOM,
   };
 
   static std::string ItemTypeName(ItemType type) {
@@ -70,6 +71,9 @@ namespace resmack {
         break;
       case ItemType::POST:
         return "POST";
+        break;
+      case ItemType::CUSTOM:
+        return "CUSTOM";
         break;
     };
     return "??";
