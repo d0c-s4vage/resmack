@@ -64,7 +64,7 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -163,17 +163,19 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   bool is_main_proc = true;
 
-  int child_num;
-  std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
-  for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
-    if (!fork()) {
-      is_main_proc = false;
-      break;
+  if (opts.nprocs > 1) {
+    int child_num;
+    std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
+    for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
+      if (!fork()) {
+        is_main_proc = false;
+        break;
+      }
     }
-  }
 
-  if (is_main_proc) {
-    LoopPrintStatus(&state, opts.show_stats);
+    if (is_main_proc) {
+      LoopPrintStatus(&state, opts.show_stats);
+    }
   }
 
   resmack::Rand meta_rand;
@@ -220,7 +222,6 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules.Build(rule_idx, &ctx);
     });
-
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(&cov, &output, &settings, &stats);
     });

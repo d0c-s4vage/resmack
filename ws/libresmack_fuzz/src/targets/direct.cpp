@@ -33,9 +33,6 @@ namespace fuzz {
       stats->crashed = res == 1;
     });
 
-    // nothing to reset here
-    //RECORD_STAT(stats, SampleTypes::TARGET_RESET, {});
-
     RECORD_STAT(stats, SampleTypes::FEEDBACK, {
       feedback->Stop();
     });
