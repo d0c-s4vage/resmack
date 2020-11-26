@@ -64,12 +64,12 @@ void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t
 void MmapCorpus::AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   size_t total_size =
     sizeof(ser::CorpusItemHeader) +
-    (sizeof(ser::CorpusRandState) * snapshot->size());
-  this->next_item->num_states = snapshot->size();
+    (sizeof(ser::GenState) * snapshot->size());
+  this->next_item->item_header.num_states = snapshot->size();
   this->next_item->size = total_size;
   this->next_item->feedback_key = feedback_key;
   
-  ser::CorpusRandState* curr_state = (ser::CorpusRandState*)(
+  ser::GenState* curr_state = (ser::GenState*)(
     (char*)this->next_item + sizeof(ser::CorpusItemHeader)
   );
   for (RandSnapshot& item: *snapshot) {
@@ -77,7 +77,7 @@ void MmapCorpus::AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, s
     curr_state->rule_idx = item.rule_idx;
     memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
 
-    curr_state = (ser::CorpusRandState*)((char*)curr_state + sizeof(ser::CorpusRandState));
+    curr_state = (ser::GenState*)((char*)curr_state + sizeof(ser::GenState));
   }
 
   this->last_updated_seq = ++this->meta->updated_seq;
@@ -107,7 +107,8 @@ void MmapCorpus::SyncInner() {
     }
     this->snapshots.clear();
     this->next_item_index = 0;
-    this->next_item = (ser::CorpusItemHeader*)((char*)this->meta + sizeof(MmapMetadata));
+    this->next_item =
+      (ser::CorpusItemHeader*)((char*)this->meta + sizeof(ser::CorpusMetadata));
   }
 
   this->last_updated_seq = this->meta->updated_seq;
@@ -122,10 +123,15 @@ void MmapCorpus::SyncInner() {
 
     size_t state_offset = 0;
     size_t header_size = sizeof(ser::CorpusItemHeader);
-    size_t state_size = sizeof(ser::CorpusRandState);
-    ser::CorpusRandState* state;
-    for(size_t rand_state_idx = 0; rand_state_idx < curr->num_states; rand_state_idx++) {
-      state = (ser::CorpusRandState*)((char*)curr + header_size + state_offset);
+    size_t state_size = sizeof(ser::GenState);
+    ser::GenState* state;
+
+    for(
+      size_t rand_state_idx = 0;
+      rand_state_idx < curr->item_header.num_states;
+      rand_state_idx++
+    ) {
+      state = (ser::GenState*)((char*)curr + header_size + state_offset);
       snapshot->emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
       state_offset += state_size;
     }

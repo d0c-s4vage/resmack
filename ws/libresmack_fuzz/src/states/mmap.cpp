@@ -1,9 +1,9 @@
-#include "errno.h"
+#include <errno.h>
 #include <iostream>
 #include <semaphore.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include "sys/stat.h"
 
 #include "resmack/fuzz/states/mmap.hpp"
 #include "resmack/fuzz/ipc_util.hpp"

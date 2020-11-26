@@ -8,18 +8,22 @@ namespace resmack {
 namespace fuzz {
 namespace ser {
 
-struct CorpusRandState {
+struct GenState {
   uint32_t ref_depth;
   uint32_t rule_idx;
   uint32_t rand_state[4];
 };
 
-struct CorpusItemHeader {
+struct GenStateHeader {
   uint32_t num_states;
+};
+
+struct CorpusItemHeader {
   uint32_t size;
+  size_t feedback_key;
   uint32_t reserved1;
   uint32_t reserved2;
-  size_t feedback_key;
+  GenStateHeader item_header;
 };
 
 struct CorpusMetadata {
