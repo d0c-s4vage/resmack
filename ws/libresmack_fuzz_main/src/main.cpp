@@ -219,10 +219,12 @@ void FuzzLoop(
 }
 
 static bool SHOULD_RUN = true;
-void HandleTracees(resmack::Vector<resmack::fuzz::Trace*> tracees) {
-  for (resmack::fuzz::Trace* tracee : tracees) {
+void HandleTracees(resmack::Vector<resmack::fuzz::Trace*>* tracees) {
+  for (resmack::fuzz::Trace* tracee : *tracees) {
     tracee->Run([tracee]() {
-      tracee->Restart();
+      if (SHOULD_RUN) {
+        tracee->Restart();
+      }
     });
   }
 }

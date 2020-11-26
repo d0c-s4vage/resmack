@@ -5,6 +5,7 @@
 
 #include "resmack/types.hpp"
 #include "resmack/rand.hpp"
+#include "resmack/fuzz/trace_target.hpp"
 #include "resmack/fuzz/serialized.hpp"
 
 namespace resmack {
@@ -44,10 +45,13 @@ class Tracer {
   Tracer();
   ~Tracer();
 
-  void Trace(pid_t pid);
-  void Continue();
+  // target does whatever it needs to do to return a pid_t and set whether
+  // it should be attached or if it's good to go. The target is run in a
+  // separate thread
+  void Trace(TraceTarget* target);
 };
 
+/*
 struct Registers {
   size_t rip;
   size_t rsp;
@@ -81,6 +85,7 @@ class Crash {
   Crash(Tracer* tracer);
   ~Crash();
 };
+*/
 
 }
 }

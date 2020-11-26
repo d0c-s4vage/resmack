@@ -22,7 +22,7 @@ class TraceTarget {
   ~TraceTarget();
 
   virtual void InitTrace();
-  virtual void Spawn(Tracee* tracee) = 0;
+  virtual pid_t Spawn(Tracee* tracee) = 0;
 };
 
 }

@@ -251,6 +251,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
+  "command": "/usr/bin/c++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack_fuzz.dir/test_trace.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_trace.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_trace.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
   "command": "/usr/bin/c++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/test_libresmack_fuzz.dir/test_tracee.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_tracee.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_tracee.cpp"
 },

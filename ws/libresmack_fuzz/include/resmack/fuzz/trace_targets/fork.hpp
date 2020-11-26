@@ -9,10 +9,10 @@ namespace trace_targets {
 
 class Fork : public TraceTarget {
  public:
-   Fork(TraceSpawnCb spawn_cb);
-   ~Fork();
+  Fork(TraceSpawnCb spawn_cb);
+  ~Fork();
 
-  void Spawn(Tracee* tracee);
+  pid_t Spawn(Tracee* tracee);
 };
 
 }
