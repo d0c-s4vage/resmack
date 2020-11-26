@@ -1,0 +1,50 @@
+#include "gtest/gtest.h"
+
+#include "resmack/rules.hpp"
+#include "resmack/item.hpp"
+#include "resmack/rand.hpp"
+#include "resmack/items/str.hpp"
+
+#include "test_utils.hpp"
+
+namespace resmack {
+namespace items {
+
+  class CustomLenInserted : public Item {
+   public:
+    Item* item_;
+
+    CustomLenInserted(Item* item) : item_(item) {}
+    ~CustomLenInserted() {
+      delete this->item_;
+    }
+
+    ItemType Type() {
+      return ItemType::CUSTOM;
+    }
+
+    void Build(BuildContext *ctx) {
+      uint8_t len;
+      len = 0;
+
+      size_t len_pos = ctx->output->size();
+      *ctx->output += (char)len;
+
+      this->item_->Build(ctx);
+
+      len = ctx->output->size() - len_pos - sizeof(len);
+      ctx->output->data()[len_pos] = len;
+    }
+  };
+
+  TEST(Custom, CustomItemsWork)
+  {
+    Rand rand(100);
+    CustomLenInserted* custom = new CustomLenInserted(STR(0x41, 0x42, "B"));
+
+    std::string built = test_utils::BuildItem(custom);
+    EXPECT_EQ(built, "ABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+  }
+
+}
+}

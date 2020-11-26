@@ -24,9 +24,10 @@ namespace items {
     Str* str = new Str(2, 5, "A");
     test_utils::CountBuilds(100, str, &counts);
 
+    EXPECT_EQ(counts.size(), 3u);
     EXPECT_GT(counts["AA"], 0u);
     EXPECT_GT(counts["AAA"], 0u);
-    EXPECT_GT(counts["AAA"], 0u);
+    EXPECT_GT(counts["AAAA"], 0u);
   }
 
   TEST(Str, FullCharset) {

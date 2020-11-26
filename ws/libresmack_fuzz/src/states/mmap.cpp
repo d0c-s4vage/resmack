@@ -23,7 +23,10 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
     this->state_file = fopen(this->state_path, "r+b");
   } else {
     this->state_file = fopen(this->state_path, "w+b");
-    ftruncate(fileno(this->state_file), this->state_max_size);
+    if (ftruncate(fileno(this->state_file), this->state_max_size) != 0) {
+      perror("Could not create resmack state mmap");
+      std::exit(1);
+    }
     is_new = true;
   }
 
