@@ -17,11 +17,11 @@ namespace fuzz {
     });
 
     pid_t pid = fork_target.Spawn(&t);
-    EXPECT_NE(pid, 0u);
+    EXPECT_NE(pid, 0);
 
     waitpid(pid, NULL, 0);
 
-    EXPECT_EQ(t.GetLastCorpusIndex(), 99999);
+    EXPECT_EQ(t.GetLastCorpusIndex(), 99999u);
     EXPECT_EQ(t.GetLastUsedCorpus(), true);
   }
 

@@ -1,4 +1,4 @@
-#include <sys.ptrace.h>
+#include <sys/ptrace.h>
 #include <unistd.h>
 
 #include "resmack/fuzz/tracee.hpp"

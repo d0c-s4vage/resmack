@@ -7,6 +7,8 @@ namespace resmack {
 namespace fuzz {
 namespace trace_targets {
 
+using TraceSpawnCb = std::function<void(Tracee*)>;
+
 class Fork : public TraceTarget {
  private:
   TraceSpawnCb cb_;
