@@ -6,12 +6,10 @@
 #include <functional>
 #include <utility>
 
-#include "resmack/fuzz/trace.hpp"
-
 namespace resmack {
 namespace fuzz {
 
-using TraceSpawnCb = std::function<void()>;
+using TraceSpawnCb = std::function<void(Tracee*)>;
 
 class TraceTarget {
  private:
@@ -21,7 +19,6 @@ class TraceTarget {
   TraceTarget(TraceSpawnCb spawn_cb);
   ~TraceTarget();
 
-  virtual void InitTrace();
   virtual pid_t Spawn(Tracee* tracee) = 0;
 };
 

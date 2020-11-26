@@ -8,6 +8,9 @@ namespace fuzz {
 namespace trace_targets {
 
 class Fork : public TraceTarget {
+ private:
+  TraceSpawnCb cb_;
+
  public:
   Fork(TraceSpawnCb spawn_cb);
   ~Fork();

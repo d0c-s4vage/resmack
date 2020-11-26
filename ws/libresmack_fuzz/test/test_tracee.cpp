@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "resmack/rand.hpp"
-#include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/tracee.hpp"
 
 namespace resmack {
 namespace fuzz {
