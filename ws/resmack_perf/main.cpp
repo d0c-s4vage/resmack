@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "resmack/defs.hpp"
 #include "resmack/rules.hpp"
 #include "resmack/items/or.hpp"
 #include "resmack/items/and.hpp"
@@ -16,7 +17,9 @@
 
 using namespace resmack;
 
-int main(int argc __attribute__((unused)), char** argv __attribute__((unused))) {
+int main(int argc, char** argv) {
+  UNUSED(argc); UNUSED(argv);
+
   Rand rand;
   Rules rules;
 

@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include "resmack/rand.hpp"
-
 namespace resmack {
 namespace utils {
 

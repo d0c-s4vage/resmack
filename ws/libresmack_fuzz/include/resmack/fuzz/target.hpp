@@ -15,9 +15,7 @@ namespace fuzz {
 
   enum SampleTypes {
 #define STAT(NAME) NAME,
-
 #include "resmack/fuzz/stats.def"
-
 #undef STAT
   };
 

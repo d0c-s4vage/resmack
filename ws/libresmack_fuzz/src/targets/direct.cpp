@@ -18,11 +18,14 @@ namespace fuzz {
   DirectTarget::DirectTarget() {
   }
 
-  void DirectTarget::Launch(Feedback* feedback,
-                            std::string* output,
-                             __attribute__((unused))
-                             TargetSettings* settings,
-                            TargetStats* stats) {
+  void DirectTarget::Launch(
+    Feedback* feedback,
+    std::string* output,
+    TargetSettings* settings,
+    TargetStats* stats
+  ) {
+    UNUSED(settings);
+
     stats->Reset();
 
     RECORD_STAT(stats, SampleTypes::FEEDBACK, {

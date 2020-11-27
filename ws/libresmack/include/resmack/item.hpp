@@ -10,6 +10,8 @@
 
 #include <string>
 
+#include "resmack/defs.hpp"
+
 #include "rand.hpp"
 #include "build_context.hpp"
 
@@ -87,10 +89,12 @@ namespace resmack {
      virtual std::string ToString() {
        return std::string("<") + ItemTypeName(this->Type()) + ">";
      }
-     virtual bool CalcReachability(calc::Reach *calc __attribute__((unused))) {
+     virtual bool CalcReachability(calc::Reach *calc) {
+       UNUSED(calc);
        return true;
      }
-     virtual size_t CalcRefDepth(calc::RefDepth *calc __attribute__((unused))) {
+     virtual size_t CalcRefDepth(calc::RefDepth *calc) {
+       UNUSED(calc);
        return 0;
      }
   };

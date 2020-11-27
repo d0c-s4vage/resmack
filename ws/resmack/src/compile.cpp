@@ -96,7 +96,7 @@ namespace compile {
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);
     }
-    // these go last!
+    // these go last and are ordered!
     options.emplace_back("build/release/ws/libresmack_fuzz_main/libresmack_fuzz_main.a");
     options.emplace_back("build/release/ws/libresmack_fuzz/libresmack_fuzz.a");
     options.emplace_back("build/release/ws/libresmack/libresmack.a");

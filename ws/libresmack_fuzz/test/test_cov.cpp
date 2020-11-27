@@ -1,5 +1,6 @@
-#include "gtest/gtest.h"
 #include <cstdio>
+
+#include "gtest/gtest.h"
 
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"

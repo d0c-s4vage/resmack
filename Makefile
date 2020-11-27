@@ -7,6 +7,8 @@ all: clean debug release
 RESMACK_EXE=resmack
 RESMACK_PERF_EXE=resmack_perf
 
+NPROCS=$(shell nproc)
+
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -39,7 +41,7 @@ build/debug:
 .PHONY: build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE):
 	cd build/debug ; \
-	make -j $(nproc)
+	make -j $(NPROCS)
 
 # -----------------------------------------------------------------------------
 # RELEASE ---------------------------------------------------------------------
@@ -101,7 +103,7 @@ build-release: $(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 $(RELEASE_PATH)/$(RESMACK_PERF_EXE): $(RELEASE_PATH)
 	cd $(RELEASE_PATH) ; \
-	make -j $(nproc)
+	make -j $(NPROCS)
 
 $(RELEASE_PATH):
 	mkdir -p $(RELEASE_PATH) ; \
@@ -127,14 +129,14 @@ clean-tests:
 
 test-libresmack-fuzz: build/test
 	cd build/test/ws/libresmack_fuzz/test ; \
-	make -j $(nproc)
+	make -j $(NPROCS)
 
 run-test-libresmack-fuzz: test-libresmack-fuzz
 	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 test-libresmack: build/test
 	cd build/test/ws/libresmack/test ; \
-	make -j $(nproc)
+	make -j $(NPROCS)
 
 run-test-libresmack: test-libresmack
 	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
@@ -148,7 +150,7 @@ libs-test/googletest/build/lib/libgtest_main.a:
 		mkdir build ; \
 		cd build ; \
 		cmake ../ ; \
-		make -j $(nproc)
+		make -j $(NPROCS)
 
 build/test:
 	mkdir -p build/test ; \

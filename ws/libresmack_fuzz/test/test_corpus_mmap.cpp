@@ -1,10 +1,12 @@
-#include "gtest/gtest.h"
 #include <cstdio>
 #include <cstring>
 #include <sys/mman.h>
 
+#include "gtest/gtest.h"
+
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
+#include "resmack/fuzz/serialized.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -40,7 +42,7 @@ namespace fuzz {
       waitpid(pid, &status, 0);
     }
 
-    corpora::MmapMetadata* meta = (corpora::MmapMetadata*)map;
+    ser::CorpusMetadata* meta = (ser::CorpusMetadata*)map;
 
     EXPECT_EQ(meta->updated_seq, 1u);
     EXPECT_EQ(meta->reorg_seq, 0u);
@@ -61,7 +63,7 @@ namespace fuzz {
     EXPECT_EQ((*fetchedSnapshots)[0].rule_idx, 100u);
     EXPECT_EQ((*fetchedSnapshots)[0].rule_idx, snapshots[0].rule_idx);
 
-    EXPECT_EQ((*fetchedSnapshots)[1].ref_depth, 2);
+    EXPECT_EQ((*fetchedSnapshots)[1].ref_depth, 2u);
     EXPECT_EQ((*fetchedSnapshots)[1].ref_depth, snapshots[1].ref_depth);
     EXPECT_EQ((*fetchedSnapshots)[1].rule_idx, 200u);
     EXPECT_EQ((*fetchedSnapshots)[1].rule_idx, snapshots[1].rule_idx);
@@ -118,7 +120,7 @@ namespace fuzz {
       waitpid(pid, &status, 0);
     }
 
-    corpora::MmapMetadata* meta = (corpora::MmapMetadata*)map;
+    ser::CorpusMetadata* meta = (ser::CorpusMetadata*)map;
 
     EXPECT_EQ(meta->updated_seq, 1u);
     EXPECT_EQ(meta->reorg_seq, 0u);
@@ -166,7 +168,7 @@ namespace fuzz {
       waitpid(pid, &status, 0);
     }
 
-    corpora::MmapMetadata* meta = (corpora::MmapMetadata*)map;
+    ser::CorpusMetadata* meta = (ser::CorpusMetadata*)map;
 
     EXPECT_EQ(meta->updated_seq, 1u);
     EXPECT_EQ(meta->reorg_seq, 0u);

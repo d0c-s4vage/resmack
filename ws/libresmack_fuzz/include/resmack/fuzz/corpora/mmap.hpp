@@ -6,32 +6,11 @@
 
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/types.hpp"
+#include "resmack/fuzz/serialized.hpp"
 
 namespace resmack {
 namespace fuzz {
 namespace corpora {
-
-struct MmapCorpusRandState {
-  uint32_t ref_depth;
-  uint32_t rule_idx;
-  uint32_t rand_state[4];
-};
-
-struct MmapCorpusItemHeader {
-  uint32_t num_states;
-  // total size of item including the header (header + rand state array)
-  uint32_t size;
-  uint32_t reserved1;
-  uint32_t reserved2;
-  size_t feedback_key;
-};
-
-struct MmapMetadata {
-  // number that gets incremented every time the corpus is updated
-  uint32_t updated_seq;
-  uint32_t reorg_seq;
-  uint32_t num_entries;
-};
 
 class MmapCorpus : public Corpus {
  private:
@@ -41,9 +20,9 @@ class MmapCorpus : public Corpus {
   Vector<Vector<RandSnapshot>> snapshots;
   Set<size_t> seen_keys;
 
-  MmapMetadata* meta;
+  ser::CorpusMetadata* meta;
   size_t next_item_index;
-  MmapCorpusItemHeader* next_item;
+  ser::CorpusItemHeader* next_item;
   uint32_t last_updated_seq; 
   uint32_t last_reorg_seq; 
 

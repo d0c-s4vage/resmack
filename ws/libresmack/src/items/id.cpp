@@ -1,3 +1,4 @@
+#include "resmack/defs.hpp"
 #include "resmack/item.hpp"
 #include "resmack/items/id.hpp"
 #include "resmack/items/raw.hpp"
@@ -29,7 +30,8 @@ namespace items {
     return true;
   }
 
-  size_t Id::CalcRefDepth(__attribute__((unused)) calc::RefDepth* ref_calc) {
+  size_t Id::CalcRefDepth(calc::RefDepth* ref_calc) {
+    UNUSED(ref_calc);
     return 0;
   }
 

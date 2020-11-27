@@ -1,11 +1,15 @@
-#include <iostream>
+#include <getopt.h>
+#include <pthread.h>
+#include <signal.h>
 #include <chrono>
 #include <cstddef>
-#include <string>
-#include <set>
 #include <ctime>
+#include <fstream>
+#include <iostream>
 #include <ratio>
-#include "getopt.h"
+#include <set>
+#include <string>
+#include <openssl/sha.h>
 
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
@@ -18,15 +22,28 @@
 #include "resmack/items/ref.hpp"
 #include "resmack/items/and.hpp"
 
+#include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/external.hpp"
-#include "resmack/fuzz/mutate.hpp"
-#include "resmack/fuzz/targets/direct.hpp"
+#include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 #include "resmack/fuzz/feedbacks/noop.hpp"
+#include "resmack/fuzz/mutate.hpp"
+#include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
-#include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/targets/direct.hpp"
+#include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/trace_targets/fork.hpp"
 
 extern "C" int __lsan_is_turned_off() { return 1; }
+
+static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
+
+void sigint_handler(int signum) {
+  std::cout << "\n\nCaught signal on main process, terminating fuzzing procs" << std::endl;
+  for (resmack::fuzz::Tracer* tracer: TRACERS) {
+    tracer->Stop();
+  }
+}
 
 void PrintHelp(char* prog_name) {
   std::cout << resmack::GetResmackLogo() << std::endl;
@@ -93,7 +110,15 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
     return true;
 }
 
-void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
+struct LoopPrintStatusArgs {
+  resmack::fuzz::states::MmapState* state;
+  int show_stats;
+};
+
+void* LoopPrintStatus(void* args_ptr) {
+  LoopPrintStatusArgs* args = (LoopPrintStatusArgs*)args_ptr;
+  resmack::fuzz::states::MmapState* state = args->state;
+  bool show_stats = args->show_stats;
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   std::chrono::high_resolution_clock::time_point end;
   uint64_t start_iters = state->GetNumIterations();
@@ -134,50 +159,19 @@ void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
 #include "resmack/fuzz/stats.def"
 #undef STAT
   }
+
+  return NULL;
 }
 
-__attribute__((visibility("default"))) int main(int argc, char** argv) {
-  FuzzOptions opts {
-    .help = false,
-    .nprocs = 1,
-    .max_depth = 10,
-    .show_stats = false,
-    .stats_interval = 0x1000,
-  };
-  ParseOptions(argc, argv, &opts);
-  if (opts.help) {
-    PrintHelp(argv[0]);
-    return 1;
-  }
-
-  resmack::fuzz::ExternalFunctions EF;
-
-  resmack::fuzz::states::MmapState state("/tmp/resmack.state");
-  resmack::fuzz::Corpus* corpus = state.GetCorpus();
-
-  resmack::Rules rules = new resmack::Rules();
-  size_t rule_idx = EF.ResmackGrammarInit(&rules);
-
-  resmack::fuzz::Coverage cov;
-  resmack::fuzz::NoopCoverage noop_cov;
-
-  bool is_main_proc = true;
-
-  if (opts.nprocs > 1) {
-    size_t child_num;
-    std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
-    for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
-      if (!fork()) {
-        is_main_proc = false;
-        break;
-      }
-    }
-
-    if (is_main_proc) {
-      LoopPrintStatus(&state, opts.show_stats);
-    }
-  }
-
+void FuzzLoop(
+  size_t rule_idx,
+  resmack::Rules* rules,
+  resmack::fuzz::Feedback* feedback,
+  resmack::fuzz::State* state,
+  resmack::fuzz::Corpus* corpus,
+  FuzzOptions* opts,
+  resmack::fuzz::Tracee* tracee
+) {
   resmack::Rand meta_rand;
   resmack::Rand build_rand(meta_rand.Next());
   build_rand.SetShouldRecord(true);
@@ -186,24 +180,25 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
-  resmack::fuzz::TargetStats stats(opts.stats_interval);
-  resmack::BuildContext ctx(&output, &build_rand, opts.max_depth);
-
-  std::set<size_t> seen_covs;
+  resmack::fuzz::TargetStats stats(opts->stats_interval);
+  resmack::BuildContext ctx(&output, &build_rand, opts->max_depth);
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
   size_t counts = 0;
   while (true) {
     counts++;
-    if ((counts % opts.stats_interval) == 0) {
-      state.IncNumIterations(opts.stats_interval);
-      state.SyncStats(&stats);
+    if ((counts % opts->stats_interval) == 0) {
+      state->IncNumIterations(opts->stats_interval);
+      state->SyncStats(&stats);
       stats.Clear();
     }
     stats.Tick();
 
+    size_t last_corpus_idx = 0;
+    bool used_corpus = false;
     if (corpus->NumItems() > 0 && meta_rand.Maybe()) {
+      used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
         replay = corpus->GetItem(&meta_rand);
@@ -220,25 +215,136 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
     build_rand.SnapshotClear();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
-      rules.Build(rule_idx, &ctx);
+      rules->Build(rule_idx, &ctx);
     });
+
+    // this occurs *in* the traced process (after forking/*).
+    // If an exception occurs, these values are extracted and
+    // used to save crash information and update corpus stats
+    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, opts->max_depth);
+    tracee->SaveLastReplay(&mutated_replay);
+
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
-      target.Launch(&cov, &output, &settings, &stats);
+      target.Launch(feedback, &output, &settings, &stats);
     });
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
     });
-    size_t cov_key = cov.GetStats().key;
+    size_t cov_key = feedback->GetStats().key;
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
-        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
+        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
 
+    /*
     if (stats.crashed) {
-      state.IncNumCrashes();
-      std::cout << "CRASH! with " << output << " and " << state.GetNumIterations() << " iters" << std::endl;
+      state->IncNumCrashes();
+      std::cout << "CRASH! with " << output << " and " << state->GetNumIterations() << " iters" << std::endl;
     }
+    */
+  }
+}
+
+bool HandleException(
+  resmack::Rules* rules,
+  resmack::fuzz::State* state,
+  size_t rule_idx,
+  pid_t, // pid
+  int, // status
+  resmack::fuzz::Tracer*, // tracer
+  resmack::fuzz::Tracee* tracee
+) {
+  state->IncNumCrashes();
+
+  std::string output;
+  // doesn't have to be the same one as before since we're doing a full,
+  // unmodified replay
+  resmack::Rand rand;
+  resmack::Vector<resmack::RandSnapshot> snapshot;
+  tracee->LoadLastReplay(&snapshot);
+
+  resmack::BuildContext ctx(&output, &rand, tracee->GetLastMaxDepth());
+  ctx.SetReplay(&snapshot);
+
+  rules->Build(rule_idx, &ctx);
+
+  std::string filename = "crashes/crash.txt";
+  
+  // TODO save output to a file!
+  std::ofstream file;
+  file.open(filename.c_str(), std::ofstream::out | std::ofstream::binary);
+  file << output;
+  file.close();
+
+  // always restart the traced program
+  return false;
+}
+
+__attribute__((visibility("default")))
+int main(int argc, char** argv) {
+  FuzzOptions opts {
+    .help = false,
+    .nprocs = 1,
+    .max_depth = 10,
+    .show_stats = false,
+    .stats_interval = 0x1000,
+  };
+  signal(SIGINT, sigint_handler);
+
+  ParseOptions(argc, argv, &opts);
+  if (opts.help) {
+    PrintHelp(argv[0]);
+    return 1;
+  }
+
+  resmack::fuzz::ExternalFunctions EF;
+
+  resmack::Rules rules = new resmack::Rules();
+  size_t rule_idx = EF.ResmackGrammarInit(&rules);
+
+  resmack::fuzz::Coverage cov;
+  //resmack::fuzz::NoopCoverage noop_cov;
+  resmack::fuzz::states::MmapState mmap_state("/tmp/resmack.state");
+  resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
+
+  bool is_main_proc = true;
+
+  resmack::fuzz::trace_targets::Fork trace_target(
+    [rule_idx, &rules, &cov, &mmap_state, corpus, &opts](resmack::fuzz::Tracee* tracee) {
+      FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, &opts, tracee);
+    }
+  );
+
+  size_t child_num;
+  std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
+  for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
+    resmack::fuzz::Tracer* tracer = new resmack::fuzz::Tracer(
+      &trace_target,
+      [&rules, rule_idx, &mmap_state](
+        pid_t pid,
+        int status,
+        resmack::fuzz::Tracer* tracer,
+        resmack::fuzz::Tracee* tracee
+      ) -> bool {
+        return HandleException(&rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
+      }
+    );
+    tracer->Trace();
+    TRACERS.push_back(tracer);
+  }
+
+  pthread_t status_thread;
+  LoopPrintStatusArgs status_args {
+    .state = &mmap_state,
+    .show_stats = opts.show_stats
+  };
+  if (is_main_proc) {
+    pthread_create(&status_thread, NULL, LoopPrintStatus, (void*)&status_args);
+  }
+
+  for (resmack::fuzz::Tracer* tracer: TRACERS) {
+    tracer->Join();
   }
 }

@@ -29,7 +29,9 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/states/*.cpp
     ${PROJECT_SOURCE_DIR}/src/states/*.hpp
     ${PROJECT_SOURCE_DIR}/src/corpora/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/corpora/*.hpp)
+    ${PROJECT_SOURCE_DIR}/src/corpora/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
 
 add_library(${RESMACK_FUZZ_LIB} STATIC ${LIBRESMACK_FUZZ_SOURCES})
 target_link_libraries(${RESMACK_FUZZ_LIB} libresmack)
