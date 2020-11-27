@@ -77,7 +77,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (parts.size() == 0) {
     return false;
   }
-
   if (curr_idx >= parts.size() || !parseSubject(&parts, &curr_idx)) {
     return false;
   }

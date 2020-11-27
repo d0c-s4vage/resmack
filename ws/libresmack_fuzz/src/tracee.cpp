@@ -64,6 +64,7 @@ void Tracee::SaveLastReplay(Vector<RandSnapshot>* replay) {
   size_t curr_offset = sizeof(ser::GenStateHeader);
   ser::GenState* curr;
 
+  size_t count = 0;
   for (RandSnapshot& state: *replay) {
     curr = (ser::GenState*)this->shared_last_gen_state + curr_offset;
     curr->ref_depth = state.ref_depth;
@@ -81,6 +82,7 @@ void Tracee::LoadLastReplay(Vector<RandSnapshot>* dest) {
   for (; num_states > 0; num_states--) {
     curr = (ser::GenState*)this->shared_last_gen_state + curr_offset;
     dest->emplace_back(curr->ref_depth, curr->rule_idx, curr->rand_state);
+    curr_offset += sizeof(ser::GenState);
   }
 }
 

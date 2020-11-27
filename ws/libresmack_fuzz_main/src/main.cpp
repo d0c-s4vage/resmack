@@ -1,13 +1,15 @@
-#include <iostream>
-#include <chrono>
-#include <cstddef>
-#include <string>
-#include <set>
-#include <ctime>
-#include <ratio>
 #include <getopt.h>
 #include <pthread.h>
 #include <signal.h>
+#include <chrono>
+#include <cstddef>
+#include <ctime>
+#include <fstream>
+#include <iostream>
+#include <ratio>
+#include <set>
+#include <string>
+#include <openssl/sha.h>
 
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
@@ -110,7 +112,7 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
 
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
-  bool show_stats;
+  int show_stats;
 };
 
 void* LoopPrintStatus(void* args_ptr) {
@@ -209,18 +211,19 @@ void FuzzLoop(
       ctx.SetReplay(NULL);
     }
 
-    // this occurs *in* the traced process (after forking/*).
-    // If an exception occurs, these values are extracted and
-    // used to save crash information and update corpus stats
-    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, opts->max_depth);
-    tracee->SaveLastReplay(&mutated_replay);
-
     output.clear();
     build_rand.SnapshotClear();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules->Build(rule_idx, &ctx);
     });
+
+    // this occurs *in* the traced process (after forking/*).
+    // If an exception occurs, these values are extracted and
+    // used to save crash information and update corpus stats
+    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, opts->max_depth);
+    tracee->SaveLastReplay(&mutated_replay);
+
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
     });
@@ -248,34 +251,35 @@ bool HandleException(
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
-  pid_t pid,
-  int status,
-  resmack::fuzz::Tracer* tracer,
+  pid_t, // pid
+  int, // status
+  resmack::fuzz::Tracer*, // tracer
   resmack::fuzz::Tracee* tracee
 ) {
-  printf("Crash!\n");
   state->IncNumCrashes();
-  return true;
 
-  /*
   std::string output;
   // doesn't have to be the same one as before since we're doing a full,
   // unmodified replay
   resmack::Rand rand;
   resmack::Vector<resmack::RandSnapshot> snapshot;
   tracee->LoadLastReplay(&snapshot);
-  std::cout << "Crashed! Saved to disk. Restarting process" << std::endl;
 
-  resmack::BuildContext ctx(&output, &rand, tracee->GetLastCorpusMaxDepth());
+  resmack::BuildContext ctx(&output, &rand, tracee->GetLastMaxDepth());
   ctx.SetReplay(&snapshot);
 
   rules->Build(rule_idx, &ctx);
 
+  std::string filename = "crashes/crash.txt";
+  
   // TODO save output to a file!
+  std::ofstream file;
+  file.open(filename.c_str(), std::ofstream::out | std::ofstream::binary);
+  file << output;
+  file.close();
 
   // always restart the traced program
-  return true;
-  */
+  return false;
 }
 
 __attribute__((visibility("default")))
@@ -301,7 +305,7 @@ int main(int argc, char** argv) {
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
 
   resmack::fuzz::Coverage cov;
-  resmack::fuzz::NoopCoverage noop_cov;
+  //resmack::fuzz::NoopCoverage noop_cov;
   resmack::fuzz::states::MmapState mmap_state("/tmp/resmack.state");
   resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
 
@@ -313,7 +317,7 @@ int main(int argc, char** argv) {
     }
   );
 
-  int child_num;
+  size_t child_num;
   std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
   for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
     resmack::fuzz::Tracer* tracer = new resmack::fuzz::Tracer(
