@@ -1,10 +1,7 @@
 #ifndef RESMACK_FUZZ_TRACE_TARGET_H_
 #define RESMACK_FUZZ_TRACE_TARGET_H_
 
-#include "sys/ptrace.h"
-
-#include <functional>
-#include <utility>
+#include "resmack/fuzz/tracee.hpp"
 
 namespace resmack {
 namespace fuzz {

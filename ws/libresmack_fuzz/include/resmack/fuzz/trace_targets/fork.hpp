@@ -1,6 +1,9 @@
 #ifndef RESMACK_FUZZ_TRACE_FORK_H
 #define RESMACK_FUZZ_TRACE_FORK_H
 
+#include <functional>
+#include <utility>
+
 #include "resmack/fuzz/trace_target.hpp"
 
 namespace resmack {

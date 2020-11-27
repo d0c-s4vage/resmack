@@ -14,6 +14,7 @@ Fork::~Fork() {}
 pid_t Fork::Spawn(Tracee* tracee) {
   pid_t res;
   if ((res = fork()) == 0) {
+    ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     cb_(tracee);
     std::exit(0);
   }

@@ -16,6 +16,7 @@ struct StateStats {
 };
 
 class State {
+ public:
   virtual StateStats* GetStats() = 0;
   virtual void SyncStats(TargetStats* stats) = 0;
 

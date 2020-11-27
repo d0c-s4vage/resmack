@@ -5,10 +5,9 @@
 #include <set>
 #include <ctime>
 #include <ratio>
-#include "getopt.h"
+#include <getopt.h>
+#include <pthread.h>
 
-#include "resmack/fuzz/feedback.hpp"
-#include "resmack/fuzz/state.hpp"
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
 #include "resmack/rand.hpp"
@@ -20,14 +19,17 @@
 #include "resmack/items/ref.hpp"
 #include "resmack/items/and.hpp"
 
+#include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/external.hpp"
-#include "resmack/fuzz/mutate.hpp"
-#include "resmack/fuzz/targets/direct.hpp"
+#include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 #include "resmack/fuzz/feedbacks/noop.hpp"
+#include "resmack/fuzz/mutate.hpp"
+#include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
-#include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/targets/direct.hpp"
 #include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/trace_targets/fork.hpp"
 
 extern "C" int __lsan_is_turned_off() { return 1; }
 
@@ -96,7 +98,14 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
     return true;
 }
 
-void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
+struct LoopPrintStatusArgs {
+  resmack::fuzz::states::MmapState* state;
+  bool show_stats;
+};
+
+void LoopPrintStatus(LoopPrintStatusArgs* args) {
+  resmack::fuzz::states::MmapState* state = args->state;
+  bool show_stats = args->show_stats;
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   std::chrono::high_resolution_clock::time_point end;
   uint64_t start_iters = state->GetNumIterations();
@@ -140,11 +149,13 @@ void LoopPrintStatus(resmack::fuzz::states::MmapState* state, bool show_stats) {
 }
 
 void FuzzLoop(
+  size_t rule_idx,
+  resmack::Rules* rules,
   resmack::fuzz::Feedback* feedback,
   resmack::fuzz::State* state,
   resmack::fuzz::Corpus* corpus,
   FuzzOptions* opts,
-  resmack::fuzz::Tracer* tracee,
+  resmack::fuzz::Tracee* tracee
 ) {
   resmack::Rand meta_rand;
   resmack::Rand build_rand(meta_rand.Next());
@@ -163,8 +174,8 @@ void FuzzLoop(
   while (true) {
     counts++;
     if ((counts % opts->stats_interval) == 0) {
-      state.IncNumIterations(opts->stats_interval);
-      state.SyncStats(&stats);
+      state->IncNumIterations(opts->stats_interval);
+      state->SyncStats(&stats);
       stats.Clear();
     }
     stats.Tick();
@@ -175,10 +186,10 @@ void FuzzLoop(
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-        replay = corpus->GetItem(&meta_rand, &last_corpus_idx);
+        replay = corpus->GetItem(&meta_rand);
       });
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
-        mutator->Mutate(&meta_rand, replay, &mutated_replay);
+        resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
       });
       ctx.SetReplay(&mutated_replay);
     } else {
@@ -195,7 +206,7 @@ void FuzzLoop(
     build_rand.SnapshotClear();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
-      rules.Build(rule_idx, &ctx);
+      rules->Build(rule_idx, &ctx);
     });
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
@@ -203,15 +214,15 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
     });
-    size_t cov_key = feedback.GetStats().key;
+    size_t cov_key = feedback->GetStats().key;
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
-        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << cov.GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
 
-    if (stats->crashed) {
+    if (stats.crashed) {
       state->IncNumCrashes();
       std::cout << "CRASH! with " << output << " and " << state->GetNumIterations() << " iters" << std::endl;
     }
@@ -251,33 +262,35 @@ __attribute__((visibility("default"))) int main(int argc, char** argv) {
   resmack::fuzz::Coverage cov;
   resmack::fuzz::NoopCoverage noop_cov;
   resmack::fuzz::states::MmapState mmap_state("/tmp/resmack.state");
-  resmack::fuzz::mutators::BasicRandMutator rand_mutator;
 
   resmack::fuzz::Feedback* feedback = &cov;
-  resmack::fuzz::State* state = &state;
-  resmack::fuzz::Corpus* corpus = state.GetCorpus();
-  resmack::fuzz::Mutator* mutator = &rand_mutator;
+  resmack::fuzz::State* state = &mmap_state;
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
 
   bool is_main_proc = true;
 
-  resmack::fuzz::trace_targets::ForkTarget trace_target(
-    [feedback, state, corpus, mutator](resmack::fuzz::Trace* tracee) {
-      FuzzLoop(feedback, state, corpus, mutator, tracee);
+  resmack::fuzz::trace_targets::Fork trace_target(
+    [rule_idx, rules, feedback, state, corpus, cov, opts](resmack::fuzz::Tracee* tracee) {
+      FuzzLoop(rule_idx, &rules, feedback, state, corpus, &opts, tracee);
     }
   );
 
-  resmack::Vector<resmack::fuzz::Trace*> tracees;
+  resmack::Vector<resmack::fuzz::Trace*> traces;
 
   int child_num;
   std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
   for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
     resmack::fuzz::Trace* tracee = new resmack::fuzz::Trace(&trace_target);
-    tracees.emplace(tracee);
+    traces.emplace(tracee);
   }
 
+  pthread_t status_thread;
+  LoopPrintStatusArgs status_args {
+    .state = &mmap_state,
+    .show_stats = opts.show_stats
+  };
   if (is_main_proc) {
-    // TODO do this in a separate thread
-    LoopPrintStatus(&state, opts.show_stats);
+    pthread_create(&status_thread, NULL, LoopPrintStatus, (void*)&status_args);
   }
 
   HandleTracees(&tracees);
