@@ -33,6 +33,7 @@ using TraceExceptionCb =
   std::function<bool(pid_t pid, int status, Tracer*, Tracee*)>;
 
 struct CrashInfo {
+  bool crashed;
   int signal;
 };
 
@@ -51,11 +52,6 @@ class Tracer {
   Tracer(TraceTarget* target, TraceExceptionCb cb);
   ~Tracer();
 
-  // target does whatever it needs to do to return a pid_t and set whether
-  // it should be attached or if it's good to go. The target is run in a
-  // separate thread, calling the call back when an exception has occurred.
-  //
-  // **NOTE** The callback must be thread-safe!
   void Trace();
   void Stop();
   void Join();

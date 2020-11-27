@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
@@ -34,9 +35,11 @@ Tracee::Tracee() {
   this->shared_last_used_corpus = (uint32_t*)this->shared;
   this->shared_last_corpus_index =
     (size_t*)(this->shared_last_used_corpus + sizeof(uint32_t));
+  this->shared_last_max_depth =
+    (size_t*)(this->shared_last_corpus_index + sizeof(size_t));
 
   this->shared_last_gen_state =
-    (ser::GenStateHeader*)(this->shared_last_corpus_index + sizeof(size_t));
+    (ser::GenStateHeader*)(this->shared_last_max_depth + sizeof(size_t));
 }
 
 Tracee::~Tracee() {
@@ -45,9 +48,14 @@ Tracee::~Tracee() {
   this->shared_last_gen_state = NULL;
 }
 
-void Tracee::SaveLastCorpusIndex(bool used_corpus, size_t last_corpus_idx) {
+void Tracee::SaveLastCorpusInfo(
+  bool used_corpus,
+  size_t last_corpus_idx,
+  size_t max_depth
+) {
   *this->shared_last_used_corpus = (uint32_t)used_corpus;
   *this->shared_last_corpus_index = last_corpus_idx;
+  *this->shared_last_max_depth = max_depth;
 }
 
 void Tracee::SaveLastReplay(Vector<RandSnapshot>* replay) {

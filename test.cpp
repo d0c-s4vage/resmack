@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <bits/stdint-uintn.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <iostream>
 #include <vector>
 #include <set>
@@ -90,7 +91,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    return true;
+    raise(SIGSEGV);
   }
 
   return false;

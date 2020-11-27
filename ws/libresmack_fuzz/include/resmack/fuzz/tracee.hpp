@@ -20,6 +20,7 @@ class Tracee {
   // we don't need semaphores to guard these since they are ony ever written to
   // when the tracee is running, and only read when the tracee is paused
   size_t* shared_last_corpus_index;
+  size_t* shared_last_max_depth;
   // boolean, uint32_t to help remember to align on 4-byte boundaries
   uint32_t* shared_last_used_corpus; 
   ser::GenStateHeader* shared_last_gen_state;
@@ -28,8 +29,9 @@ class Tracee {
   Tracee();
   ~Tracee();
 
-  void SaveLastCorpusIndex(bool used_corpus, size_t last_corpus_idx);
+  void SaveLastCorpusInfo(bool used_corpus, size_t last_corpus_idx, size_t max_depth);
   size_t GetLastCorpusIndex() { return *this->shared_last_corpus_index; }
+  size_t GetLastMaxDepth() { return *this->shared_last_max_depth; }
   bool GetLastUsedCorpus() { return (bool)*this->shared_last_used_corpus; }
 
   void SaveLastReplay(Vector<RandSnapshot>* replay);
