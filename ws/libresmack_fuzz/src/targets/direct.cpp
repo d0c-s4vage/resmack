@@ -33,8 +33,7 @@ namespace fuzz {
     });
 
     RECORD_STAT(stats, SampleTypes::TARGET, {
-      size_t res = EF.LLVMFuzzerTestOneInput((const uint8_t*)output->c_str(), output->size());
-      stats->crashed = res == 1;
+      EF.LLVMFuzzerTestOneInput((const uint8_t*)output->data(), output->size());
     });
 
     RECORD_STAT(stats, SampleTypes::FEEDBACK, {

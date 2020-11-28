@@ -41,11 +41,11 @@ namespace resmack {
   /**
    * Return true if the rule was successfully built
    */
-  bool Rules::Build(std::string rule_name, std::string *output, Rand *rand) {
+  bool Rules::Build(std::string rule_name, std::string* output, Rand* rand) {
     return this->Build(rule_name, output, rand, 10);
   }
 
-  bool Rules::Build(std::string rule_name, std::string *output, Rand *rand, size_t max_depth) {
+  bool Rules::Build(std::string rule_name, std::string* output, Rand* rand, size_t max_depth) {
     size_t rule_idx;
     if (!this->rule_man_.IndexOf(rule_name, &rule_idx)) {
       return false;
@@ -53,16 +53,16 @@ namespace resmack {
     return this->Build(rule_idx, output, rand, max_depth);
   }
 
-  bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand) {
+  bool Rules::Build(size_t rule_idx, std::string* output, Rand* rand) {
     return this->Build(rule_idx, output, rand, 10);
   }
 
-  bool Rules::Build(size_t rule_idx, std::string *output, Rand *rand, size_t max_depth) {
+  bool Rules::Build(size_t rule_idx, std::string* output, Rand* rand, size_t max_depth) {
     BuildContext ctx(output, rand, max_depth);
     return this->Build(rule_idx, &ctx);
   }
 
-  bool Rules::Build(size_t rule_idx, BuildContext *ctx) {
+  bool Rules::Build(size_t rule_idx, BuildContext* ctx) {
     if (!this->finalized_) {
       this->Finalize();
     }

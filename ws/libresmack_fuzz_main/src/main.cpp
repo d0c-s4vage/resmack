@@ -189,21 +189,22 @@ bool FuzzLoop(
   FuzzOptions* opts,
   resmack::fuzz::Tracee* tracee
 ) {
-  resmack::Rand meta_rand;
-  resmack::Rand build_rand(meta_rand.Next());
-  build_rand.SetShouldRecord(true);
+  resmack::Rand* meta_rand = new resmack::Rand();;
+  resmack::Rand* build_rand = new resmack::Rand(meta_rand->Next());
+  build_rand->SetShouldRecord(true);
 
   std::string output;
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats(opts->stats_interval);
-  resmack::BuildContext ctx(&output, &build_rand, opts->max_depth);
+  resmack::BuildContext ctx(&output, build_rand, opts->max_depth);
 
-  resmack::Vector<resmack::RandSnapshot> mutated_replay;
+  resmack::Vector<resmack::RandSnapshot> *mutated_replay =
+    new resmack::Vector<resmack::RandSnapshot>();
 
   size_t counts = 0;
-  while (opts->max_iters == 0 || state->GetNumIterations() <= opts->max_iters) {
+  while (opts->max_iters == 0 || state->GetNumIterations() < opts->max_iters) {
     counts++;
     if ((counts % opts->stats_interval) == 0) {
       state->IncNumIterations(opts->stats_interval);
@@ -214,22 +215,22 @@ bool FuzzLoop(
 
     size_t last_corpus_idx = 0;
     bool used_corpus = false;
-    if (corpus->NumItems() > 0 && meta_rand.Maybe()) {
+    if (corpus->NumItems() > 0 && meta_rand->Maybe()) {
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-        replay = corpus->GetItem(&meta_rand);
+        replay = corpus->GetItem(meta_rand);
       });
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
-        resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
+        resmack::fuzz::MutateRandSnapshot(meta_rand, replay, mutated_replay);
       });
-      ctx.SetReplay(&mutated_replay);
+      ctx.SetReplay(mutated_replay);
     } else {
       ctx.SetReplay(NULL);
     }
 
     output.clear();
-    build_rand.SnapshotClear();
+    build_rand->SnapshotClear();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules->Build(rule_idx, &ctx);
@@ -239,7 +240,7 @@ bool FuzzLoop(
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats
     tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, opts->max_depth);
-    tracee->SaveLastReplay(&mutated_replay);
+    tracee->SaveLastReplay(mutated_replay);
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
@@ -250,11 +251,15 @@ bool FuzzLoop(
     size_t cov_key = feedback->GetStats().key;
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-      if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), cov_key)) {
+      if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
         //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
+
+  delete meta_rand;
+  delete build_rand;
+  delete mutated_replay;
 }
 
 bool HandleException(
@@ -282,7 +287,6 @@ bool HandleException(
 
   std::string filename = "crashes/crash.txt";
   
-  // TODO save output to a file!
   std::ofstream file;
   file.open(filename.c_str(), std::ofstream::out | std::ofstream::binary);
   file << output;

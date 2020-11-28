@@ -23,7 +23,7 @@ namespace items {
     ~Raw();
 
     ItemType Type();
-    void Build(BuildContext *ctx);
+    void Build(BuildContext* ctx);
     std::string ToString();
   };
 

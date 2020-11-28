@@ -8,7 +8,7 @@ namespace fuzz {
 
 class Corpus {
  public:
-  virtual void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) = 0;
+  virtual void AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) = 0;
   virtual Vector<RandSnapshot>* GetItem(Rand* rand) = 0;
   /**
    * Intended to be called on intervals to do "processing" (whatever that means
@@ -18,7 +18,7 @@ class Corpus {
   virtual size_t NumItems() = 0;
   virtual bool SeenFeedback(size_t key) = 0;
   virtual bool AddRandSnapshotIfNotSeen(
-    resmack::Vector<RandSnapshot>* snapshot,
+    const resmack::Vector<RandSnapshot>* snapshot,
     size_t key
   ) = 0;
 };

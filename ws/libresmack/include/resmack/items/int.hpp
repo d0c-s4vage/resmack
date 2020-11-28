@@ -23,7 +23,7 @@ namespace items {
     ~Int();
 
     ItemType Type();
-    void Build(BuildContext *ctx);
+    void Build(BuildContext* ctx);
   };
 
 }
