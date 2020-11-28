@@ -30,6 +30,7 @@ namespace resmack {
     bool did_replay;
 
     BuildContext(std::string* output, Rand* rand, size_t max_depth);
+    ~BuildContext();
 
     // reset replay and other state fields
     void SetReplay(Vector<RandSnapshot>* replay);

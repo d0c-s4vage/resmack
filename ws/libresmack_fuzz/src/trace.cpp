@@ -54,6 +54,13 @@ void* Tracer::MonitorTracee(void* this_arg) {
       );
     }
 
+    // exited normally - which should only occur if the FuzzLoop itself exited
+    // normally. For example, when --max-iters is set and the maximum number
+    // of iterations has been achieved
+    if (WIFEXITED(status)) {
+      break;
+    }
+
     // ignore resize signals
     if (crash_sig == SIGWINCH) {
       ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);

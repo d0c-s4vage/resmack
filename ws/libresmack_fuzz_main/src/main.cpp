@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <chrono>
 #include <cstddef>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -54,6 +55,7 @@ void PrintHelp(char* prog_name) {
   std::cout << "          --help, -h            Show this help message" << std::endl;
   std::cout << "        --nprocs, -n NPROCS     Number of times to fork" << std::endl;
   std::cout << "     --max-depth, -d MAX_DEPTH  Maximum grammar depth during recursion" << std::endl;
+  std::cout << "     --max-iters, -m MAX_ITERS  Maximum number of iterations" << std::endl;
   std::cout << "    --show-stats, -s            Show stat percentages" << std::endl;
   std::cout << "--stats-interval, -i INTERVAL   Collect stats on every Nth iteration" << std::endl;
   std::cout << std::endl;
@@ -65,6 +67,7 @@ struct FuzzOptions {
   int help;
   size_t nprocs;
   size_t max_depth;
+  size_t max_iters;
   int show_stats;
   size_t stats_interval;
 };
@@ -74,6 +77,7 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
       { "help", no_argument, &opts->help, 'h' },
       { "show-stats", no_argument, &opts->show_stats, 's' },
       { "max-depth", optional_argument, 0, 'd' },
+      { "max-iters", optional_argument, 0, 'm' },
       { "nprocs", optional_argument, 0, 'n' },
       { "stats-interval", optional_argument, 0, 'i' },
       { 0, 0, 0, 0 },
@@ -81,7 +85,7 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:i:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:m:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -96,7 +100,10 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
           opts->show_stats = true;
           break;
         case 'd':
-          opts->max_depth = atoi(optarg);
+          opts->max_depth = strtoull(optarg, NULL, 10);
+          break;
+        case 'm':
+          opts->max_iters = strtoull(optarg, NULL, 10);
           break;
         case 'n':
           opts->nprocs = atoi(optarg);
@@ -113,6 +120,7 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
   int show_stats;
+  bool should_run;
 };
 
 void* LoopPrintStatus(void* args_ptr) {
@@ -127,7 +135,16 @@ void* LoopPrintStatus(void* args_ptr) {
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   while (true) {
-    sleep(sleep_amt++);
+    sleep_amt++;
+    for (int i = 0; i < sleep_amt; i++) {
+      if (!args->should_run) {
+        return NULL;
+      }
+      sleep(1);
+    }
+    if (!args->should_run) {
+      return NULL;
+    }
     corpus->Sync();
 
     end = std::chrono::high_resolution_clock::now();
@@ -163,7 +180,7 @@ void* LoopPrintStatus(void* args_ptr) {
   return NULL;
 }
 
-void FuzzLoop(
+bool FuzzLoop(
   size_t rule_idx,
   resmack::Rules* rules,
   resmack::fuzz::Feedback* feedback,
@@ -186,7 +203,7 @@ void FuzzLoop(
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
   size_t counts = 0;
-  while (true) {
+  while (opts->max_iters == 0 || state->GetNumIterations() <= opts->max_iters) {
     counts++;
     if ((counts % opts->stats_interval) == 0) {
       state->IncNumIterations(opts->stats_interval);
@@ -237,13 +254,6 @@ void FuzzLoop(
         //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
-
-    /*
-    if (stats.crashed) {
-      state->IncNumCrashes();
-      std::cout << "CRASH! with " << output << " and " << state->GetNumIterations() << " iters" << std::endl;
-    }
-    */
   }
 }
 
@@ -288,6 +298,7 @@ int main(int argc, char** argv) {
     .help = false,
     .nprocs = 1,
     .max_depth = 10,
+    .max_iters = 0,
     .show_stats = false,
     .stats_interval = 0x1000,
   };
@@ -338,7 +349,8 @@ int main(int argc, char** argv) {
   pthread_t status_thread;
   LoopPrintStatusArgs status_args {
     .state = &mmap_state,
-    .show_stats = opts.show_stats
+    .show_stats = opts.show_stats,
+    .should_run = true,
   };
   if (is_main_proc) {
     pthread_create(&status_thread, NULL, LoopPrintStatus, (void*)&status_args);
@@ -347,4 +359,7 @@ int main(int argc, char** argv) {
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
   }
+
+  status_args.should_run = false;
+  pthread_join(status_thread, NULL);
 }
