@@ -76,10 +76,10 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
     static struct option long_options[] = {
       { "help", no_argument, &opts->help, 'h' },
       { "show-stats", no_argument, &opts->show_stats, 's' },
-      { "max-depth", optional_argument, 0, 'd' },
-      { "max-iters", optional_argument, 0, 'm' },
-      { "nprocs", optional_argument, 0, 'n' },
-      { "stats-interval", optional_argument, 0, 'i' },
+      { "max-depth", required_argument, 0, 'd' },
+      { "max-iters", required_argument, 0, 'm' },
+      { "nprocs", required_argument, 0, 'n' },
+      { "stats-interval", required_argument, 0, 'i' },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
