@@ -303,14 +303,16 @@ bool HandleException(
   out_path += "/";
   out_path += info->minor_hash;
 
-  state->IncNumCrashesIfTrue([out_path]() -> bool {
-    return !std::filesystem::exists(out_path);
+  state->IncNumCrashesIfTrue([out_path, output]() -> bool {
+    if (!std::filesystem::exists(out_path)) {
+      std::ofstream file;
+      file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
+      file << output;
+      file.close();
+    } else {
+      return false;
+    }
   });
-  
-  std::ofstream file;
-  file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
-  file << output;
-  file.close();
 
   // always restart the traced program
   return true;

@@ -23,7 +23,7 @@ namespace fuzz {
     rand.SnapshotState(0, 0);
 
     Vector<RandSnapshot> new_state_tree;
-    Vector<RandSnapshot>* orig_state_tree = rand.GetSnapshots();
+    const Vector<RandSnapshot>* orig_state_tree = rand.GetSnapshots();
     uint32_t tmp_state[4] = { 0, 1, 2, 3};
 
     size_t tests[][2] = {
@@ -39,9 +39,9 @@ namespace fuzz {
       size_t returned_idx = test[1];
       new_state_tree.clear();
       size_t res_idx = CascadeMutatedState(tmp_state,
-                                           &(*orig_state_tree)[cascade_idx],
+                                           (const RandSnapshot*)&(*orig_state_tree)[cascade_idx],
                                            cascade_idx,
-                                           orig_state_tree,
+                                           (const Vector<RandSnapshot>*)orig_state_tree,
                                            &new_state_tree);
       EXPECT_EQ(res_idx, returned_idx);
     }

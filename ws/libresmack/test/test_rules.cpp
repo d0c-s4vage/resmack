@@ -34,14 +34,17 @@ namespace items {
 
     rules.Build(rule_idx, &ctx);
 
-    Vector<RandSnapshot> replay(*rand.GetSnapshots());
+    Vector<RandSnapshot> replay;
+    for (auto& item: *rand.GetSnapshots()) {
+      replay.emplace_back(item.ref_depth, item.rule_idx, item.state);
+    }
     RandSnapshot* snap = &replay[0];
     snap->state[0] = 0u;
     snap->state[1] = 1u;
     snap->state[2] = 2u;
     snap->state[3] = 3u;
 
-    Vector<RandSnapshot>* orig = rand.GetSnapshots();
+    const Vector<RandSnapshot>* orig = rand.GetSnapshots();
     EXPECT_NE(0u, (*orig)[0].state[0]);
     EXPECT_NE(1u, (*orig)[0].state[1]);
     EXPECT_NE(2u, (*orig)[0].state[2]);

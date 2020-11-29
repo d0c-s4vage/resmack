@@ -21,7 +21,7 @@ namespace fuzz {
 
     pid_t pid;
     if ((pid = fork()) == 0) {
-      t.SaveLastCorpusIndex(true, 555);
+      t.SaveLastCorpusInfo(true, 555, 444);
       t.SaveLastReplay(&snapshots);
       std::exit(0);
     } else {
@@ -30,6 +30,7 @@ namespace fuzz {
     }
 
     EXPECT_EQ(t.GetLastCorpusIndex(), 555u);
+    EXPECT_EQ(t.GetLastMaxDepth(), 444u);
     EXPECT_EQ(t.GetLastUsedCorpus(), true);
 
     snapshots.clear();

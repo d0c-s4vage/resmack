@@ -19,4 +19,7 @@ target_link_libraries(test_${PROJECT_NAME}
   libresmack_fuzz
   ${GTEST_LIB_DIR}/libgtest.a
   pthread
+  crypto
+  unwind-ptrace
+  unwind-generic
 )

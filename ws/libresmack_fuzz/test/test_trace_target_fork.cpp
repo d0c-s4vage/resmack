@@ -14,7 +14,7 @@ namespace fuzz {
   TEST(TraceTargetFork, ForksCorrectly) {
     Tracee t;
     trace_targets::Fork fork_target([](Tracee* tracee) {
-      tracee->SaveLastCorpusIndex(true, 99999);
+      tracee->SaveLastCorpusInfo(true, 99999, 88888);
     });
 
     pid_t pid = fork_target.Spawn(&t);
@@ -26,6 +26,7 @@ namespace fuzz {
     waitpid(pid, &status, 0);
 
     EXPECT_EQ(t.GetLastCorpusIndex(), 99999u);
+    EXPECT_EQ(t.GetLastMaxDepth(), 88888u);
     EXPECT_EQ(t.GetLastUsedCorpus(), true);
   }
 

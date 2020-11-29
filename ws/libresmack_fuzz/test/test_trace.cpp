@@ -14,7 +14,7 @@ namespace fuzz {
 
   TEST(Trace, CatchesCrashes) {
     trace_targets::Fork fork_target([](Tracee* tracee) {
-      tracee->SaveLastCorpusIndex(true, 1337);
+      tracee->SaveLastCorpusInfo(true, 1337, 1338);
       raise(SIGSEGV);
     });
 

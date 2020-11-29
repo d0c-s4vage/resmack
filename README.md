@@ -1,5 +1,20 @@
 # RESMACK
 
+## Dependencies
+
+Clone this repository with:
+
+```
+git clone PATH_TO_THIS_REPO
+git submodule init
+git submodule update
+```
+
+Additionally, the following must be installed on the system:
+
+* libssl, libssl-dev (`openssh/sha.h`, links against `-lcrypto`)
+* libunwind, libunwind-dev (usually already exists)
+
 ## Structure
 
 Resmack is separated into separate sub-projects for each distinct piece of
