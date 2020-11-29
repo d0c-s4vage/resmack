@@ -86,9 +86,13 @@ namespace compile {
 
     std::vector<const char *> options({
       "clang++",
+      "-Iws/libresmack/include",
       "-Ofast",
       "-march=native",
       "-lpthread",
+      "-lcrypto",
+      "-lunwind-ptrace",
+      "-lunwind-generic",
       "-fsanitize-coverage=trace-pc-guard",
       //"-fsanitize=address",
     });

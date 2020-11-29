@@ -90,7 +90,8 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    raise(SIGSEGV);
+    ((void(*)())(0))();
+    //raise(SIGSEGV);
   }
 
   return false;

@@ -272,7 +272,7 @@ bool HandleException(
   size_t rule_idx,
   pid_t, // pid
   int, // status
-  resmack::fuzz::Tracer*, // tracer
+  resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
   state->IncNumCrashes();

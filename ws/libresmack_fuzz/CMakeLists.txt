@@ -34,6 +34,11 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
 
 add_library(${RESMACK_FUZZ_LIB} STATIC ${LIBRESMACK_FUZZ_SOURCES})
+
+#add_library(unwind STATIC IMPORTED GLOBAL)
+#find_library(unwind-generic libunwind-generic.a STATIC)
+#find_library(unwind-ptrace libunwind-ptrace.a STATIC)
+
 target_link_libraries(${RESMACK_FUZZ_LIB} libresmack)
 set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
 

@@ -35,6 +35,10 @@ using TraceExceptionCb =
 struct CrashInfo {
   bool crashed;
   int signal;
+  // last 5 frames
+  size_t major_hash;
+  // all frames
+  size_t minor_hash;
 };
 
 class Tracer {
@@ -58,6 +62,9 @@ class Tracer {
   CrashInfo* GetCrashInfo() { return &this->last_crash; }
  
   static void* MonitorTracee(void* this_arg);
+ 
+ private:
+  void CalcHashes(size_t* major_hash, size_t* minor_hash);
 };
 
 /*

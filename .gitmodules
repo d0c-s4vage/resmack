@@ -2,3 +2,6 @@
 	path = ws/libresmack/libs/fmt
 	url = https://github.com/fmtlib/fmt.git
     shallow = true
+[submodule "ws/libresmack_fuzz/libs/libunwind"]
+	path = ws/libresmack_fuzz/libs/libunwind
+	url = https://github.com/libunwind/libunwind

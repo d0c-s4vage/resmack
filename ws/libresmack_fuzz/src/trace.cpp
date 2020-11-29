@@ -1,10 +1,14 @@
+#include <cstring>
+#include <cxxabi.h>
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
+#include <libunwind-ptrace.h>
 #include <pthread.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <openssl/sha.h>
 
 #include "resmack/fuzz/trace.hpp"
 
@@ -55,6 +59,12 @@ void* Tracer::MonitorTracee(void* this_arg) {
       this_->last_crash.crashed = (
         crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS
       );
+      if (this_->last_crash.crashed) {
+        this_->CalcHashes(
+          &this_->last_crash.major_hash,
+          &this_->last_crash.minor_hash
+        );
+      }
     }
 
     // exited normally - which should only occur if the FuzzLoop itself exited
@@ -86,6 +96,66 @@ void* Tracer::MonitorTracee(void* this_arg) {
   this_->Stop();
   pthread_exit(NULL);
   return NULL;
+}
+
+// https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
+void Tracer::CalcHashes(size_t* major_hash, size_t* minor_hash) {
+  unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
+
+	void *context = _UPT_create(this->traced_pid);
+	unw_cursor_t cursor;
+	if (unw_init_remote(&cursor, as, context) != 0) {
+    std::cout << "Couldn't initialize cursor for remote unwinding" << std::endl;
+    _UPT_destroy(context);
+    return;
+  }
+
+  std::string stack = "";
+
+  char sym[4096];
+	do {
+		unw_word_t offset;
+    unw_word_t pc;
+    std::string frame_loc = "";
+
+		if (unw_get_reg(&cursor, UNW_REG_IP, &pc)) {
+      std::cout << "Could not read program counter" << std::endl;
+      _UPT_destroy(context);
+      return;
+    }
+
+		if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+      int status;
+      size_t demangled_size;
+      char* demangled = abi::__cxa_demangle(sym, NULL, &demangled_size, &status);
+      if (demangled != NULL) {
+        snprintf(sym, sizeof(sym), "%s+0x%lx", demangled, offset);
+        free(demangled);
+      } else {
+        snprintf(sym + strlen(sym), sizeof(sym) - strlen(sym), "+0x%lx", offset);
+      }
+      if (stack.size() > 0) { stack += "\n"; }
+      stack += sym;
+
+      if (strstr(sym, "LLVMFuzzerTestOneInput") != NULL) {
+        break;
+      }
+    } else {
+      stack += "??";
+    }
+	} while (unw_step(&cursor) > 0);
+
+	_UPT_destroy(context);
+
+  std::cout << "STACK:" << std::endl << stack << std::endl;
+  unsigned char digest[SHA_DIGEST_LENGTH];
+  SHA1((unsigned char *)stack.data(), stack.size(), (unsigned char *)digest);
+
+  char hex_digest[(SHA_DIGEST_LENGTH * 2) + 1];
+  for (size_t i = 0; i < SHA_DIGEST_LENGTH; i++) {
+    snprintf(hex_digest + (i * 2), 4, "%02x", digest[i]);
+  }
+  std::cout << "DIGEST: " << hex_digest << std::endl;
 }
 
 }
