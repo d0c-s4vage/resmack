@@ -12,10 +12,10 @@ namespace resmack {
 namespace fuzz {
 
 Tracer::Tracer(TraceTarget* target, TraceExceptionCb cb) :
+  tracee(),
   target(target),
   traced_pid(-1),
-  exception_cb(cb),
-  tracee()
+  exception_cb(cb)
 {}
 Tracer::~Tracer() {}
 

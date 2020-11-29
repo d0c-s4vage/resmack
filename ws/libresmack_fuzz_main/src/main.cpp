@@ -40,7 +40,7 @@ extern "C" int __lsan_is_turned_off() { return 1; }
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 
 void sigint_handler(int signum) {
-  std::cout << "\n\nCaught signal on main process, terminating fuzzing procs" << std::endl;
+  std::cout << "\n\nCaught signal " << signum << " on main process, terminating fuzzing procs" << std::endl;
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Stop();
   }
@@ -180,7 +180,7 @@ void* LoopPrintStatus(void* args_ptr) {
   return NULL;
 }
 
-bool FuzzLoop(
+void FuzzLoop(
   size_t rule_idx,
   resmack::Rules* rules,
   resmack::fuzz::Feedback* feedback,
