@@ -1,16 +1,17 @@
-#include <getopt.h>
-#include <pthread.h>
-#include <signal.h>
 #include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <ctime>
+#include <ctype.h>
 #include <fstream>
+#include <getopt.h>
 #include <iostream>
+#include <openssl/sha.h>
+#include <pthread.h>
 #include <ratio>
 #include <set>
+#include <signal.h>
 #include <string>
-#include <openssl/sha.h>
 
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
@@ -40,7 +41,10 @@ extern "C" int __lsan_is_turned_off() { return 1; }
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 
 void sigint_handler(int signum) {
-  std::cout << "\n\nCaught signal " << signum << " on main process, terminating fuzzing procs" << std::endl;
+  printf(
+    "\nCaught signal %d on main process, terminating fuzzing procs\n",
+    signum
+  );
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Stop();
   }
