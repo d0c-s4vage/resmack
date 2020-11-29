@@ -35,10 +35,12 @@ using TraceExceptionCb =
 struct CrashInfo {
   bool crashed;
   int signal;
+  std::string major_stack;
+  std::string minor_stack;
   // last 5 frames
-  size_t major_hash;
+  char major_hash[41];
   // all frames
-  size_t minor_hash;
+  char minor_hash[41];
 };
 
 class Tracer {
@@ -64,7 +66,7 @@ class Tracer {
   static void* MonitorTracee(void* this_arg);
  
  private:
-  void CalcHashes(size_t* major_hash, size_t* minor_hash);
+  void CalcHashes();
 };
 
 /*

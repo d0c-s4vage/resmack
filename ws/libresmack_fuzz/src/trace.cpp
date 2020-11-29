@@ -12,6 +12,8 @@
 
 #include "resmack/fuzz/trace.hpp"
 
+#include "utils.hpp"
+
 namespace resmack {
 namespace fuzz {
 
@@ -31,6 +33,9 @@ void Tracer::Trace() {
 void Tracer::Stop() {
   this->should_run = false;
   ptrace(PTRACE_DETACH, this->traced_pid, NULL, NULL);
+  if (this->traced_pid == -1) {
+    return;
+  }
   kill(this->traced_pid, SIGKILL);
 }
 
@@ -60,10 +65,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
         crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS
       );
       if (this_->last_crash.crashed) {
-        this_->CalcHashes(
-          &this_->last_crash.major_hash,
-          &this_->last_crash.minor_hash
-        );
+        this_->CalcHashes();
       }
     }
 
@@ -99,7 +101,10 @@ void* Tracer::MonitorTracee(void* this_arg) {
 }
 
 // https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
-void Tracer::CalcHashes(size_t* major_hash, size_t* minor_hash) {
+void Tracer::CalcHashes() {
+  this->last_crash.major_stack.clear();
+  this->last_crash.minor_stack.clear();
+
   unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
 
 	void *context = _UPT_create(this->traced_pid);
@@ -110,13 +115,17 @@ void Tracer::CalcHashes(size_t* major_hash, size_t* minor_hash) {
     return;
   }
 
-  std::string stack = "";
+  // last five frames
+  std::string* major_stack = &this->last_crash.major_stack;
+  // all frames
+  std::string* minor_stack = &this->last_crash.minor_stack;
 
   char sym[4096];
+  size_t count = 0;
 	do {
+    count++;
 		unw_word_t offset;
     unw_word_t pc;
-    std::string frame_loc = "";
 
 		if (unw_get_reg(&cursor, UNW_REG_IP, &pc)) {
       std::cout << "Could not read program counter" << std::endl;
@@ -134,28 +143,27 @@ void Tracer::CalcHashes(size_t* major_hash, size_t* minor_hash) {
       } else {
         snprintf(sym + strlen(sym), sizeof(sym) - strlen(sym), "+0x%lx", offset);
       }
-      if (stack.size() > 0) { stack += "\n"; }
-      stack += sym;
 
-      if (strstr(sym, "LLVMFuzzerTestOneInput") != NULL) {
-        break;
-      }
     } else {
-      stack += "??";
+      snprintf(sym, sizeof(sym), "??");
+    }
+
+    if (count <= 5) {
+      if (count > 0) { *major_stack += "\n"; }
+      *major_stack += sym;
+    }
+    if (count > 0) { *minor_stack += "\n"; }
+    *minor_stack += sym;
+
+    if (strstr(sym, "LLVMFuzzerTestOneInput") != NULL) {
+      break;
     }
 	} while (unw_step(&cursor) > 0);
 
 	_UPT_destroy(context);
 
-  std::cout << "STACK:" << std::endl << stack << std::endl;
-  unsigned char digest[SHA_DIGEST_LENGTH];
-  SHA1((unsigned char *)stack.data(), stack.size(), (unsigned char *)digest);
-
-  char hex_digest[(SHA_DIGEST_LENGTH * 2) + 1];
-  for (size_t i = 0; i < SHA_DIGEST_LENGTH; i++) {
-    snprintf(hex_digest + (i * 2), 4, "%02x", digest[i]);
-  }
-  std::cout << "DIGEST: " << hex_digest << std::endl;
+  utils::sha1_hex(major_stack->data(), major_stack->size(), this->last_crash.major_hash);
+  utils::sha1_hex(minor_stack->data(), minor_stack->size(), this->last_crash.minor_hash);
 }
 
 }

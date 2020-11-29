@@ -1,20 +1,20 @@
 #ifndef RESMACK_FUZZ_MMAP_STATE_H
 #define RESMACK_FUZZ_MMAP_STATE_H
 
-#include "fcntl.h"
-#include "inttypes.h"
-#include "stdio.h"
-#include "sys/mman.h"
-#include "sys/stat.h"
-#include "semaphore.h"
-#include "unistd.h"
+#include <fcntl.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <bits/stdint-uintn.h>
 
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/target.hpp"
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
-#include <bits/stdint-uintn.h>
 
 namespace resmack {
 namespace fuzz {
@@ -60,10 +60,14 @@ class MmapState : public State {
   void IncNumIterations(uint64_t amt);
 
   uint64_t GetNumCrashes();
+  void IncNumCrashesIfTrue(UniqueCrashCb cb);
   void IncNumCrashes();
   void IncNumCrashes(uint64_t amt);
 
   Corpus* GetCorpus();
+
+  void SyncLockAcquire();
+  void SyncLockRelease();
 };
 
 }

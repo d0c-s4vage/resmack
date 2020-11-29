@@ -10,6 +10,8 @@
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
 
+#include "utils.hpp"
+
 namespace resmack {
 namespace fuzz {
 namespace states {
@@ -52,8 +54,11 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
   size_t meta_size = sizeof(StateMetadata);
   this->corpus.Init((void*)((char*)this->state_map + meta_size), state_max_size - meta_size);
 
-  //if ((this->state_lock = sem_open(this->state_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
-  if ((this->state_lock = sem_open("/ttest12345", O_CREAT, 0660, 1)) == SEM_FAILED) {
+  char sem_path[2 + (SHA_DIGEST_LENGTH * 2)]; // leading '/' + SHA_DIGEST_LENGTH + NULL
+  utils::sha1_hex(this->state_path, strlen(this->state_path), sem_path+1);
+  sem_path[0] = '/';
+
+  if ((this->state_lock = sem_open(sem_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
     perror("Could not create semaphore");
     std::exit(1);
   }
@@ -109,6 +114,13 @@ void MmapState::IncNumCrashes() {
 void MmapState::IncNumCrashes(uint64_t amt) {
   WITH_LOCK(this->state_lock, IncNumCrashes, {
     this->metadata->crashes += amt;
+  });
+}
+void MmapState::IncNumCrashesIfTrue(UniqueCrashCb cb) {
+  WITH_LOCK(this->state_lock, IncNumCrashesIfTrue, {
+    if (cb()) {
+      this->metadata->crashes += 1;
+    }
   });
 }
 
