@@ -32,7 +32,7 @@ namespace items {
     ~And();
 
     ItemType Type();
-    void Build(BuildContext *ctx);
+    void Build(BuildContext* ctx);
     And* AddItem(Item *item);
     /**
      * Add a variable number of items to this Or. NULL *MUST* be passed

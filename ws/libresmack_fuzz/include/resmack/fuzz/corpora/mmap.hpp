@@ -31,15 +31,16 @@ class MmapCorpus : public Corpus {
   ~MmapCorpus();
 
   void Init(void* corpus_map, size_t max_corpus_size);
-  void AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
-  void AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
-  bool AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
+  void AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
+  bool AddRandSnapshotIfNotSeen(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
   Vector<RandSnapshot>* GetItem(Rand* rand);
   void Sync();
-  void SyncInner();
-
   bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
   size_t NumItems() { return this->snapshots.size(); }
+
+ private:
+  void AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
+  void SyncInner();
 };
 
 }

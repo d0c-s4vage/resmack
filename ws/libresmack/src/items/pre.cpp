@@ -11,9 +11,9 @@ namespace items {
     return ItemType::PRE;
   }
 
-  void Pre::Build(BuildContext *ctx) {
+  void Pre::Build(BuildContext* ctx) {
     std::string tmp_pre_output;
-    std::string *orig_output = ctx->output;
+    std::string* orig_output = ctx->output;
 
     ctx->output = ctx->pre_output;
     ctx->pre_output = &tmp_pre_output;

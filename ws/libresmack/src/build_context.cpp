@@ -1,4 +1,5 @@
 #include <cstring>
+#include <exception>
 
 #include "resmack/build_context.hpp"
 #include "resmack/rand.hpp"
@@ -19,7 +20,12 @@ namespace resmack {
   {
   }
 
-  BuildContext::~BuildContext() {}
+  BuildContext::~BuildContext() {
+    this->output = NULL;
+    this->replay = NULL;
+    this->output = NULL;
+    this->rand = NULL;
+  }
 
   void BuildContext::SetReplay(Vector<RandSnapshot>* replay) {
     this->replay = replay;

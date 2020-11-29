@@ -34,7 +34,7 @@ class Str: public resmack::Item {
   ~Str();
 
   ItemType Type();
-  void Build(BuildContext *ctx);
+  void Build(BuildContext* ctx);
 };
 
 }

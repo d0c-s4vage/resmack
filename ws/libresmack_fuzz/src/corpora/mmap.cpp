@@ -17,7 +17,8 @@ MmapCorpus::MmapCorpus() :
 {
 }
 
-MmapCorpus::~MmapCorpus() {}
+MmapCorpus::~MmapCorpus() {
+}
 
 void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
   this->corpus_map = corpus_map;
@@ -35,7 +36,7 @@ void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
   this->Sync();
 }
 
-bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+bool MmapCorpus::AddRandSnapshotIfNotSeen(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   bool res = true;
   if (this->SeenFeedback(feedback_key)) {
     return false;
@@ -55,13 +56,13 @@ bool MmapCorpus::AddRandSnapshotIfNotSeen(resmack::Vector<RandSnapshot>* snapsho
   return res;
 }
 
-void MmapCorpus::AddRandSnapshot(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+void MmapCorpus::AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
       this->AddRandSnapshotInner(snapshot, feedback_key);
   });
 }
 
-void MmapCorpus::AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+void MmapCorpus::AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
   size_t total_size =
     sizeof(ser::CorpusItemHeader) +
     (sizeof(ser::GenState) * snapshot->size());
@@ -72,20 +73,21 @@ void MmapCorpus::AddRandSnapshotInner(resmack::Vector<RandSnapshot>* snapshot, s
   ser::GenState* curr_state = (ser::GenState*)(
     (char*)this->next_item + sizeof(ser::CorpusItemHeader)
   );
-  for (RandSnapshot& item: *snapshot) {
+  Vector<RandSnapshot>* new_snapshot = &this->snapshots.emplace_back();
+
+  for (const RandSnapshot& item: *snapshot) {
     curr_state->ref_depth = item.ref_depth;
     curr_state->rule_idx = item.rule_idx;
     memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
 
     curr_state = (ser::GenState*)((char*)curr_state + sizeof(ser::GenState));
+    new_snapshot->emplace_back(item.ref_depth, item.rule_idx, item.state);
   }
 
   this->last_updated_seq = ++this->meta->updated_seq;
   this->next_item_index = ++this->meta->num_entries;
   // gets incremented to point at the "next" empty spot after the for loop
   this->next_item = (ser::CorpusItemHeader*)((char*)curr_state);
-
-  this->snapshots.emplace_back(*snapshot);
   this->seen_keys.emplace(feedback_key);
 }
 
@@ -119,7 +121,7 @@ void MmapCorpus::SyncInner() {
 
   for(; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
     this->seen_keys.emplace(curr->feedback_key);
-    Vector<RandSnapshot>* snapshot = &this->snapshots.emplace_back();
+    Vector<RandSnapshot>& snapshot = this->snapshots.emplace_back();
 
     size_t state_offset = 0;
     size_t header_size = sizeof(ser::CorpusItemHeader);
@@ -132,7 +134,7 @@ void MmapCorpus::SyncInner() {
       rand_state_idx++
     ) {
       state = (ser::GenState*)((char*)curr + header_size + state_offset);
-      snapshot->emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
+      snapshot.emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
       state_offset += state_size;
     }
 

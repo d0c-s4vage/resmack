@@ -1,13 +1,14 @@
-#include <cstddef>
+
 #include <cstring>
 #include <iostream>
+#include <thread>
 
 #include "resmack/rand.hpp"
 
 
 namespace resmack {
 
-  RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t rule_idx, uint32_t state[]) :
+  RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t rule_idx, const uint32_t state[]) :
     ref_depth(ref_depth),
     rule_idx(rule_idx)
   {
@@ -22,6 +23,29 @@ namespace resmack {
   Rand::Rand(uint32_t seed) {
     this->Init(seed);
   }
+
+  Rand::Rand(const Rand& other) {
+    this->should_record_ = other.should_record_;
+    memcpy(this->s_, other.s_, sizeof(this->s_));
+    for (const RandSnapshot& item: other.snapshots_) {
+      this->snapshots_.emplace_back(item.ref_depth, item.rule_idx, item.state);
+    }
+  }
+
+  Rand& Rand::operator=(const Rand& other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->should_record_ = other.should_record_;
+    memcpy(this->s_, other.s_, sizeof(this->s_));
+    for (const RandSnapshot& item: other.snapshots_) {
+      this->snapshots_.emplace_back(item.ref_depth, item.rule_idx, item.state);
+    }
+    return *this;
+  }
+
+  Rand::~Rand() {}
 
   uint32_t Rand::Next() {
     const uint32_t result = this->Rotl(this->s_[1] * 5, 7) * 9;

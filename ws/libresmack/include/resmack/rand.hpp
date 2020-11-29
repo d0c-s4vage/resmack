@@ -17,7 +17,7 @@ namespace resmack {
       uint32_t rule_idx;
       uint32_t state[4];
 
-      RandSnapshot(size_t ref_depth, uint32_t rule_idx, uint32_t state[]);
+      RandSnapshot(size_t ref_depth, uint32_t rule_idx, const uint32_t state[]);
   };
 
   class Rand {
@@ -28,9 +28,13 @@ namespace resmack {
 
     public: 
      Rand();
+     ~Rand();
+     Rand(const Rand& other);
+     Rand& operator=(const Rand& other);
      Rand(uint32_t seed);
+
      uint32_t Next();
-     Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
+     const Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
      bool Maybe();
      void SnapshotState(size_t ref_depth, uint32_t rule_idx);
      void SnapshotClear();

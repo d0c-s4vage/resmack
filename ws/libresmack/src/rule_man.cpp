@@ -25,7 +25,7 @@ namespace resmack {
     size_t num_rules = parent->NumRules();
     this->rules_.reserve(num_rules);
     for (size_t i = 0; i < num_rules; i++) {
-      this->rules_.emplace_back((items::Or*)NULL);
+      this->rules_.push_back((items::Or*)NULL);
     }
   }
 
@@ -90,7 +90,7 @@ namespace resmack {
       (*this->rule_name_to_idx_)[rule_name] = rule_idx;
       (*this->rule_idx_to_name_)[rule_idx] = rule_name;
       res = new items::Or();
-      this->rules_.emplace_back(res);
+      this->rules_.push_back(res);
     }
 
     return res;
@@ -124,7 +124,7 @@ namespace resmack {
     RuleManager* curr = this;
     while (curr != NULL) {
       if (curr->ValidRule(rule_idx)) {
-        options.emplace_back(curr);
+        options.push_back(curr);
       }
       curr = curr->parent_;
     }

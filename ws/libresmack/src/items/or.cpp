@@ -85,7 +85,7 @@ namespace items {
     for (size_t idx = 0; idx < this->items_.size(); idx++) {
       Item* item = this->items_[idx];
       if (item->CalcReachability(reach_calc)) {
-        this->choice_indices_.emplace_back(idx);
+        this->choice_indices_.push_back(idx);
       }
     }
 

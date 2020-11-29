@@ -20,7 +20,7 @@ namespace resmack {
     RuleManager rule_man_;
 
     Rules();
-    Rules(Rules *parent);
+    Rules(Rules* parent);
     ~Rules();
 
     Rules* AddRule(std::string name, Item* item);
@@ -28,20 +28,20 @@ namespace resmack {
     Rules* AddRule(size_t rule_idx, Item* item);
     RuleManager* GetRuleMan() { return &this->rule_man_; }
     bool Build(std::string rule_name,
-               std::string *output,
-               Rand *rand);
+               std::string* output,
+               Rand* rand);
     bool Build(std::string rule_name,
-               std::string *output,
-               Rand *rand,
+               std::string* output,
+               Rand* rand,
                size_t max_depth);
     bool Build(size_t rule_idx,
-               std::string *output,
-               Rand *rand);
+               std::string* output,
+               Rand* rand);
     bool Build(size_t rule_idx,
-               std::string *output,
-               Rand *rand,
+               std::string* output,
+               Rand* rand,
                size_t max_depth);
-    bool Build(size_t rule_idx, BuildContext *ctx);
+    bool Build(size_t rule_idx, BuildContext* ctx);
     Rules* NewChild();
     void Finalize();
   };

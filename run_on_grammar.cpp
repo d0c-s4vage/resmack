@@ -23,9 +23,11 @@ size_t ResmackGrammarInit(resmack::Rules* rules) {
     ->AddRule("run-on-sentence", AND(
       REF("sentence"),
       OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence")))
-    ));
+    ))
+    ->AddRule("direct", V("A"));
 
   size_t rule_idx;
+  //if (!rules->GetRuleMan()->IndexOf("direct", &rule_idx)) {
   if (!rules->GetRuleMan()->IndexOf("run-on-sentence", &rule_idx)) {
     std::cout << "Invalid rules" << std::endl;
     std::exit(1);

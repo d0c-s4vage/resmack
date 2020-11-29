@@ -11,9 +11,9 @@ namespace items {
     return ItemType::POST;
   }
 
-  void Post::Build(BuildContext *ctx) {
+  void Post::Build(BuildContext* ctx) {
     std::string tmp_post_output;
-    std::string *orig_output = ctx->output;
+    std::string* orig_output = ctx->output;
 
     ctx->output = ctx->post_output;
     ctx->post_output = &tmp_post_output;

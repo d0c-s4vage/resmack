@@ -85,7 +85,7 @@ namespace resmack {
     public:
      virtual ~Item() { };
      virtual ItemType Type() = 0;
-     virtual void Build(BuildContext *ctx) = 0;
+     virtual void Build(BuildContext* ctx) = 0;
      virtual std::string ToString() {
        return std::string("<") + ItemTypeName(this->Type()) + ">";
      }
