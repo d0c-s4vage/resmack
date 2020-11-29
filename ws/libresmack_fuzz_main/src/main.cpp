@@ -293,7 +293,7 @@ bool HandleException(
   file.close();
 
   // always restart the traced program
-  return false;
+  return true;
 }
 
 __attribute__((visibility("default")))

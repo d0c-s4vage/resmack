@@ -45,6 +45,8 @@ void* Tracer::MonitorTracee(void* this_arg) {
     waitpid(this_->traced_pid, &status, 0);
 
     int crash_sig = WSTOPSIG(status);
+
+    this_->last_crash.crashed = false;
     if (WIFSTOPPED(status)) {
       this_->last_crash.signal = crash_sig;
       // SIGILL -- illegal instruction
@@ -79,7 +81,6 @@ void* Tracer::MonitorTracee(void* this_arg) {
     // default action is to kill the current process, and then restart it
     ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
     kill(this_->traced_pid, SIGKILL);
-    this_->last_crash.crashed = false;
   }
 
   this_->Stop();
