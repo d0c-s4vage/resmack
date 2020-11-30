@@ -8,11 +8,9 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <openssl/sha.h>
 
 #include "resmack/fuzz/trace.hpp"
-
-#include "utils.hpp"
+#include "resmack/fuzz/utils.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -55,6 +53,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
 
     int crash_sig = WSTOPSIG(status);
 
+    int exit_status = WEXITSTATUS(status);
     this_->last_crash.crashed = false;
     if (WIFSTOPPED(status)) {
       this_->last_crash.signal = crash_sig;
@@ -62,7 +61,10 @@ void* Tracer::MonitorTracee(void* this_arg) {
       // SIGSEGV - reading/writing outside of valid memory
       // SIGBUS - invalid pointer dereferenced
       this_->last_crash.crashed = (
-        crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS
+        crash_sig == SIGILL ||
+        crash_sig == SIGSEGV ||
+        crash_sig == SIGBUS ||
+        exit_status != 0
       );
       if (this_->last_crash.crashed) {
         this_->CalcHashes();
@@ -72,7 +74,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
     // exited normally - which should only occur if the FuzzLoop itself exited
     // normally. For example, when --max-iters is set and the maximum number
     // of iterations has been achieved
-    if (WIFEXITED(status)) {
+    if (WIFEXITED(status) && exit_status == 0) {
       break;
     }
 
@@ -80,10 +82,6 @@ void* Tracer::MonitorTracee(void* this_arg) {
     if (crash_sig == SIGWINCH) {
       ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
       continue;
-    }
-
-    if (crash_sig == SIGINT) {
-      break;
     }
 
     if (!this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee)) {
@@ -110,7 +108,6 @@ void Tracer::CalcHashes() {
 	void *context = _UPT_create(this->traced_pid);
 	unw_cursor_t cursor;
 	if (unw_init_remote(&cursor, as, context) != 0) {
-    std::cout << "Couldn't initialize cursor for remote unwinding" << std::endl;
     _UPT_destroy(context);
     return;
   }
@@ -128,7 +125,6 @@ void Tracer::CalcHashes() {
     unw_word_t pc;
 
 		if (unw_get_reg(&cursor, UNW_REG_IP, &pc)) {
-      std::cout << "Could not read program counter" << std::endl;
       _UPT_destroy(context);
       return;
     }

@@ -9,8 +9,7 @@
 #include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
-
-#include "utils.hpp"
+#include "resmack/fuzz/utils.hpp"
 
 namespace resmack {
 namespace fuzz {

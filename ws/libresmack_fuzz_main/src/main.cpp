@@ -36,6 +36,7 @@
 #include "resmack/fuzz/targets/direct.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
+#include "resmack/fuzz/utils.hpp"
 
 extern "C" int __lsan_is_turned_off() { return 1; }
 
@@ -51,6 +52,7 @@ struct FuzzOptions {
   size_t stats_interval;
   char* crash_output;
   size_t create_threshhold;
+  char* dump_corpus_path;
 };
 
 static FuzzOptions OPTS {
@@ -62,6 +64,7 @@ static FuzzOptions OPTS {
   .stats_interval = 0x1000,
   .crash_output = "crashes",
   .create_threshhold = 100000,
+  .dump_corpus_path = NULL,
 };
 
 void sigint_handler(int signum) {
@@ -87,6 +90,7 @@ void PrintHelp(char* prog_name) {
   std::cout << "        --max-depth,-d MAX_DEPTH  Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
   std::cout << "        --max-iters,-m MAX_ITERS  Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
   std::cout << "       --show-stats,-s            Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
+  std::cout << "      --dump-corpus,-D DIR        Dump the corpus to DIR" << std::endl;
   std::cout << "   --stats-interval,-i INTERVAL   Collect stats on every Nth iteration (" << OPTS.stats_interval << ")" << std::endl;
   std::cout << "--create-threshhold,-t THRESHOLD  The threshold to create new inputs (" << OPTS.create_threshhold << ")" << std::endl;
   std::cout << std::endl;
@@ -102,6 +106,7 @@ bool ParseOptions(int argc, char**argv) {
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
       { "show-stats", no_argument, &OPTS.show_stats, 's' },
+      { "dump-corpus", required_argument, 0, 'D' },
       { "stats-interval", required_argument, 0, 'i' },
       { "create-threshhold", required_argument, 0, 't' },
       { 0, 0, 0, 0 },
@@ -109,7 +114,7 @@ bool ParseOptions(int argc, char**argv) {
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -140,6 +145,9 @@ bool ParseOptions(int argc, char**argv) {
           break;
         case 't':
           OPTS.create_threshhold = strtoull(optarg, NULL, 10);
+          break;
+        case 'D':
+          OPTS.dump_corpus_path = optarg;
           break;
       }
     }
@@ -346,6 +354,44 @@ bool HandleException(
   return true;
 }
 
+void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rule_idx) {
+  resmack::Rand rand;
+  std::string output;
+  resmack::BuildContext ctx(&output, &rand, OPTS.max_depth);
+
+  if (!std::filesystem::exists(OPTS.dump_corpus_path)) {
+    std::filesystem::create_directories(OPTS.dump_corpus_path);
+  }
+
+  const resmack::Vector<resmack::Vector<resmack::RandSnapshot>>* corpus_items =
+    corpus->GetItems();
+
+  size_t i;
+  for (i = 0; i < corpus_items->size(); i++) {
+    std::cout << ".";
+    resmack::Vector<resmack::RandSnapshot>* replay =
+      (resmack::Vector<resmack::RandSnapshot>*)&corpus_items->at(i);
+
+    output.clear();
+    ctx.SetReplay(replay);
+    rules->Build(rule_idx, &ctx);
+
+    char* output_sha = resmack::fuzz::utils::sha1_hex(output.data(), output.size(), NULL);
+    std::string out_path = std::string(OPTS.dump_corpus_path) + "/" + output_sha;
+    free(output_sha);
+
+    if (std::filesystem::exists(out_path)) { continue; }
+
+    std::ofstream file;
+    file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
+    file.write(output.data(), output.size());
+    file.close();
+  }
+  std::cout << std::endl;
+
+  std::cout << "Wrote " << i << " corpus entries to " << OPTS.dump_corpus_path << std::endl;
+}
+
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
   signal(SIGINT, sigint_handler);
@@ -368,6 +414,11 @@ int main(int argc, char** argv) {
   snprintf(state_path, sizeof(state_path), "%s.resmack-state", argv[0]);
   resmack::fuzz::states::MmapState mmap_state(state_path);
   resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
+
+  if (OPTS.dump_corpus_path) {
+    DumpCorpus(&rules, corpus, rule_idx);
+    return 0;
+  }
 
   bool is_main_proc = true;
 

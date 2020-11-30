@@ -43,6 +43,7 @@ class MmapCorpus : public Corpus {
   void Init(void* corpus_map, size_t max_corpus_size);
   void AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
   bool AddRandSnapshotIfNotSeen(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
+  virtual const Vector<Vector<RandSnapshot>>* GetItems() { return &this->snapshots; }
   Vector<RandSnapshot>* GetItem(Rand* rand);
   void Sync();
   bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }

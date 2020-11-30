@@ -15,12 +15,10 @@ Fork::~Fork() {}
 pid_t Fork::Spawn(Tracee* tracee) {
   pid_t res;
   if ((res = fork()) == 0) {
-    /*
     int fd = open("/dev/null", O_WRONLY);
     dup2(fd, 1);
     dup2(fd, 2);
     close(fd);
-    */
 
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     cb_(tracee);
