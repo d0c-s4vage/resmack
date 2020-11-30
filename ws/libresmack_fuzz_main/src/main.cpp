@@ -283,6 +283,7 @@ void FuzzLoop(
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
+        std::cout << "NOT PAST CREATE THRESHHOLD" << std::endl;
         past_create_threshhold = false;
         //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
