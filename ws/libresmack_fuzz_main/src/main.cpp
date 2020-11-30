@@ -263,7 +263,7 @@ void FuzzLoop(
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
-        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "New coverage with: " << output.size() << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
@@ -307,8 +307,9 @@ bool HandleException(
     if (!std::filesystem::exists(out_path)) {
       std::ofstream file;
       file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
-      file << output;
+      file.write(output.data(), output.size());
       file.close();
+      return true;
     } else {
       return false;
     }
@@ -341,6 +342,7 @@ int main(int argc, char** argv) {
 
   resmack::Rules rules = new resmack::Rules();
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
+  rules.Finalize();
 
   resmack::fuzz::Coverage cov;
   //resmack::fuzz::NoopCoverage noop_cov;

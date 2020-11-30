@@ -23,15 +23,22 @@ namespace calc {
         // it has been finalized and officially pruned, so ignore it
         if (this->pruned_.contains(rule_idx)) { continue; }
 
+        std::string name;
+        this->rule_man_->NameOf(rule_idx, &name);
+
         before_options = rule->NumShortestItems();
         size_t depth = rule->CalcRefDepth(this);
+        if (!this->depths_.contains(rule_idx) || this->depths_[rule_idx] != depth) {
+          changed = true;
+        }
+          
         this->depths_[rule_idx] = depth;
 
         if (before_options != rule->NumShortestItems()) {
           changed = true;
         }
 
-        if (depth == RefDepth::INF_DEPTH && !rule->ShouldKeep()) {
+        if (!changed && depth == RefDepth::INF_DEPTH && !rule->ShouldKeep()) {
           this->tmp_to_prune_.emplace(rule_idx);
           this->num_changes_ += 1;
         }

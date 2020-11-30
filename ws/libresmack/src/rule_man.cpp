@@ -105,6 +105,7 @@ namespace resmack {
 
   void RuleManager::Prune(size_t rule_idx) {
     if (rule_idx >= this->rules_.size()) { return; }
+
     delete this->rules_[rule_idx];
     this->rules_[rule_idx] = 0;
   }
