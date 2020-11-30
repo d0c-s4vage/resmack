@@ -40,8 +40,10 @@
 extern "C" int __lsan_is_turned_off() { return 1; }
 
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
+static bool SHUTTING_DOWN = false;
 
 void sigint_handler(int signum) {
+  SHUTTING_DOWN = true;
   printf(
     "\nCaught signal %d on main process, terminating fuzzing procs\n",
     signum
@@ -283,6 +285,9 @@ bool HandleException(
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
+  if (SHUTTING_DOWN) {
+    return false;
+  }
   std::string output;
   // doesn't have to be the same one as before since we're doing a full,
   // unmodified replay
@@ -304,6 +309,9 @@ bool HandleException(
   out_path += info->minor_hash;
 
   state->IncNumCrashesIfTrue([out_path, output]() -> bool {
+    if (SHUTTING_DOWN) {
+      return false;
+    }
     if (!std::filesystem::exists(out_path)) {
       std::ofstream file;
       file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
