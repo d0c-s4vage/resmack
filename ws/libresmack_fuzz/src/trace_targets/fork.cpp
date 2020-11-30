@@ -20,7 +20,6 @@ pid_t Fork::Spawn(Tracee* tracee) {
     dup2(fd, 2);
     close(fd);
 
-
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     cb_(tracee);
     std::exit(0);
