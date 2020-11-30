@@ -21,6 +21,7 @@ struct GenStateHeader {
 struct CorpusItemHeader {
   uint32_t size;
   size_t feedback_key;
+  size_t iter_discovered;
   uint32_t reserved1;
   uint32_t reserved2;
   GenStateHeader item_header;

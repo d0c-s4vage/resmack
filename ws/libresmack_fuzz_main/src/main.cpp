@@ -42,6 +42,28 @@ extern "C" int __lsan_is_turned_off() { return 1; }
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 static bool SHUTTING_DOWN = false;
 
+struct FuzzOptions {
+  int help;
+  size_t nprocs;
+  size_t max_depth;
+  size_t max_iters;
+  int show_stats;
+  size_t stats_interval;
+  char* crash_output;
+  size_t create_threshhold;
+};
+
+static FuzzOptions OPTS {
+  .help = false,
+  .nprocs = 1,
+  .max_depth = 10,
+  .max_iters = 0,
+  .show_stats = false,
+  .stats_interval = 0x1000,
+  .crash_output = "crashes",
+  .create_threshhold = 100000,
+};
+
 void sigint_handler(int signum) {
   SHUTTING_DOWN = true;
   printf(
@@ -59,43 +81,35 @@ void PrintHelp(char* prog_name) {
   std::cout << prog_name << std::endl << std::endl;
   std::cout << "  Fuzz the compiled target" << std::endl << std::endl;
   std::cout << prog_name << " [-d MAX_DEPTH] [-n NPROCS] [-s] [-i INTERVAL] [--help]"  << std::endl << std::endl;
-  std::cout << "          --help, -h            Show this help message" << std::endl;
-  std::cout << "        --nprocs, -n NPROCS     Number of times to fork" << std::endl;
-  std::cout << "       --crashes, -c CRASH_DIR  Where to store crashing inputs" << std::endl;
-  std::cout << "     --max-depth, -d MAX_DEPTH  Maximum grammar depth during recursion" << std::endl;
-  std::cout << "     --max-iters, -m MAX_ITERS  Maximum number of iterations" << std::endl;
-  std::cout << "    --show-stats, -s            Show stat percentages" << std::endl;
-  std::cout << "--stats-interval, -i INTERVAL   Collect stats on every Nth iteration" << std::endl;
+  std::cout << "             --help,-h            Show this help message" << std::endl;
+  std::cout << "           --nprocs,-n NPROCS     Number of times to fork (" << OPTS.nprocs << ")" << std::endl;
+  std::cout << "          --crashes,-c CRASH_DIR  Where to store crashing inputs (" << OPTS.crash_output << ")" << std::endl;
+  std::cout << "        --max-depth,-d MAX_DEPTH  Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
+  std::cout << "        --max-iters,-m MAX_ITERS  Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
+  std::cout << "       --show-stats,-s            Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
+  std::cout << "   --stats-interval,-i INTERVAL   Collect stats on every Nth iteration (" << OPTS.stats_interval << ")" << std::endl;
+  std::cout << "--create-threshhold,-t THRESHOLD  The threshold to create new inputs (" << OPTS.create_threshhold << ")" << std::endl;
   std::cout << std::endl;
   std::cout << "Example:" << std::endl << std::endl;
   std::cout << prog_name << " -n 3 --show-stats" << std::endl;
 }
 
-struct FuzzOptions {
-  int help;
-  size_t nprocs;
-  size_t max_depth;
-  size_t max_iters;
-  int show_stats;
-  size_t stats_interval;
-  char* crash_output;
-};
-
-bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
+bool ParseOptions(int argc, char**argv) {
     static struct option long_options[] = {
-      { "help", no_argument, &opts->help, 'h' },
+      { "help", no_argument, &OPTS.help, 'h' },
       { "nprocs", required_argument, 0, 'n' },
       { "crashes", required_argument, 0, 'c' },
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
-      { "show-stats", no_argument, &opts->show_stats, 's' },
+      { "show-stats", no_argument, &OPTS.show_stats, 's' },
       { "stats-interval", required_argument, 0, 'i' },
+      { "create-threshhold", required_argument, 0, 't' },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:i:m:c:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -104,25 +118,28 @@ bool ParseOptions(int argc, char**argv, FuzzOptions* opts) {
         case 0:
           break;
         case 'h':
-          opts->help = true;
+          OPTS.help = true;
           break;
         case 's':
-          opts->show_stats = true;
+          OPTS.show_stats = true;
           break;
         case 'd':
-          opts->max_depth = strtoull(optarg, NULL, 10);
+          OPTS.max_depth = strtoull(optarg, NULL, 10);
           break;
         case 'm':
-          opts->max_iters = strtoull(optarg, NULL, 10);
+          OPTS.max_iters = strtoull(optarg, NULL, 10);
           break;
         case 'n':
-          opts->nprocs = atoi(optarg);
+          OPTS.nprocs = strtoull(optarg, NULL, 10);
           break;
         case 'i':
-          opts->stats_interval = atoi(optarg);
+          OPTS.stats_interval = strtoull(optarg, NULL, 10);
           break;
         case 'c':
-          opts->crash_output = optarg;
+          OPTS.crash_output = optarg;
+          break;
+        case 't':
+          OPTS.create_threshhold = strtoull(optarg, NULL, 10);
           break;
       }
     }
@@ -199,7 +216,6 @@ void FuzzLoop(
   resmack::fuzz::Feedback* feedback,
   resmack::fuzz::State* state,
   resmack::fuzz::Corpus* corpus,
-  FuzzOptions* opts,
   resmack::fuzz::Tracee* tracee
 ) {
   resmack::Rand* meta_rand = new resmack::Rand();;
@@ -210,25 +226,29 @@ void FuzzLoop(
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
-  resmack::fuzz::TargetStats stats(opts->stats_interval);
-  resmack::BuildContext ctx(&output, build_rand, opts->max_depth);
+  resmack::fuzz::TargetStats stats(OPTS.stats_interval);
+  resmack::BuildContext ctx(&output, build_rand, OPTS.max_depth);
 
   resmack::Vector<resmack::RandSnapshot> *mutated_replay =
     new resmack::Vector<resmack::RandSnapshot>();
 
   size_t counts = 0;
-  while (opts->max_iters == 0 || state->GetNumIterations() < opts->max_iters) {
+  bool past_create_threshhold = true;
+  while (OPTS.max_iters == 0 || state->GetNumIterations() < OPTS.max_iters) {
     counts++;
-    if ((counts % opts->stats_interval) == 0) {
-      state->IncNumIterations(opts->stats_interval);
+    if ((counts % OPTS.stats_interval) == 0) {
+      state->IncNumIterations(OPTS.stats_interval);
       state->SyncStats(&stats);
       stats.Clear();
+      past_create_threshhold = corpus->ItersSinceNewItem() > OPTS.create_threshhold;
     }
     stats.Tick();
 
     size_t last_corpus_idx = 0;
     bool used_corpus = false;
-    if (corpus->NumItems() > 0 && meta_rand->Maybe()) {
+    if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand->Maybe())) {
+      ctx.SetReplay(NULL);
+    } else {
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
@@ -238,8 +258,6 @@ void FuzzLoop(
         resmack::fuzz::MutateRandSnapshot(meta_rand, replay, mutated_replay);
       });
       ctx.SetReplay(mutated_replay);
-    } else {
-      ctx.SetReplay(NULL);
     }
 
     output.clear();
@@ -252,7 +270,7 @@ void FuzzLoop(
     // this occurs *in* the traced process (after forking/*).
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats
-    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, opts->max_depth);
+    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, OPTS.max_depth);
     tracee->SaveLastReplay(mutated_replay);
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
@@ -265,7 +283,9 @@ void FuzzLoop(
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
-        std::cout << "New coverage with: " << output.size() << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "NOT PAST CREATE THRESHHOLD" << std::endl;
+        past_create_threshhold = false;
+        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
@@ -276,7 +296,6 @@ void FuzzLoop(
 }
 
 bool HandleException(
-  FuzzOptions* opts,
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
@@ -301,7 +320,7 @@ bool HandleException(
   rules->Build(rule_idx, &ctx);
 
   resmack::fuzz::CrashInfo* info = tracer->GetCrashInfo();
-  std::string out_path = std::string(opts->crash_output) + "/" + info->major_hash;
+  std::string out_path = std::string(OPTS.crash_output) + "/" + info->major_hash;
   if (!std::filesystem::exists(out_path)) {
     std::filesystem::create_directories(out_path);
   }
@@ -329,19 +348,10 @@ bool HandleException(
 
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
-  FuzzOptions opts {
-    .help = false,
-    .nprocs = 1,
-    .max_depth = 10,
-    .max_iters = 0,
-    .show_stats = false,
-    .stats_interval = 0x1000,
-    .crash_output = "crashes"
-  };
   signal(SIGINT, sigint_handler);
 
-  ParseOptions(argc, argv, &opts);
-  if (opts.help) {
+  ParseOptions(argc, argv);
+  if (OPTS.help) {
     PrintHelp(argv[0]);
     return 1;
   }
@@ -362,23 +372,23 @@ int main(int argc, char** argv) {
   bool is_main_proc = true;
 
   resmack::fuzz::trace_targets::Fork trace_target(
-    [rule_idx, &rules, &cov, &mmap_state, corpus, &opts](resmack::fuzz::Tracee* tracee) {
-      FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, &opts, tracee);
+    [rule_idx, &rules, &cov, &mmap_state, corpus](resmack::fuzz::Tracee* tracee) {
+      FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, tracee);
     }
   );
 
   size_t child_num;
-  std::cout << "Creating " << opts.nprocs << " proceses for fuzzing" << std::endl;
-  for (child_num = 0; child_num < opts.nprocs; child_num++ ) {
+  std::cout << "Creating " << OPTS.nprocs << " proceses for fuzzing" << std::endl;
+  for (child_num = 0; child_num < OPTS.nprocs; child_num++ ) {
     resmack::fuzz::Tracer* tracer = new resmack::fuzz::Tracer(
       &trace_target,
-      [&rules, rule_idx, &mmap_state, &opts](
+      [&rules, rule_idx, &mmap_state](
         pid_t pid,
         int status,
         resmack::fuzz::Tracer* tracer,
         resmack::fuzz::Tracee* tracee
       ) -> bool {
-        return HandleException(&opts, &rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
+        return HandleException(&rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
       }
     );
     tracer->Trace();
@@ -388,7 +398,7 @@ int main(int argc, char** argv) {
   pthread_t status_thread;
   LoopPrintStatusArgs status_args {
     .state = &mmap_state,
-    .show_stats = opts.show_stats,
+    .show_stats = OPTS.show_stats,
     .should_run = true,
   };
   if (is_main_proc) {

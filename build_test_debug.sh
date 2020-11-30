@@ -8,6 +8,10 @@ CMD=(
         -fsanitize-coverage=trace-pc-guard
         -std=c++20
         -I ws/libresmack/include
+        -lpthread
+        -lunwind-ptrace
+        -lunwind-generic
+        -lcrypto
         test.cpp
         #alpha_grammar.cpp
         run_on_grammar.cpp

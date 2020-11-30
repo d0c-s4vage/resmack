@@ -63,12 +63,15 @@ void MmapCorpus::AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, 
 }
 
 void MmapCorpus::AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+  this->last_discovered_iteration = *this->curr_iter_count;
+
   size_t total_size =
     sizeof(ser::CorpusItemHeader) +
     (sizeof(ser::GenState) * snapshot->size());
   this->next_item->item_header.num_states = snapshot->size();
   this->next_item->size = total_size;
   this->next_item->feedback_key = feedback_key;
+  this->next_item->iter_discovered = this->last_discovered_iteration;
   
   ser::GenState* curr_state = (ser::GenState*)(
     (char*)this->next_item + sizeof(ser::CorpusItemHeader)
