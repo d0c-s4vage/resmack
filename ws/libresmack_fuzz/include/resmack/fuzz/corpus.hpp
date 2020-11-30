@@ -21,6 +21,7 @@ class Corpus {
     const resmack::Vector<RandSnapshot>* snapshot,
     size_t key
   ) = 0;
+  virtual size_t ItersSinceNewItem() = 0;
 };
 
 }

@@ -26,9 +26,19 @@ class MmapCorpus : public Corpus {
   uint32_t last_updated_seq; 
   uint32_t last_reorg_seq; 
 
+  // pointer to the current number of iterations. READ ONLY!
+  // WILL NOT BE EXACT! Iteration counts are synced every X intervals, not
+  // with each iteration
+  const size_t* curr_iter_count;
+  size_t last_discovered_iteration;
+
  public:
   MmapCorpus();
   ~MmapCorpus();
+
+  void SetCurrIterPtr(size_t* curr_iter_count) {
+    this->curr_iter_count = curr_iter_count;
+  }
 
   void Init(void* corpus_map, size_t max_corpus_size);
   void AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
@@ -37,6 +47,9 @@ class MmapCorpus : public Corpus {
   void Sync();
   bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
   size_t NumItems() { return this->snapshots.size(); }
+  size_t ItersSinceNewItem() {
+    return *this->curr_iter_count - this->last_discovered_iteration;
+  }
 
  private:
   void AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key);
