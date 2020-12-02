@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
   );
 
   size_t child_num;
-  std::cout << "Creating " << OPTS.nprocs << " proceses for fuzzing" << std::endl;
+  std::cout << "Creating " << OPTS.nprocs << " processes for fuzzing" << std::endl;
   for (child_num = 0; child_num < OPTS.nprocs; child_num++ ) {
     resmack::fuzz::Tracer* tracer = new resmack::fuzz::Tracer(
       &trace_target,

@@ -70,6 +70,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
         this_->CalcHashes();
       }
     } else if (asan_info != NULL) {
+      this_->last_crash.crashed = true;
       this_->last_crash.major_stack.clear();
       this_->last_crash.minor_stack.clear();
       memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
@@ -89,8 +90,10 @@ void* Tracer::MonitorTracee(void* this_arg) {
       continue;
     }
 
-    if (!this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee)) {
-      break;
+    if (this_->last_crash.crashed) {
+      if (!this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee)) {
+        break;
+      }
     }
 
     // default action is to kill the current process, and then restart it

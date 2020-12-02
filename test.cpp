@@ -76,6 +76,11 @@ bool parseSentence(const uint8_t* data, size_t size) {
   splitStr(&input, " ", &parts);
   size_t curr_idx = 0;
 
+    char* test = (char*)malloc(0x10);
+    char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
+    memcpy(test, to_copy, sizeof(to_copy));
+    raise(SIGSEGV);
+
   if (parts.size() == 0) {
     return false;
   }
@@ -88,6 +93,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (curr_idx >= parts.size() || !parseFruitList(&parts, &curr_idx)) {
     return false;
   }
+
   if (parts.size() - curr_idx != 4) {
     return false;
   }
@@ -102,6 +108,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
     char* test = (char*)malloc(0x10);
     char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
     memcpy(test, to_copy, sizeof(to_copy));
+    raise(SIGSEGV);
   }
 
   return false;

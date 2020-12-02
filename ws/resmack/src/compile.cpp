@@ -15,6 +15,7 @@ namespace compile {
 
   struct CompileOpts {
     int help;
+    int use_asan;
   };
 
   void PrintHelp() {
@@ -23,7 +24,8 @@ namespace compile {
     std::cout << "resmack cc" << std::endl << std::endl;
     std::cout << "  Compile a fuzz harness into a stand-alone binary" << std::endl << std::endl;
     std::cout << "resmack cc CLANG_ARGS" << std::endl << std::endl;
-    std::cout << "   --help, -h    Show this help message" << std::endl;
+    std::cout << "  --help,-h    Show this help message" << std::endl;
+    std::cout << "  --asan,-a    Compile with address sanitizer (ASAN)" << std::endl;
     std::cout << "   CLANG_ARGS    Arguments to pass to clang (use --" << std::endl;
     std::cout << "                 if needed)" << std::endl;
     std::cout << std::endl;
@@ -37,6 +39,7 @@ namespace compile {
   bool ParseOpts(int argc, char** argv, CompileOpts* opts) {
     static struct option long_options[] = {
       { "help", no_argument, &opts->help, 'h' },
+      { "asan", no_argument, &opts->use_asan, 'a' },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
@@ -52,6 +55,9 @@ namespace compile {
           break;
         case 'h':
           opts->help = true;
+          break;
+        case 'a':
+          opts->use_asan = true;
           break;
       }
     }
@@ -76,6 +82,7 @@ namespace compile {
   int Run(int argc, char** argv) {
     CompileOpts opts {
       .help = false,
+      .use_asan = false,
     };
 
     ParseOpts(argc, argv, &opts);
@@ -87,15 +94,21 @@ namespace compile {
     std::vector<const char *> options({
       "clang++",
       "-Iws/libresmack/include",
-      "-O0",
       "-lpthread",
       "-lcrypto",
       "-lunwind",
       "-lunwind-ptrace",
       "-lunwind-generic",
-      "-fsanitize-coverage=trace-pc-guard",
-      "-fsanitize=address",
     });
+
+    if (opts.use_asan) {
+      options.emplace_back("-O0");
+      options.emplace_back("-fsanitize=address");
+    } else {
+      options.emplace_back("-Ofast");
+      options.emplace_back("-march=native");
+    }
+    options.emplace_back("-fsanitize-coverage=trace-pc-guard");
 
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);
