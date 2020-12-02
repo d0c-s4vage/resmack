@@ -12,6 +12,8 @@
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/utils.hpp"
 
+#include "asan_util.hpp"
+
 namespace resmack {
 namespace fuzz {
 
@@ -48,6 +50,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
   int status;
 
   while (this_->should_run) {
+    this_->tracee.Reset();
     this_->traced_pid = this_->target->Spawn(&this_->tracee);
     waitpid(this_->traced_pid, &status, 0);
 
@@ -55,20 +58,22 @@ void* Tracer::MonitorTracee(void* this_arg) {
 
     int exit_status = WEXITSTATUS(status);
     this_->last_crash.crashed = false;
+
+    ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
     if (WIFSTOPPED(status)) {
       this_->last_crash.signal = crash_sig;
       // SIGILL -- illegal instruction
       // SIGSEGV - reading/writing outside of valid memory
       // SIGBUS - invalid pointer dereferenced
-      this_->last_crash.crashed = (
-        crash_sig == SIGILL ||
-        crash_sig == SIGSEGV ||
-        crash_sig == SIGBUS ||
-        exit_status != 0
-      );
-      if (this_->last_crash.crashed) {
+      if (crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS) {
+        this_->last_crash.crashed = true;
         this_->CalcHashes();
       }
+    } else if (asan_info != NULL) {
+      this_->last_crash.major_stack.clear();
+      this_->last_crash.minor_stack.clear();
+      memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
+      memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
     }
 
     // exited normally - which should only occur if the FuzzLoop itself exited

@@ -1,5 +1,5 @@
+#include <string.h>
 #include <stdint.h>
-#include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
 #include <sys/types.h>
 #include <bits/stdint-uintn.h>
 #include <sys/types.h>
@@ -8,6 +8,8 @@
 #include <vector>
 #include <set>
 #include <string>
+
+#include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
 
 void splitStr(std::string* input, std::string split, std::vector<std::string>* output) {
   size_t last_idx = 0;
@@ -89,9 +91,17 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (parts.size() - curr_idx != 4) {
     return false;
   }
+
+  size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
     ((void(*)())(0))();
     //raise(SIGSEGV);
+  }
+  curr_idx = start_idx;
+  if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
+    char* test = (char*)malloc(0x10);
+    char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
+    memcpy(test, to_copy, sizeof(to_copy));
   }
 
   return false;

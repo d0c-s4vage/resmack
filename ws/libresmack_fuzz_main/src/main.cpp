@@ -35,6 +35,7 @@
 #include "resmack/fuzz/states/mmap.hpp"
 #include "resmack/fuzz/targets/direct.hpp"
 #include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 
@@ -335,7 +336,7 @@ bool HandleException(
   out_path += "/";
   out_path += info->minor_hash;
 
-  state->IncNumCrashesIfTrue([out_path, output]() -> bool {
+  state->IncNumCrashesIfTrue([out_path, output, tracee]() -> bool {
     if (SHUTTING_DOWN) {
       return false;
     }
@@ -344,6 +345,14 @@ bool HandleException(
       file.open(out_path.c_str(), std::ofstream::out | std::ofstream::binary);
       file.write(output.data(), output.size());
       file.close();
+
+      resmack::fuzz::ser::AsanInfo* asan_info = tracee->GetAsanInfo();
+      if (asan_info != NULL) {
+        std::string asan_path = out_path + ".asan.txt";
+        file.open(asan_path.c_str(), std::ofstream::out | std::ofstream::binary);
+        file.write(asan_info->report, strlen(asan_info->report));
+        file.close();
+      }
       return true;
     } else {
       return false;

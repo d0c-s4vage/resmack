@@ -20,7 +20,7 @@ namespace items {
 
   void Id::Build(BuildContext *ctx) {
     std::string new_id;
-    utils::RandBytes(ctx->rand, &Str::CHARSET_ALPHA, 10, &new_id);
+    utils::RandBytes(ctx->rand, CHARSET_ALPHA, sizeof(CHARSET_ALPHA), 10, &new_id);
     ctx->rules->AddRule(this->rule_idx_, new Raw(new_id));
     *ctx->output += new_id;
   }

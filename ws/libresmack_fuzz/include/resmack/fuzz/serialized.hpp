@@ -34,6 +34,14 @@ struct CorpusMetadata {
   uint32_t num_entries;
 };
 
+struct AsanInfo {
+  uint32_t exists; // bool
+  char major_hash[41];
+  char minor_hash[41];
+  char report[0x10000];
+  char stack[0x10000];
+};
+
 }
 } // namespace fuzz
 } // namespace resmack
