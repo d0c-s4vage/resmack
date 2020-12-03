@@ -5,7 +5,6 @@ CMD=(
     build/release/ws/resmack/resmack cc
       $@
       --
-        -ggdb
         -std=c++20
         test.cpp
         #alpha_grammar.cpp
