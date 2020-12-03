@@ -59,24 +59,6 @@ void* Tracer::MonitorTracee(void* this_arg) {
     int crash_sig = WSTOPSIG(status);
     int exit_status = WEXITSTATUS(status);
 
-    std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
-    if (WIFEXITED(status)) {
-      std::cout << "  WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
-    }
-
-    std::cout << "WIFSIGNALED: " << WIFSIGNALED(status) << std::endl;
-    if (WIFSIGNALED(status)) {
-      std::cout << "  WTERMSIG: " << strsignal(WTERMSIG(status)) << std::endl;
-      std::cout << "  WCOREDUMP: " << WCOREDUMP(status) << std::endl;
-    }
-
-    std::cout << "WIFSTOPPED: " << WIFSTOPPED(status) << std::endl;
-    if (WIFSTOPPED(status)) {
-      std::cout << "  WSTOPSIG: " << strsignal(WSTOPSIG(status)) << std::endl;
-    }
-
-    std::cout << "WIFCONTINUED: " << WIFCONTINUED(status) << std::endl;
-
     this_->last_crash.crashed = false;
 
     ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
