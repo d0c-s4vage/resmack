@@ -4,9 +4,10 @@
 namespace resmack {
 namespace items {
 
-  Raw::Raw(std::string data) : data_(data) {}
-  Raw::Raw(char* data) : data_(data) {}
-  Raw::Raw(const char* data) : data_((char *)data) {}
+  Raw::Raw(std::string data) : data(data) {
+  }
+  //Raw::Raw(char* data) : data_(data) {}
+  //Raw::Raw(const char* data) : data_((char *)data) {}
 
   Raw::~Raw() {
   }
@@ -16,11 +17,11 @@ namespace items {
   }
 
   void Raw::Build(BuildContext *ctx) {
-    *ctx->output += this->data_;
+    *ctx->output += this->data;
   }
 
   std::string Raw::ToString() {
-    return std::string("<RAW ") + this->data_ + ">";
+    return std::string("<RAW ") + this->data + ">";
   }
 
 }

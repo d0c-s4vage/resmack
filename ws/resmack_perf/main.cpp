@@ -17,6 +17,8 @@
 
 using namespace resmack;
 
+#define AND_SIZE(STR) STR, sizeof(STR)
+
 int main(int argc, char** argv) {
   UNUSED(argc); UNUSED(argv);
 
@@ -33,7 +35,7 @@ int main(int argc, char** argv) {
     ->AddRule("TestRule2", AND(REF("TestRule"), V("World")))
     ->AddRule("TestRule2", INT(5, 1337))
     ->AddRule("TestRule2", AND(OR(
-      V("1"), V("2"), V("3"), V("4"), V("5"), STR(5, 10, "abcdefg")
+      V("1"), V("2"), V("3"), V("4"), V("5"), STR(5, 10, AND_SIZE("abcdefg"))
     )))
     ->AddRule("TestRule2", "1000.5")
     ->AddRule("TestRule2", "---World")

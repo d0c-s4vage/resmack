@@ -3,9 +3,11 @@
 
 #define STR(...) OVERLOADED_MACRO(STR, __VA_ARGS__)
 
+#define STR_ALL(MIN, MAX) (new resmack::items::Str(MIN, MAX, resmack::items::CHARSET_ALL, sizeof(resmack::items::CHARSET_ALL)))
+
 #define STR2(MIN, MAX) (new resmack::items::Str(MIN, MAX))
-#define STR3(MIN, MAX, CHAR_ARY) (new resmack::items::Str(MIN, MAX, CHAR_ARY))
-#define STR4(MIN, MAX, CHARSET, CHARSET_SIZE) (new resmack::items::Str(MIN, MAX, CHARSET, sizeof(CHARSET)))
+#define STR3(MIN, MAX, CHAR_ARY) DO-NOT-USE-THIS-MUST-SPECIFY-SIZE
+#define STR4(MIN, MAX, CHARSET, CHARSET_SIZE) (new resmack::items::Str(MIN, MAX, CHARSET, CHARSET_SIZE))
 
 #include <cstdlib>
 #include <iostream>

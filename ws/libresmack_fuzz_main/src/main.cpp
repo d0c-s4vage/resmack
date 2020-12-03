@@ -50,6 +50,7 @@ struct FuzzOptions {
   size_t max_depth;
   size_t max_iters;
   int show_stats;
+  int mute_stdio;
   size_t stats_interval;
   char* crash_output;
   size_t create_threshhold;
@@ -62,6 +63,7 @@ static FuzzOptions OPTS {
   .max_depth = 10,
   .max_iters = 0,
   .show_stats = false,
+  .mute_stdio = true,
   .stats_interval = 0x1000,
   .crash_output = "crashes",
   .create_threshhold = 100000,
@@ -88,6 +90,7 @@ void PrintHelp(char* prog_name) {
   std::cout << "             --help,-h            Show this help message" << std::endl;
   std::cout << "           --nprocs,-n NPROCS     Number of times to fork (" << OPTS.nprocs << ")" << std::endl;
   std::cout << "          --crashes,-c CRASH_DIR  Where to store crashing inputs (" << OPTS.crash_output << ")" << std::endl;
+  std::cout << "          --no-mute               Do not mute stdio of fuzz procs (" << !OPTS.mute_stdio << ")" << std::endl;
   std::cout << "        --max-depth,-d MAX_DEPTH  Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
   std::cout << "        --max-iters,-m MAX_ITERS  Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
   std::cout << "       --show-stats,-s            Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
@@ -100,10 +103,12 @@ void PrintHelp(char* prog_name) {
 }
 
 bool ParseOptions(int argc, char**argv) {
+#define OPT_NO_MUTE 1000
     static struct option long_options[] = {
       { "help", no_argument, &OPTS.help, 'h' },
       { "nprocs", required_argument, 0, 'n' },
       { "crashes", required_argument, 0, 'c' },
+      { "no-mute", no_argument, 0, OPT_NO_MUTE },
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
       { "show-stats", no_argument, &OPTS.show_stats, 's' },
@@ -149,6 +154,9 @@ bool ParseOptions(int argc, char**argv) {
           break;
         case 'D':
           OPTS.dump_corpus_path = optarg;
+          break;
+        case OPT_NO_MUTE:
+          OPTS.mute_stdio = false;
           break;
       }
     }
@@ -292,9 +300,6 @@ void FuzzLoop(
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
-        if (past_create_threshhold) {
-          std::cout << "NOT PAST CREATE THRESHHOLD" << std::endl;
-        }
         past_create_threshhold = false;
         //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
@@ -432,6 +437,7 @@ int main(int argc, char** argv) {
   bool is_main_proc = true;
 
   resmack::fuzz::trace_targets::Fork trace_target(
+    OPTS.mute_stdio,
     [rule_idx, &rules, &cov, &mmap_state, corpus](resmack::fuzz::Tracee* tracee) {
       FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, tracee);
     }

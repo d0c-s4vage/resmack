@@ -13,18 +13,18 @@ namespace resmack {
 namespace fuzz {
 namespace trace_targets {
 
-Fork::Fork(TraceSpawnCb cb) : cb_(cb) {}
+Fork::Fork(bool mute_io, TraceSpawnCb cb) : cb(cb), mute_io(mute_io) {}
 Fork::~Fork() {}
 
 pid_t Fork::Spawn(Tracee* tracee) {
   pid_t res;
   if ((res = fork()) == 0) {
-    /*
-    int fd = open("/dev/null", O_WRONLY);
-    dup2(fd, 1);
-    dup2(fd, 2);
-    close(fd);
-    */
+    if (this->mute_io) {
+      int fd = open("/dev/null", O_WRONLY);
+      dup2(fd, 1);
+      dup2(fd, 2);
+      close(fd);
+    }
 
     resmack::fuzz::asan::SetAsanCallback([tracee](const char* report) {
       tracee->SaveAsanInfo(report);
@@ -32,7 +32,7 @@ pid_t Fork::Spawn(Tracee* tracee) {
     });
 
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-    cb_(tracee);
+    this->cb(tracee);
     std::exit(0);
   }
   return res;

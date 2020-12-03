@@ -14,10 +14,11 @@ using TraceSpawnCb = std::function<void(Tracee*)>;
 
 class Fork : public TraceTarget {
  private:
-  TraceSpawnCb cb_;
+  TraceSpawnCb cb;
+  bool mute_io;
 
  public:
-  Fork(TraceSpawnCb spawn_cb);
+  Fork(bool mute_io, TraceSpawnCb spawn_cb);
   ~Fork();
 
   pid_t Spawn(Tracee* tracee);
