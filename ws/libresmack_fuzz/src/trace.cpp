@@ -5,6 +5,8 @@
 #include <iostream>
 #include <libunwind-ptrace.h>
 #include <pthread.h>
+#include <signal.h>
+#include <string.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -49,14 +51,32 @@ void* Tracer::MonitorTracee(void* this_arg) {
 
   int status;
 
+  this_->traced_pid = this_->target->Spawn(&this_->tracee);
   while (this_->should_run) {
     this_->tracee.Reset();
-    this_->traced_pid = this_->target->Spawn(&this_->tracee);
     waitpid(this_->traced_pid, &status, 0);
 
     int crash_sig = WSTOPSIG(status);
-
     int exit_status = WEXITSTATUS(status);
+
+    std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
+    if (WIFEXITED(status)) {
+      std::cout << "  WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
+    }
+
+    std::cout << "WIFSIGNALED: " << WIFSIGNALED(status) << std::endl;
+    if (WIFSIGNALED(status)) {
+      std::cout << "  WTERMSIG: " << strsignal(WTERMSIG(status)) << std::endl;
+      std::cout << "  WCOREDUMP: " << WCOREDUMP(status) << std::endl;
+    }
+
+    std::cout << "WIFSTOPPED: " << WIFSTOPPED(status) << std::endl;
+    if (WIFSTOPPED(status)) {
+      std::cout << "  WSTOPSIG: " << strsignal(WSTOPSIG(status)) << std::endl;
+    }
+
+    std::cout << "WIFCONTINUED: " << WIFCONTINUED(status) << std::endl;
+
     this_->last_crash.crashed = false;
 
     ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
@@ -86,12 +106,14 @@ void* Tracer::MonitorTracee(void* this_arg) {
 
     // ignore resize signals
     if (crash_sig == SIGWINCH) {
-      ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
+      ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGWINCH);
       continue;
     }
 
     if (this_->last_crash.crashed) {
-      if (!this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee)) {
+      bool should_continue = this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee);
+      this_->last_crash.crashed = false;
+      if (!should_continue) {
         break;
       }
     }
@@ -99,6 +121,7 @@ void* Tracer::MonitorTracee(void* this_arg) {
     // default action is to kill the current process, and then restart it
     ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
     kill(this_->traced_pid, SIGKILL);
+    this_->traced_pid = this_->target->Spawn(&this_->tracee);
   }
 
   this_->Stop();

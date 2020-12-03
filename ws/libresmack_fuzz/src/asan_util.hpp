@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <sanitizer/asan_interface.h>
 
+__attribute__((weak, visibility("default")))
+void __asan_set_error_report_callback(void(*)(const char*));
+
 namespace resmack {
 namespace fuzz {
 namespace asan {

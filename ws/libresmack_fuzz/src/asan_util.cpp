@@ -18,7 +18,9 @@ void HandleAsan(const char* report) {
 
 void SetAsanCallback(AsanCb cb) {
   ASAN_CB = cb;
-  __asan_set_error_report_callback(HandleAsan);
+  if (__asan_set_error_report_callback != NULL) {
+    __asan_set_error_report_callback(HandleAsan);
+  }
 }
 
 }

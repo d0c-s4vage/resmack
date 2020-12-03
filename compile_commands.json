@@ -101,6 +101,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/c++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/asan_util.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/asan_util.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/asan_util.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/c++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -g   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/corpora/mmap.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/corpora/mmap.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/corpora/mmap.cpp"
 },

@@ -292,7 +292,9 @@ void FuzzLoop(
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
-        std::cout << "NOT PAST CREATE THRESHHOLD" << std::endl;
+        if (past_create_threshhold) {
+          std::cout << "NOT PAST CREATE THRESHHOLD" << std::endl;
+        }
         past_create_threshhold = false;
         //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
@@ -403,8 +405,6 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
 
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
-  signal(SIGINT, sigint_handler);
-
   ParseOptions(argc, argv);
   if (OPTS.help) {
     PrintHelp(argv[0]);
@@ -463,6 +463,7 @@ int main(int argc, char** argv) {
   };
   if (is_main_proc) {
     pthread_create(&status_thread, NULL, LoopPrintStatus, (void*)&status_args);
+    signal(SIGINT, sigint_handler);
   }
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
