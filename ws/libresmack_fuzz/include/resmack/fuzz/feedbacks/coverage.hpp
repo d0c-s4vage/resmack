@@ -6,11 +6,10 @@
 
 #include "resmack/fuzz/feedback.hpp"
 
-extern "C" void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var);
-extern "C" void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* end);
-
 namespace resmack {
 namespace fuzz {
+  void HandleSanitizerCovTracePcGuard(uint32_t* guard_var);
+  void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* end);
 
   class Coverage : public Feedback {
    private:

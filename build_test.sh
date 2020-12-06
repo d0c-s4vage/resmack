@@ -2,7 +2,7 @@
 
 
 CMD=(
-    build/release/ws/resmack/resmack cc
+    build/release/resmack cc
       $@
       --
         -std=c++20

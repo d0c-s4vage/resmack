@@ -99,7 +99,7 @@ namespace compile {
       "-lunwind",
       "-lunwind-ptrace",
       "-lunwind-generic",
-      "-lresmack_fuzz_main",
+      "-lresmack_fuzz_main", // static lib
       "-lresmack_fuzz",
       "-lresmack",
     });

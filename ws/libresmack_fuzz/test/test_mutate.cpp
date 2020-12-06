@@ -6,7 +6,7 @@
 namespace resmack {
 namespace fuzz {
 
-  TEST(Mutate, MutateRandSnapshot) {
+  TEST(Mutate, MutateSnapshots) {
     Rand rand(100);
     rand.SnapshotClear();
     rand.Next();
@@ -38,8 +38,9 @@ namespace fuzz {
       size_t cascade_idx = test[0];
       size_t returned_idx = test[1];
       new_state_tree.clear();
-      size_t res_idx = CascadeMutatedState(tmp_state,
-                                           (const RandSnapshot*)&(*orig_state_tree)[cascade_idx],
+
+      size_t res_idx = resmack::fuzz::CascadeMutatedState(tmp_state,
+                                           (*orig_state_tree)[cascade_idx],
                                            cascade_idx,
                                            (const Vector<RandSnapshot>*)orig_state_tree,
                                            &new_state_tree);
