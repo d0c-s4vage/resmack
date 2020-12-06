@@ -65,7 +65,7 @@ static FuzzOptions OPTS {
   .show_stats = false,
   .mute_stdio = true,
   .stats_interval = 0x1000,
-  .crash_output = "crashes",
+  .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
 };

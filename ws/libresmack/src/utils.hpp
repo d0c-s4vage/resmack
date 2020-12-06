@@ -19,7 +19,7 @@ namespace utils {
     return true;
   }
 
-  inline void RandBytes(Rand* rand, char* charset, size_t charset_size, size_t num_chars, std::string* out) {
+  inline void RandBytes(Rand* rand, const char* charset, size_t charset_size, size_t num_chars, std::string* out) {
     if (out->size() + num_chars > out->capacity()) {
       out->reserve(out->size() + num_chars);
     }

@@ -99,6 +99,9 @@ namespace compile {
       "-lunwind",
       "-lunwind-ptrace",
       "-lunwind-generic",
+      "-lresmack_fuzz_main",
+      "-lresmack_fuzz",
+      "-lresmack",
     });
 
     if (opts.use_asan) {
@@ -114,9 +117,9 @@ namespace compile {
       options.emplace_back(argv[curr_opt_ind]);
     }
     // these go last and are ordered!
-    options.emplace_back("build/release/ws/libresmack_fuzz_main/libresmack_fuzz_main.a");
-    options.emplace_back("build/release/ws/libresmack_fuzz/libresmack_fuzz.a");
-    options.emplace_back("build/release/ws/libresmack/libresmack.a");
+    // options.emplace_back("build/release/ws/libresmack_fuzz_main/libresmack_fuzz_main.a");
+    // options.emplace_back("build/release/ws/libresmack_fuzz/libresmack_fuzz.a");
+    // options.emplace_back("build/release/ws/libresmack/libresmack.a");
     options.emplace_back((const char*)NULL);
 
     std::cout << "Executing: " << std::endl << std::endl;

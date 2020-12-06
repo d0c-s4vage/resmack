@@ -7,6 +7,8 @@
 
 #include "test_utils.hpp"
 
+using namespace std::string_literals;
+
 namespace resmack {
 namespace items {
 
@@ -40,7 +42,7 @@ namespace items {
   TEST(Custom, CustomItemsWork)
   {
     Rand rand(100);
-    CustomLenInserted* custom = new CustomLenInserted(STR(0x41, 0x42, "B"));
+    CustomLenInserted* custom = new CustomLenInserted(STR(0x41, 0x42, "B", 1));
 
     std::string built = test_utils::BuildItem(custom);
     EXPECT_EQ(built, "ABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
