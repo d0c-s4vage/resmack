@@ -103,7 +103,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
     char* test = (char*)malloc(0x10);
     char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
     memcpy(test, to_copy, sizeof(to_copy));
-    raise(SIGSEGV);
   }
 
   return false;

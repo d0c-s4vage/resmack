@@ -93,6 +93,7 @@ namespace compile {
 
     std::vector<const char *> options({
       "clang++",
+      "-fno-omit-frame-pointer",
       "-Iws/libresmack/include",
       "-lpthread",
       "-lcrypto",
