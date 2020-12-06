@@ -13,7 +13,7 @@ namespace fuzz {
 
   TEST(TraceTargetFork, ForksCorrectly) {
     Tracee t;
-    trace_targets::Fork fork_target([](Tracee* tracee) {
+    trace_targets::Fork fork_target(true, [](Tracee* tracee) {
       tracee->SaveLastCorpusInfo(true, 99999, 88888);
     });
 

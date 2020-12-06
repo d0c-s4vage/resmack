@@ -39,7 +39,17 @@
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 
-extern "C" int __lsan_is_turned_off() { return 1; }
+extern "C" {
+  int __lsan_is_turned_off() { return 1; }
+
+  void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var) {
+    resmack::fuzz::HandleSanitizerCovTracePcGuard(guard_var);
+  }
+
+  void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* end) {
+    resmack::fuzz::HandleSanitizerCovTracePcGuardInit(start, end);
+  }
+};
 
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 static bool SHUTTING_DOWN = false;
@@ -65,7 +75,7 @@ static FuzzOptions OPTS {
   .show_stats = false,
   .mute_stdio = true,
   .stats_interval = 0x1000,
-  .crash_output = "crashes",
+  .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
 };

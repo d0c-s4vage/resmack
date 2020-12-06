@@ -5,10 +5,9 @@
 namespace resmack {
 namespace items {
 
-  Str::Str() : Str(1, 10, CHARSET_ALPHA) {}
-  Str::Str(uint32_t min, uint32_t max) : Str(min, max, CHARSET_ALPHA) {}
-  Str::Str(uint32_t min, uint32_t max, char charset[]) : Str(min, max, charset, sizeof(charset)) {}
-  Str::Str(uint32_t min, uint32_t max, char* charset, size_t charset_size):
+  Str::Str() : Str(1, 10) {}
+  Str::Str(uint32_t min, uint32_t max) : Str(min, max, CHARSET_ALPHA, sizeof(CHARSET_ALPHA)) {}
+  Str::Str(uint32_t min, uint32_t max, const char* charset, size_t charset_size):
     min_(min),
     max_(max),
     charset_(charset),

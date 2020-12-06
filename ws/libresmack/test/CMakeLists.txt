@@ -16,7 +16,7 @@ add_executable(test_${PROJECT_NAME}
 )
 
 target_link_libraries(test_${PROJECT_NAME}
-  libresmack
+  ${RESMACK_LIB}
   ${GTEST_LIB_DIR}/libgtest.a
   pthread
 )

@@ -13,24 +13,27 @@ NPROCS=$(shell nproc)
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+DEBUG_SUFFIX=""
+DEBUG_PATH=build/debug$(RELEASE_SUFFIX)
+
 .PHONY: debug
 debug: build/debug build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
 
 .PHONY: clean-debug
 clean-debug:
-	rm -rf build/debug
+	rm -rf $(DEBUG_PATH)
 
 run-perf-debug: debug
-	build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
+	$(DEBUG_PATH)/$(RESMACK_PERF_EXE)
 
 gdb-perf-debug: debug
-	gdb -ex run build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
+	gdb -ex run $(DEBUG_PATH)/$(RESMACK_PERF_EXE)
 
 gdb-test-libresmack: test-libresmack
-	gdb -ex run build/test/ws/libresmack/test/test_libresmack
+	gdb -ex run build/test/test_libresmack
 
 gdb-test-libresmack-fuzz: test-libresmack-fuzz
-	gdb -ex run build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz
+	gdb -ex run build/test/test_libresmack_fuzz
 
 build/debug:
 	mkdir -p build/debug ; \
@@ -61,6 +64,18 @@ RELEASE_PATH=build/release$(RELEASE_SUFFIX)
 release:
 	$(MAKE) build-release
 
+install: release
+	cd "$(RELEASE_PATH)" ; \
+	make install
+
+install-release: release
+	cd "$(RELEASE_PATH)" ; \
+	make install
+
+install-debug: debug 
+	cd "$(DEBUG_PATH)" ; \
+	make install
+
 .PHONY: clean-release
 clean-release:
 	rm -rf build/release*
@@ -68,13 +83,13 @@ clean-release:
 run-resmack: run-resmack-release
 
 run-resmack-release: release
-	$(RELEASE_PATH)/ws/resmack/$(RESMACK_EXE)
+	$(RELEASE_PATH)/$(RESMACK_EXE)
 
 run-resmack-debug: debug
-	$(RELEASE_PATH)/ws/resmack/$(RESMACK_EXE)
+	$(RELEASE_PATH)/$(RESMACK_EXE)
 
 gdb-resmack: debug
-	gdb -ex run $(RELEASE_PATH)/ws/debug/resmack/$(RESMACK_EXE)
+	gdb -ex run $(RELEASE_PATH)/$(RESMACK_EXE)
 
 release-syms:
 	$(MAKE) build-release RELEASE_TYPE=RelWithDebInfo RELEASE_SUFFIX="-syms"
@@ -82,19 +97,19 @@ release-syms:
 # --- PERF EXE ---
 
 run-perf-release: release
-	$(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
+	$(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 gdb-perf-release: release
-	gdb -ex run $(RELEASE_PATH)/ws/resmack_perf/$(RESMACK_PERF_EXE)
+	gdb -ex run $(RELEASE_PATH)/$(RESMACK_PERF_EXE)
 
 gdb-perf: release-syms
-	gdb -ex run $(RELEASE_PATH)-syms/ws/resmack_perf/$(RESMACK_PERF_EXE)
+	gdb -ex run $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE)
 
 run-perf: release-syms
 	bash -c "trap 'trap - SIGINT ERR SIGTERM; perf report; exit 1' SIGINT SIGTERM ERR; $(MAKE) perf-release-inner"
 
 perf-release-inner:
-	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/ws/resmack_perf/$(RESMACK_PERF_EXE) || true
+	perf record --call-graph dwarf -g $(RELEASE_PATH)-syms/$(RESMACK_PERF_EXE) || true
 
 
 # -----------------------------------------------------------------------------
@@ -118,11 +133,11 @@ TEST="*"
 
 .PHONY: tests clean-tests test-libresmack-fuzz test-libresmack libs-test/googletest
 
-tests: libs-test/googletest build/test/ws/libresmack/test/test_libresmack test-libresmack-fuzz
+tests: libs-test/googletest test-libresmack test-libresmack-fuzz
 
 run-tests: test-libresmack test-libresmack-fuzz
-	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
-	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	build/test/test_libresmack --gtest_filter=$(TEST)
+	build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 clean-tests:
 	rm -rf build/test
@@ -132,14 +147,14 @@ test-libresmack-fuzz: build/test
 	make -j $(NPROCS)
 
 run-test-libresmack-fuzz: test-libresmack-fuzz
-	build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 test-libresmack: build/test
 	cd build/test/ws/libresmack/test ; \
 	make -j $(NPROCS)
 
 run-test-libresmack: test-libresmack
-	build/test/ws/libresmack/test/test_libresmack --gtest_filter=$(TEST)
+	build/test/test_libresmack --gtest_filter=$(TEST)
 
 libs-test/googletest: libs-test/googletest/build/lib/libgtest_main.a
 

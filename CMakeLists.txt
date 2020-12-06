@@ -12,6 +12,13 @@ project(resmack-main)
 ## or cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
+set(CMAKE_INSTALL_PREFIX "/usr")
+
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+
 add_subdirectory(ws/libresmack)
 add_subdirectory(ws/libresmack_fuzz)
 add_subdirectory(ws/libresmack_fuzz_main)

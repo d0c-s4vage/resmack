@@ -14,14 +14,14 @@ namespace items {
 
   TEST(Str, CorrectLength) {
     for (size_t i = 0; i < 100; i++) {
-      Str* str = new Str(2, 3, "A");
+      Str* str = new Str(2, 3, "A", 1);
       std::string built = test_utils::BuildItem(str);
       EXPECT_EQ(built, "AA");
     }
 
     Map<std::string, size_t> counts;
     // 2, 3, 4 are the possible lengths
-    Str* str = new Str(2, 5, "A");
+    Str* str = new Str(2, 5, "A", 1);
     test_utils::CountBuilds(100, str, &counts);
 
     EXPECT_EQ(counts.size(), 3u);
@@ -33,7 +33,7 @@ namespace items {
   TEST(Str, FullCharset) {
     Map<std::string, size_t> counts;
     // 2, 3, 4 are the possible lengths
-    Str* str = new Str(1, 2, "ABCD");
+    Str* str = new Str(1, 2, "ABCD", 4);
     test_utils::CountBuilds(1000, str, &counts);
 
     EXPECT_GT(counts["A"], 0u);

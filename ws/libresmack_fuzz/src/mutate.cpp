@@ -7,7 +7,8 @@ namespace resmack {
 namespace fuzz {
 
   // Returns the new index into orig_ss that iteration should continue at
-  inline size_t CascadeMutatedState(
+  __attribute__((noinline))
+  size_t CascadeMutatedState(
     uint32_t new_state[],
     const RandSnapshot& item,
     size_t item_idx,

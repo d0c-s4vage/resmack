@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <sanitizer/asan_interface.h>
 
+#include "resmack/defs.hpp"
+
 __attribute__((weak, visibility("default")))
 void __asan_set_error_report_callback(void(*)(const char*));
 
@@ -11,8 +13,10 @@ namespace resmack {
 namespace fuzz {
 namespace asan {
 
-  static char *ASAN_DEFAULT_OPTIONS = "exitcode=199";
-  static int ASAN_EXIT_CODE = 199;
+  UNUSED_DECL
+  static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199";
+  UNUSED_DECL
+  static const int ASAN_EXIT_CODE = 199;
 
   extern "C"
   __attribute__((no_sanitize_address))
