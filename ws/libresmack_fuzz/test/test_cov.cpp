@@ -10,13 +10,13 @@ namespace fuzz {
 
   TEST(Fuzz, CoverageHitTwice) {
     uint32_t vars[3] = {0, 0, 0};
-    __sanitizer_cov_trace_pc_guard_init(&vars[0], &vars[2]);
+    HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
     Coverage cov;
     cov.Start();
 
-    __sanitizer_cov_trace_pc_guard(&vars[0]);
-    __sanitizer_cov_trace_pc_guard(&vars[1]);
+    HandleSanitizerCovTracePcGuard(&vars[0]);
+    HandleSanitizerCovTracePcGuard(&vars[1]);
 
     cov.Stop();
 

@@ -286,7 +286,7 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz_main",
-  "command": "/usr/bin/c++  -Dlibresmack_fuzz_main_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/../libresmack_fuzz/include  -Wall -Wextra -fPIC -g -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz_main.dir/src/main.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/src/main.cpp",
+  "command": "/usr/bin/c++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/../libresmack_fuzz/include  -Wall -Wextra -fPIC -g   -std=gnu++2a -o CMakeFiles/libresmack_fuzz_main.dir/src/main.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/src/main.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz_main/src/main.cpp"
 },
 {
