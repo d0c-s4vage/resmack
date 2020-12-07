@@ -6,6 +6,19 @@
 namespace resmack {
 namespace fuzz {
 
+struct CorpusEntry;
+
+struct CorpusEntry {
+  CorpusEntry* parent1;
+  CorpusEntry* parent2;
+  uint64_t descendant_level;
+  uint64_t num_direct_descendants;
+  uint64_t num_descendants;
+  uint64_t num_mutations;
+  uint64_t num_crashes;
+  Vector<Vector<RandSnapshot>> snapshot;
+};
+
 class Corpus {
  public:
   virtual void AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) = 0;
@@ -23,6 +36,10 @@ class Corpus {
     size_t key
   ) = 0;
   virtual size_t ItersSinceNewItem() = 0;
+
+  // --------------------------------------------------------------------------
+
+  virtual 
 };
 
 }
