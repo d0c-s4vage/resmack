@@ -119,10 +119,10 @@ bool ParseOptions(int argc, char**argv) {
 #define OPT_NO_MUTE    1000
 #define OPT_RUN_DIRECT 1001
     static struct option long_options[] = {
-      { "help", no_argument, &OPTS.help, 'h' },
+      { "help", no_argument, 0, 'h' },
       { "nprocs", required_argument, 0, 'n' },
       { "crashes", required_argument, 0, 'c' },
-      { "direct", no_argument, &OPTS.run_direct, OPT_RUN_DIRECT },
+      { "direct", no_argument, 0, OPT_RUN_DIRECT },
       { "no-mute", no_argument, 0, OPT_NO_MUTE },
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
@@ -322,7 +322,7 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key, used_corpus)) {
         past_create_threshhold = false;
-        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
@@ -437,7 +437,7 @@ int main(int argc, char** argv) {
 
   resmack::fuzz::ExternalFunctions EF;
 
-  resmack::Rules rules = new resmack::Rules();
+  resmack::Rules rules;
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
   rules.Finalize();
 

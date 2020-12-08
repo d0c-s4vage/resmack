@@ -136,6 +136,8 @@ namespace resmack {
     if (this->parent_ == NULL) {
       return this->GetRule(rule_idx);
     }
+    printf("this->parent_: %p\n", this->parent_);
+
     Vector<RuleManager*> options;
     RuleManager* curr = this;
     while (curr != NULL) {

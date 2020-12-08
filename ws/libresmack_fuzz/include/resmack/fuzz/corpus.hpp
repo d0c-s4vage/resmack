@@ -9,8 +9,8 @@ namespace fuzz {
 struct CorpusEntry;
 
 struct CorpusEntry {
-  CorpusEntry* parent1;
-  CorpusEntry* parent2;
+  size_t parent1_one_based_idx; // 0 == NOT SET
+  size_t parent2_one_based_idx; // 0 == NOT SET
   uint64_t index;
   uint64_t iter_discovered;
   uint64_t descendant_level;
@@ -21,8 +21,8 @@ struct CorpusEntry {
   Vector<RandSnapshot> snapshot;
 
   CorpusEntry() :
-    parent1(NULL),
-    parent2(NULL),
+    parent1_one_based_idx(0),
+    parent2_one_based_idx(0),
     index(0),
     descendant_level(0),
     num_descendants(0),

@@ -17,8 +17,12 @@ class MmapCorpus : public Corpus {
   void* corpus_map;
   size_t max_corpus_size;
   sem_t* corpus_lock;
-  Vector<CorpusEntry> snapshots;
   Set<size_t> seen_keys;
+  Vector<CorpusEntry> snapshots;
+  Vector<size_t> most_direct_descendants_desc;
+  Vector<size_t> most_descendants_desc;
+  Vector<size_t> most_ancestors_desc;
+  Vector<size_t> most_crashes_desc;
 
   ser::CorpusMetadata* meta;
   size_t next_item_index;
@@ -27,8 +31,8 @@ class MmapCorpus : public Corpus {
   uint32_t last_updated_seq; 
   uint32_t last_reorg_seq; 
 
-  CorpusEntry* last_item1;
-  CorpusEntry* last_item2; // only used if crossover between two parents was used
+  size_t last_item1_one_based_idx;
+  size_t last_item2_one_based_idx; // only used if crossover between two parents was used
 
   // pointer to the current number of iterations. READ ONLY!
   // WILL NOT BE EXACT! Iteration counts are synced every X intervals, not
@@ -74,6 +78,9 @@ class MmapCorpus : public Corpus {
   void SyncInner();
   size_t UpdateStats(CorpusEntry* entry, size_t level);
   ser::CorpusItemHeader* GetItemHeader(size_t index);
+  void SortedsAdd(size_t index);
+  void SortedsClear();
+  void SortedsResort();
 };
 
 }

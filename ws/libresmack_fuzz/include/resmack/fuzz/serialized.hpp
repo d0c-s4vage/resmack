@@ -22,8 +22,8 @@ struct CorpusItemHeader {
   uint32_t size;
   size_t feedback_key;
   uint64_t iter_discovered;
-  uint64_t parent_1_one_based_idx; // 1-based!!! 0 == no parent
-  uint64_t parent_2_one_based_idx;
+  uint64_t parent1_one_based_idx; // 1-based!!! 0 == no parent
+  uint64_t parent2_one_based_idx;
   uint64_t num_crashes;
   uint64_t num_ancestors;
   uint64_t num_descendants;

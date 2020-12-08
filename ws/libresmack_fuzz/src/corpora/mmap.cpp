@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <cstddef>
 #include <fcntl.h>
@@ -90,7 +91,7 @@ void MmapCorpus::AddRandSnapshot(
   bool descendant_of_last
 ) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
-      this->AddRandSnapshotInner(snapshot, feedback_key, descendant_of_last);
+    this->AddRandSnapshotInner(snapshot, feedback_key, descendant_of_last);
   });
 }
 
@@ -103,11 +104,19 @@ void MmapCorpus::AddRandSnapshotInner(
 
   CorpusEntry* new_snapshot = &this->snapshots.emplace_back();
   new_snapshot->index = this->snapshots.size() - 1;
+
   if (descendant_of_last) {
-    new_snapshot->parent1 = this->last_item1;
-    new_snapshot->parent2 = this->last_item2;
+    new_snapshot->parent1_one_based_idx = this->last_item1_one_based_idx;
+    new_snapshot->parent2_one_based_idx = this->last_item2_one_based_idx;
     new_snapshot->num_ancestors = this->UpdateStats(new_snapshot, 0);
+  } else {
+    new_snapshot->parent1_one_based_idx = 0;
+    new_snapshot->parent2_one_based_idx = 0;
   }
+
+  // Need to do this *AFTER* we have updated any stats!
+  this->SortedsAdd(new_snapshot->index);
+  this->SortedsResort();
 
   size_t total_size =
     sizeof(ser::CorpusItemHeader) +
@@ -122,11 +131,11 @@ void MmapCorpus::AddRandSnapshotInner(
   this->next_item->num_descendants = new_snapshot->num_descendants;
   this->next_item->num_crashes = new_snapshot->num_crashes;
 
-  if (new_snapshot->parent1 != NULL) {
-    this->next_item->parent_1_one_based_idx = new_snapshot->parent1->index + 1;
+  if (new_snapshot->parent1_one_based_idx != 0) {
+    this->next_item->parent1_one_based_idx = new_snapshot->parent1_one_based_idx;
   }
-  if (new_snapshot->parent2 != NULL) {
-    this->next_item->parent_2_one_based_idx = new_snapshot->parent2->index + 1;
+  if (new_snapshot->parent2_one_based_idx != 0) {
+    this->next_item->parent2_one_based_idx = new_snapshot->parent2_one_based_idx;
   }
   
   ser::GenState* curr_state = (ser::GenState*)(
@@ -165,6 +174,7 @@ void MmapCorpus::SyncInner() {
     for (auto entry : this->snapshots) {
       entry.snapshot.clear();
     }
+    this->SortedsClear();
     this->snapshots.clear();
     this->next_item_index = 0;
     this->next_item =
@@ -180,12 +190,16 @@ void MmapCorpus::SyncInner() {
 
   for(; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
     this->seen_keys.emplace(curr->feedback_key);
+
     CorpusEntry& entry = this->snapshots.emplace_back();
-    if (curr->parent_1_one_based_idx != 0) {
-      entry.parent1 = &this->snapshots[curr->parent_1_one_based_idx];
+    entry.index = snapshot_idx;
+    this->SortedsAdd(snapshot_idx);
+
+    if (curr->parent1_one_based_idx != 0) {
+      entry.parent1_one_based_idx = curr->parent1_one_based_idx;
     }
-    if (curr->parent_2_one_based_idx != 0) {
-      entry.parent2 = &this->snapshots[curr->parent_1_one_based_idx];
+    if (curr->parent2_one_based_idx != 0) {
+      entry.parent2_one_based_idx = curr->parent2_one_based_idx;
     }
     entry.num_crashes = curr->num_crashes;
     entry.num_descendants = curr->num_descendants;
@@ -213,50 +227,105 @@ void MmapCorpus::SyncInner() {
 
   this->next_item_index = snapshot_idx;
   this->next_item = curr;
+
+  this->SortedsResort();
 }
 
 Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
   size_t corpus_len = this->snapshots.size();
   size_t rand_idx;
 
-  if (corpus_len > 4) {
-    size_t half_size = corpus_len / 2;
-    size_t first_half = corpus_len - half_size;
-    // double the odds of the last half
-    size_t new_size = corpus_len + half_size;
-    size_t tmp = rand->Next() % new_size;
-    if (tmp < first_half) {
-      rand_idx = tmp;
-    } else {
-      rand_idx = first_half + (tmp - first_half) / 2;
-    }
-  } else {
-    uint32_t next = rand->Next();
-    printf("CORPUS LENGTH: %lu\n", corpus_len);
-    rand_idx = next % corpus_len;
+  uint32_t choice_val = rand->Next();
+  uint32_t rand_val = rand->Next();
+  size_t top_fourth = corpus_len / 4;
+  size_t total_options = 6;
+
+  if (corpus_len < 4) {
+    total_options = 1; // only the first case statement
+  } else if (
+      choice_val % 6 == 5 &&
+      this->snapshots[this->most_crashes_desc[0]].num_crashes == 0
+  ) {
+    total_options = 5; // don't use the crashes, that's the same as rand
   }
 
-  // TODO crossover
+  switch (choice_val % total_options) {
+    // random
+    case 0: {
+      rand_idx = rand->Next() % corpus_len;
+      break;
+    }
 
-  this->last_item1 = &this->snapshots[rand_idx];
-  this->last_item2 = NULL;
-  return &this->last_item1->snapshot;
+    // top 4th of most recent
+    case 1: {
+      // doubles the odds of the most recent 4th
+      size_t part_size = corpus_len / 4;
+      size_t first_part = corpus_len - part_size;
+      // double the odds of the last part
+      size_t new_size = corpus_len + part_size;
+      size_t tmp = rand_val % new_size;
+      if (tmp < first_part) {
+        rand_idx = tmp;
+      } else {
+        rand_idx = first_part + (tmp - first_part) / 2;
+      }
+      break;
+    }
+
+    // top 4th of largest ancestor chain
+    case 2: {
+      rand_idx = this->most_ancestors_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most direct descendants
+    case 3: {
+      rand_idx = this->most_direct_descendants_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most total descendants
+    case 4: {
+      rand_idx = this->most_descendants_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most crashes
+    case 5: {
+      rand_idx = this->most_crashes_desc[top_fourth % rand_val];
+      break;
+    }
+  };
+
+  this->last_item1_one_based_idx = rand_idx + 1;
+  this->last_item2_one_based_idx = 0;
+
+  return &(this->snapshots[rand_idx].snapshot);
 }
 
 // returns the maximum ancestor depth max(ancestor_parent1, ancestor_parent2)
 size_t MmapCorpus::UpdateStats(CorpusEntry* entry, size_t level) {
-  if (entry->parent1 == NULL && entry->parent2 == NULL) {
+  if (entry->parent1_one_based_idx == 0 && entry->parent2_one_based_idx == 0) {
     return 0;
   }
 
-  CorpusEntry* parents[2] = { entry->parent1, entry->parent2 };
+  size_t parents[2] = {
+    entry->parent1_one_based_idx,
+    entry->parent2_one_based_idx,
+  };
   size_t max_level = 0;
 
-  for (size_t i = 0; i < 2; i++) {
-    CorpusEntry* parent = parents[i];
-    if (parent == NULL) { continue; }
+  if (level == 10) {
+    std::exit(1);
+  }
 
-    ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent->index);
+  for (size_t i = 0; i < 2; i++) {
+    size_t parent_idx = parents[i];
+    if (parent_idx == 0) { continue; }
+    parent_idx -= 1;
+
+    CorpusEntry* parent = &this->snapshots[parent_idx];
+    ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
     if (level == 0) {
       parent->num_direct_descendants++;
       parent_header->num_direct_descendants++;
@@ -276,12 +345,12 @@ size_t MmapCorpus::UpdateStats(CorpusEntry* entry, size_t level) {
 
 void MmapCorpus::IncLastItemCrashes() {
   WITH_LOCK(this->corpus_lock, Incrementing Last Item Crashes, {
-    this->last_item1->num_crashes++;
-    this->GetItemHeader(this->last_item1->index)->num_crashes++;
+    this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
+    this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
 
-    if (this->last_item2 != NULL) {
-      this->last_item2->num_crashes++;
-      this->GetItemHeader(this->last_item2->index)->num_crashes++;
+    if (this->last_item2_one_based_idx != 0) {
+      this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
+      this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
     }
   });
 }
@@ -292,6 +361,60 @@ ser::CorpusItemHeader* MmapCorpus::GetItemHeader(size_t index) {
     curr = (ser::CorpusItemHeader*)((char*)curr + curr->size + sizeof(ser::CorpusItemHeader));
   }
   return curr;
+}
+
+void MmapCorpus::SortedsAdd(size_t index) {
+  this->most_direct_descendants_desc.push_back(index);
+  this->most_descendants_desc.push_back(index);
+  this->most_ancestors_desc.push_back(index);
+  this->most_crashes_desc.push_back(index);
+}
+
+void MmapCorpus::SortedsClear() {
+  this->most_direct_descendants_desc.clear();
+  this->most_descendants_desc.clear();
+  this->most_ancestors_desc.clear();
+  this->most_crashes_desc.clear();
+}
+
+void MmapCorpus::SortedsResort() {
+  Vector<CorpusEntry>* snapshots = &this->snapshots;
+
+  std::sort(
+    this->most_direct_descendants_desc.begin(),
+    this->most_direct_descendants_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_direct_descendants >
+        (*snapshots)[right_idx].num_direct_descendants;
+    }
+  );
+
+  std::sort(
+    this->most_descendants_desc.begin(),
+    this->most_descendants_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_descendants >
+        (*snapshots)[right_idx].num_descendants;
+    }
+  );
+
+  std::sort(
+    this->most_ancestors_desc.begin(),
+    this->most_ancestors_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_ancestors >
+        (*snapshots)[right_idx].num_ancestors;
+    }
+  );
+
+  std::sort(
+    this->most_crashes_desc.begin(),
+    this->most_crashes_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_crashes >
+        (*snapshots)[right_idx].num_crashes;
+    }
+  );
 }
 
 }
