@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 #include <cstddef>
 #include <fcntl.h>
@@ -6,6 +7,7 @@
 
 #include "resmack/fuzz/corpora/mmap.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/utils.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -13,6 +15,7 @@ namespace corpora {
 
 MmapCorpus::MmapCorpus() :
   next_item_index(0),
+  first_item(NULL),
   next_item(NULL)
 {
 }
@@ -20,23 +23,49 @@ MmapCorpus::MmapCorpus() :
 MmapCorpus::~MmapCorpus() {
 }
 
-void MmapCorpus::Init(void* corpus_map, size_t max_corpus_size) {
+void MmapCorpus::Init(
+  const char* state_path,
+  void* corpus_map,
+  size_t max_corpus_size
+) {
   this->corpus_map = corpus_map;
   this->max_corpus_size = max_corpus_size;
   this->next_item_index = 0;
+  this->first_item = NULL;
   this->next_item = NULL;
 
   this->meta = (ser::CorpusMetadata*)this->corpus_map;
 
-  if ((this->corpus_lock = sem_open("/resmack-corpus", O_CREAT, 0660, 1)) == SEM_FAILED) {
+  const char* suffix = "-corpus";
+  size_t suffix_len = strlen(suffix);
+  size_t state_len = strlen(state_path);
+  char* with_sem = (char*)malloc(state_len + suffix_len + 1);
+  memcpy(with_sem, state_path, state_len);
+  // keep the null terminator
+  memcpy(with_sem + state_len, suffix, suffix_len + 1);
+
+  char sem_path[2 + (SHA_DIGEST_LENGTH * 2)]; // leading '/' + SHA_DIGEST_LENGTH + NULL
+  utils::sha1_hex(with_sem, strlen(with_sem), sem_path+1);
+  sem_path[0] = '/';
+
+  free(with_sem);
+
+  if ((this->corpus_lock = sem_open(sem_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
     perror("Could not create semaphore");
     std::exit(1);
   }
 
-  this->Sync();
+  // *ALWAYS* sync when in Init (don't use Sync())
+  WITH_LOCK(this->corpus_lock, Syncing corpus, {
+    this->SyncInner();
+  });
 }
 
-bool MmapCorpus::AddRandSnapshotIfNotSeen(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+bool MmapCorpus::AddRandSnapshotIfNotSeen(
+  const resmack::Vector<RandSnapshot>* snapshot,
+  size_t feedback_key,
+  bool descendant_of_last
+) {
   bool res = true;
   if (this->SeenFeedback(feedback_key)) {
     return false;
@@ -50,33 +79,68 @@ bool MmapCorpus::AddRandSnapshotIfNotSeen(const resmack::Vector<RandSnapshot>* s
       break;
     }
 
-    this->AddRandSnapshotInner(snapshot, feedback_key);
+    this->AddRandSnapshotInner(snapshot, feedback_key, descendant_of_last);
   });
 
   return res;
 }
 
-void MmapCorpus::AddRandSnapshot(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+void MmapCorpus::AddRandSnapshot(
+  const resmack::Vector<RandSnapshot>* snapshot,
+  size_t feedback_key,
+  bool descendant_of_last
+) {
   WITH_LOCK(this->corpus_lock, Adding snapshot, {
-      this->AddRandSnapshotInner(snapshot, feedback_key);
+    this->AddRandSnapshotInner(snapshot, feedback_key, descendant_of_last);
   });
 }
 
-void MmapCorpus::AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snapshot, size_t feedback_key) {
+void MmapCorpus::AddRandSnapshotInner(
+  const resmack::Vector<RandSnapshot>* snapshot,
+  size_t feedback_key,
+  bool descendant_of_last
+) {
   this->last_discovered_iteration = *this->curr_iter_count;
+
+  CorpusEntry* new_snapshot = &this->snapshots.emplace_back();
+  new_snapshot->index = this->snapshots.size() - 1;
+
+  if (descendant_of_last) {
+    new_snapshot->parent1_one_based_idx = this->last_item1_one_based_idx;
+    new_snapshot->parent2_one_based_idx = this->last_item2_one_based_idx;
+    new_snapshot->num_ancestors = this->UpdateStats(new_snapshot, 0);
+  } else {
+    new_snapshot->parent1_one_based_idx = 0;
+    new_snapshot->parent2_one_based_idx = 0;
+  }
+
+  // Need to do this *AFTER* we have updated any stats!
+  this->SortedsAdd(new_snapshot->index);
+  this->SortedsResort();
 
   size_t total_size =
     sizeof(ser::CorpusItemHeader) +
     (sizeof(ser::GenState) * snapshot->size());
+
   this->next_item->item_header.num_states = snapshot->size();
   this->next_item->size = total_size;
   this->next_item->feedback_key = feedback_key;
   this->next_item->iter_discovered = this->last_discovered_iteration;
+  this->next_item->num_ancestors = new_snapshot->num_ancestors;
+  this->next_item->num_direct_descendants = new_snapshot->num_direct_descendants;
+  this->next_item->num_descendants = new_snapshot->num_descendants;
+  this->next_item->num_crashes = new_snapshot->num_crashes;
+
+  if (new_snapshot->parent1_one_based_idx != 0) {
+    this->next_item->parent1_one_based_idx = new_snapshot->parent1_one_based_idx;
+  }
+  if (new_snapshot->parent2_one_based_idx != 0) {
+    this->next_item->parent2_one_based_idx = new_snapshot->parent2_one_based_idx;
+  }
   
   ser::GenState* curr_state = (ser::GenState*)(
     (char*)this->next_item + sizeof(ser::CorpusItemHeader)
   );
-  Vector<RandSnapshot>* new_snapshot = &this->snapshots.emplace_back();
 
   for (const RandSnapshot& item: *snapshot) {
     curr_state->ref_depth = item.ref_depth;
@@ -84,7 +148,7 @@ void MmapCorpus::AddRandSnapshotInner(const resmack::Vector<RandSnapshot>* snaps
     memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
 
     curr_state = (ser::GenState*)((char*)curr_state + sizeof(ser::GenState));
-    new_snapshot->emplace_back(item.ref_depth, item.rule_idx, item.state);
+    new_snapshot->snapshot.emplace_back(item.ref_depth, item.rule_idx, item.state);
   }
 
   this->last_updated_seq = ++this->meta->updated_seq;
@@ -107,13 +171,15 @@ void MmapCorpus::Sync() {
 
 void MmapCorpus::SyncInner() {
   if (this->next_item == NULL || this->meta->reorg_seq != this->last_reorg_seq) {
-    for (auto snapshot : this->snapshots) {
-      snapshot.clear();
+    for (auto entry : this->snapshots) {
+      entry.snapshot.clear();
     }
+    this->SortedsClear();
     this->snapshots.clear();
     this->next_item_index = 0;
     this->next_item =
       (ser::CorpusItemHeader*)((char*)this->meta + sizeof(ser::CorpusMetadata));
+    this->first_item = this->next_item;
   }
 
   this->last_updated_seq = this->meta->updated_seq;
@@ -124,7 +190,22 @@ void MmapCorpus::SyncInner() {
 
   for(; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
     this->seen_keys.emplace(curr->feedback_key);
-    Vector<RandSnapshot>& snapshot = this->snapshots.emplace_back();
+
+    CorpusEntry& entry = this->snapshots.emplace_back();
+    entry.index = snapshot_idx;
+    this->SortedsAdd(snapshot_idx);
+
+    if (curr->parent1_one_based_idx != 0) {
+      entry.parent1_one_based_idx = curr->parent1_one_based_idx;
+    }
+    if (curr->parent2_one_based_idx != 0) {
+      entry.parent2_one_based_idx = curr->parent2_one_based_idx;
+    }
+    entry.num_crashes = curr->num_crashes;
+    entry.num_descendants = curr->num_descendants;
+    entry.num_direct_descendants = curr->num_direct_descendants;
+    entry.num_ancestors = curr->num_ancestors;
+    entry.iter_discovered = curr->iter_discovered;
 
     size_t state_offset = 0;
     size_t header_size = sizeof(ser::CorpusItemHeader);
@@ -137,7 +218,7 @@ void MmapCorpus::SyncInner() {
       rand_state_idx++
     ) {
       state = (ser::GenState*)((char*)curr + header_size + state_offset);
-      snapshot.emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
+      entry.snapshot.emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
       state_offset += state_size;
     }
 
@@ -146,28 +227,194 @@ void MmapCorpus::SyncInner() {
 
   this->next_item_index = snapshot_idx;
   this->next_item = curr;
+
+  this->SortedsResort();
 }
 
 Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
   size_t corpus_len = this->snapshots.size();
   size_t rand_idx;
 
-  if (corpus_len > 4) {
-    size_t half_size = corpus_len / 2;
-    size_t first_half = corpus_len - half_size;
-    // double the odds of the last half
-    size_t new_size = corpus_len + half_size;
-    size_t tmp = rand->Next() % new_size;
-    if (tmp < first_half) {
-      rand_idx = tmp;
-    } else {
-      rand_idx = first_half + (tmp - first_half) / 2;
-    }
-  } else {
-    uint32_t next = rand->Next();
-    rand_idx = next % corpus_len;
+  uint32_t choice_val = rand->Next();
+  uint32_t rand_val = rand->Next();
+  size_t top_fourth = corpus_len / 4;
+  size_t total_options = 6;
+
+  if (corpus_len < 4) {
+    total_options = 1; // only the first case statement
+  } else if (
+      choice_val % 6 == 5 &&
+      this->snapshots[this->most_crashes_desc[0]].num_crashes == 0
+  ) {
+    total_options = 5; // don't use the crashes, that's the same as rand
   }
-  return &this->snapshots[rand_idx];
+
+  switch (choice_val % total_options) {
+    // random
+    case 0: {
+      rand_idx = rand->Next() % corpus_len;
+      break;
+    }
+
+    // top 4th of most recent
+    case 1: {
+      // doubles the odds of the most recent 4th
+      size_t part_size = corpus_len / 4;
+      size_t first_part = corpus_len - part_size;
+      // double the odds of the last part
+      size_t new_size = corpus_len + part_size;
+      size_t tmp = rand_val % new_size;
+      if (tmp < first_part) {
+        rand_idx = tmp;
+      } else {
+        rand_idx = first_part + (tmp - first_part) / 2;
+      }
+      break;
+    }
+
+    // top 4th of largest ancestor chain
+    case 2: {
+      rand_idx = this->most_ancestors_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most direct descendants
+    case 3: {
+      rand_idx = this->most_direct_descendants_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most total descendants
+    case 4: {
+      rand_idx = this->most_descendants_desc[top_fourth % rand_val];
+      break;
+    }
+
+    // top 4th of most crashes
+    case 5: {
+      rand_idx = this->most_crashes_desc[top_fourth % rand_val];
+      break;
+    }
+  };
+
+  this->last_item1_one_based_idx = rand_idx + 1;
+  this->last_item2_one_based_idx = 0;
+
+  return &(this->snapshots[rand_idx].snapshot);
+}
+
+// returns the maximum ancestor depth max(ancestor_parent1, ancestor_parent2)
+size_t MmapCorpus::UpdateStats(CorpusEntry* entry, size_t level) {
+  if (entry->parent1_one_based_idx == 0 && entry->parent2_one_based_idx == 0) {
+    return 0;
+  }
+
+  size_t parents[2] = {
+    entry->parent1_one_based_idx,
+    entry->parent2_one_based_idx,
+  };
+  size_t max_level = 0;
+
+  if (level == 10) {
+    std::exit(1);
+  }
+
+  for (size_t i = 0; i < 2; i++) {
+    size_t parent_idx = parents[i];
+    if (parent_idx == 0) { continue; }
+    parent_idx -= 1;
+
+    CorpusEntry* parent = &this->snapshots[parent_idx];
+    ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
+    if (level == 0) {
+      parent->num_direct_descendants++;
+      parent_header->num_direct_descendants++;
+    }
+    size_t parent_level = this->UpdateStats(parent, level+1);
+    // will already be set! num ancestors never changes
+    // parent->num_ancestors++;
+    parent->num_descendants++;
+    parent_header->num_descendants++;
+    if (parent_level > max_level) {
+      max_level = parent_level;
+    }
+  }
+
+  return max_level;
+}
+
+void MmapCorpus::IncLastItemCrashes() {
+  WITH_LOCK(this->corpus_lock, Incrementing Last Item Crashes, {
+    this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
+    this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
+
+    if (this->last_item2_one_based_idx != 0) {
+      this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
+      this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
+    }
+  });
+}
+
+ser::CorpusItemHeader* MmapCorpus::GetItemHeader(size_t index) {
+  ser::CorpusItemHeader* curr = this->first_item;
+  for (size_t i = 0; i < index; i++) {
+    curr = (ser::CorpusItemHeader*)((char*)curr + curr->size + sizeof(ser::CorpusItemHeader));
+  }
+  return curr;
+}
+
+void MmapCorpus::SortedsAdd(size_t index) {
+  this->most_direct_descendants_desc.push_back(index);
+  this->most_descendants_desc.push_back(index);
+  this->most_ancestors_desc.push_back(index);
+  this->most_crashes_desc.push_back(index);
+}
+
+void MmapCorpus::SortedsClear() {
+  this->most_direct_descendants_desc.clear();
+  this->most_descendants_desc.clear();
+  this->most_ancestors_desc.clear();
+  this->most_crashes_desc.clear();
+}
+
+void MmapCorpus::SortedsResort() {
+  Vector<CorpusEntry>* snapshots = &this->snapshots;
+
+  std::sort(
+    this->most_direct_descendants_desc.begin(),
+    this->most_direct_descendants_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_direct_descendants >
+        (*snapshots)[right_idx].num_direct_descendants;
+    }
+  );
+
+  std::sort(
+    this->most_descendants_desc.begin(),
+    this->most_descendants_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_descendants >
+        (*snapshots)[right_idx].num_descendants;
+    }
+  );
+
+  std::sort(
+    this->most_ancestors_desc.begin(),
+    this->most_ancestors_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_ancestors >
+        (*snapshots)[right_idx].num_ancestors;
+    }
+  );
+
+  std::sort(
+    this->most_crashes_desc.begin(),
+    this->most_crashes_desc.end(),
+    [snapshots](size_t left_idx, size_t right_idx) -> bool {
+      return (*snapshots)[left_idx].num_crashes >
+        (*snapshots)[right_idx].num_crashes;
+    }
+  );
 }
 
 }

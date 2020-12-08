@@ -40,7 +40,7 @@ namespace resmack {
      void SnapshotClear();
      inline void SetShouldRecord(bool val) { this->should_record_ = val; }
      inline bool ShouldRecord() { return this->should_record_; }
-     void SetState(uint32_t state[]);
+     void SetState(const uint32_t state[]);
      uint32_t* GetState() { return this->s_; }
      void CopyState(uint32_t state[]);
 

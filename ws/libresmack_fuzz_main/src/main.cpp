@@ -65,6 +65,7 @@ struct FuzzOptions {
   char* crash_output;
   size_t create_threshhold;
   char* dump_corpus_path;
+  int run_direct;
 };
 
 static FuzzOptions OPTS {
@@ -78,6 +79,7 @@ static FuzzOptions OPTS {
   .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
+  .run_direct = 0,
 };
 
 void sigint_handler(int signum) {
@@ -98,6 +100,7 @@ void PrintHelp(char* prog_name) {
   std::cout << "  Fuzz the compiled target" << std::endl << std::endl;
   std::cout << prog_name << " [-d MAX_DEPTH] [-n NPROCS] [-s] [-i INTERVAL] [--help]"  << std::endl << std::endl;
   std::cout << "             --help,-h            Show this help message" << std::endl;
+  std::cout << "           --direct               Run the fuzzing loop and target in the main thread (" << OPTS.run_direct << ")" << std::endl;
   std::cout << "           --nprocs,-n NPROCS     Number of times to fork (" << OPTS.nprocs << ")" << std::endl;
   std::cout << "          --crashes,-c CRASH_DIR  Where to store crashing inputs (" << OPTS.crash_output << ")" << std::endl;
   std::cout << "          --no-mute               Do not mute stdio of fuzz procs (" << !OPTS.mute_stdio << ")" << std::endl;
@@ -113,11 +116,13 @@ void PrintHelp(char* prog_name) {
 }
 
 bool ParseOptions(int argc, char**argv) {
-#define OPT_NO_MUTE 1000
+#define OPT_NO_MUTE    1000
+#define OPT_RUN_DIRECT 1001
     static struct option long_options[] = {
-      { "help", no_argument, &OPTS.help, 'h' },
+      { "help", no_argument, 0, 'h' },
       { "nprocs", required_argument, 0, 'n' },
       { "crashes", required_argument, 0, 'c' },
+      { "direct", no_argument, 0, OPT_RUN_DIRECT },
       { "no-mute", no_argument, 0, OPT_NO_MUTE },
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
@@ -167,6 +172,9 @@ bool ParseOptions(int argc, char**argv) {
           break;
         case OPT_NO_MUTE:
           OPTS.mute_stdio = false;
+          break;
+        case OPT_RUN_DIRECT:
+          OPTS.run_direct = true;
           break;
       }
     }
@@ -245,6 +253,7 @@ void FuzzLoop(
   resmack::fuzz::Corpus* corpus,
   resmack::fuzz::Tracee* tracee
 ) {
+  std::cout << "." ;
   resmack::Rand* meta_rand = new resmack::Rand();;
   resmack::Rand* build_rand = new resmack::Rand(meta_rand->Next());
   build_rand->SetShouldRecord(true);
@@ -297,8 +306,10 @@ void FuzzLoop(
     // this occurs *in* the traced process (after forking/*).
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats
-    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, OPTS.max_depth);
-    tracee->SaveLastReplay(mutated_replay);
+    if (tracee != NULL) {
+      tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, OPTS.max_depth);
+      tracee->SaveLastReplay(mutated_replay);
+    }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
@@ -309,9 +320,9 @@ void FuzzLoop(
     size_t cov_key = feedback->GetStats().key;
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-      if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key)) {
+      if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key, used_corpus)) {
         past_create_threshhold = false;
-        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
@@ -389,17 +400,15 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
     std::filesystem::create_directories(OPTS.dump_corpus_path);
   }
 
-  const resmack::Vector<resmack::Vector<resmack::RandSnapshot>>* corpus_items =
-    corpus->GetItems();
+  const resmack::Vector<resmack::fuzz::CorpusEntry>* corpus_items = corpus->GetItems();
 
   size_t i;
   for (i = 0; i < corpus_items->size(); i++) {
     std::cout << ".";
-    resmack::Vector<resmack::RandSnapshot>* replay =
-      (resmack::Vector<resmack::RandSnapshot>*)&corpus_items->at(i);
+    const resmack::fuzz::CorpusEntry* entry = &corpus_items->at(i);
 
     output.clear();
-    ctx.SetReplay(replay);
+    ctx.SetReplay(&entry->snapshot);
     rules->Build(rule_idx, &ctx);
 
     char* output_sha = resmack::fuzz::utils::sha1_hex(output.data(), output.size(), NULL);
@@ -428,7 +437,7 @@ int main(int argc, char** argv) {
 
   resmack::fuzz::ExternalFunctions EF;
 
-  resmack::Rules rules = new resmack::Rules();
+  resmack::Rules rules;
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
   rules.Finalize();
 
@@ -445,6 +454,11 @@ int main(int argc, char** argv) {
   }
 
   bool is_main_proc = true;
+
+  if (OPTS.run_direct) {
+    FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, NULL);
+    std::exit(0);
+  }
 
   resmack::fuzz::trace_targets::Fork trace_target(
     OPTS.mute_stdio,

@@ -19,6 +19,7 @@ namespace fuzz {
     rand.Next();
     rand.SnapshotState(2, 200);
 
+    size_t curr_iter_count = 0;
     size_t map_size = 0x1000;
     void* map;
 
@@ -28,14 +29,15 @@ namespace fuzz {
     memset(map, 0, map_size);
 
     corpora::MmapCorpus corpus;
-    corpus.Init(map, map_size);
+    corpus.SetCurrIterPtr(&curr_iter_count);
+    corpus.Init("resmack-test", map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0);
+      corpus.AddRandSnapshot(&snapshots, 0, false);
       std::exit(1);
     } else {
       int status;
@@ -106,14 +108,14 @@ namespace fuzz {
     memset(map, 0, map_size);
 
     corpora::MmapCorpus corpus;
-    corpus.Init(map, map_size);
+    corpus.Init("resmack-test-2", map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0);
+      corpus.AddRandSnapshot(&snapshots, 0, false);
       std::exit(1);
     } else {
       int status;
@@ -154,14 +156,14 @@ namespace fuzz {
     memset(map, 0, map_size);
 
     corpora::MmapCorpus corpus;
-    corpus.Init(map, map_size);
+    corpus.Init("resmack-test-3", map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0);
+      corpus.AddRandSnapshot(&snapshots, 0, false);
       std::exit(1);
     } else {
       int status;
@@ -183,7 +185,7 @@ namespace fuzz {
 
     // fork again, add another snapshot (same one)
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0);
+      corpus.AddRandSnapshot(&snapshots, 0, false);
       std::exit(1);
     } else {
       int status;

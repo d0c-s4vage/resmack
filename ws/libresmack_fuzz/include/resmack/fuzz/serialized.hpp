@@ -21,9 +21,15 @@ struct GenStateHeader {
 struct CorpusItemHeader {
   uint32_t size;
   size_t feedback_key;
-  size_t iter_discovered;
-  uint32_t reserved1;
-  uint32_t reserved2;
+  uint64_t iter_discovered;
+  uint64_t parent1_one_based_idx; // 1-based!!! 0 == no parent
+  uint64_t parent2_one_based_idx;
+  uint64_t num_crashes;
+  uint64_t num_ancestors;
+  uint64_t num_descendants;
+  uint64_t num_direct_descendants;
+  uint64_t reserved1;
+  uint64_t reserved2;
   GenStateHeader item_header;
 };
 

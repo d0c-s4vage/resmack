@@ -122,6 +122,7 @@ void Tracer::CalcHashes() {
 	unw_cursor_t cursor;
 	if (unw_init_remote(&cursor, as, context) != 0) {
     _UPT_destroy(context);
+    free(as);
     return;
   }
 
@@ -170,6 +171,7 @@ void Tracer::CalcHashes() {
 	} while (unw_step(&cursor) > 0);
 
 	_UPT_destroy(context);
+  free(as);
 
   utils::sha1_hex(major_stack->data(), major_stack->size(), this->last_crash.major_hash);
   utils::sha1_hex(minor_stack->data(), minor_stack->size(), this->last_crash.minor_hash);

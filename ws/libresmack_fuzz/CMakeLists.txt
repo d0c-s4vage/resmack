@@ -4,10 +4,7 @@ project(libresmack_fuzz VERSION 0.0.1 DESCRIPTION "resmack fuzzing library")
 
 option(BUILD_TEST "Build the unit tests" OFF)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
+include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
 set(RESMACK_FUZZ_LIB libresmack_fuzz)
 
@@ -34,7 +31,15 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
 
 add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
 
-target_link_libraries(${RESMACK_FUZZ_LIB} ${RESMACK_LIB})
+target_link_libraries(
+    ${RESMACK_FUZZ_LIB}
+    ${RESMACK_LIB}
+    pthread
+    crypto
+    unwind
+    unwind-ptrace
+    unwind-generic
+)
 set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).

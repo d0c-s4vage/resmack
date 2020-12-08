@@ -4,10 +4,7 @@ project(libresmack VERSION 0.0.1 DESCRIPTION "resmack core grammar library")
 
 option(BUILD_TEST "Build the unit tests" OFF)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
+include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
 set(RESMACK_LIB libresmack)
 

@@ -27,7 +27,7 @@ namespace resmack {
     this->rand = NULL;
   }
 
-  void BuildContext::SetReplay(Vector<RandSnapshot>* replay) {
+  void BuildContext::SetReplay(const Vector<RandSnapshot>* replay) {
     this->replay = replay;
     this->replay_idx = 0;
   }
@@ -38,7 +38,7 @@ namespace resmack {
       return;
     }
 
-    RandSnapshot& snapshot = (*this->replay)[this->replay_idx];
+    const RandSnapshot& snapshot = (*this->replay)[this->replay_idx];
     if (this->ref_depth != snapshot.ref_depth) {
       this->did_replay = false;
       return;

@@ -88,7 +88,7 @@ namespace resmack {
     s_[3] = gen();
   }
 
-  void Rand::SetState(uint32_t state[]) {
+  void Rand::SetState(const uint32_t state[]) {
     memcpy(this->s_, state, sizeof(uint32_t) * 4);
   }
 

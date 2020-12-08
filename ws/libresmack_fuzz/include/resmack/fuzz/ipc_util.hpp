@@ -3,7 +3,7 @@
 
 #define WITH_LOCK(LOCK, MSG, STATEMENTS) { \
   if (sem_wait(LOCK) == -1) { \
-    perror("#MSG (sem_wait)"); \
+    perror(#MSG" (sem_wait)"); \
     std::exit(1); \
   } \
   while (1) { \
@@ -11,7 +11,7 @@
     break; \
   } \
   if (sem_post(LOCK) == -1) { \
-    perror("#MSG (sem_post)"); \
+    perror(#MSG" (sem_post)"); \
     std::exit(1); \
   } \
 }

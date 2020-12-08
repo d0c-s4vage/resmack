@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string>
 #include <cstring>
+#include <signal.h>
 
 #include "resmack/types.hpp"
 #include "resmack/items/or.hpp"
@@ -12,10 +13,12 @@
 
 namespace resmack {
 
-  Rules::Rules(): Rules(NULL) {}
-  Rules::Rules(Rules* parent): finalized_(false), parent_(parent) {
-    if (parent != NULL) {
-      this->rule_man_.SetParent(parent->GetRuleMan());
+  Rules::Rules() : Rules(NULL) {}
+
+  Rules::Rules(Rules* parent): finalized_(false) {
+    this->parent_ = parent;
+    if (this->parent_ != NULL) {
+      this->rule_man_.SetParent(this->parent_->GetRuleMan());
     } else {
       this->rule_man_.Init();
     }
@@ -34,7 +37,7 @@ namespace resmack {
   }
 
   Rules* Rules::AddRule(size_t rule_idx, Item* item) {
-    this->rule_man_.GetRule(rule_idx)->AddItem(item);
+    this->rule_man_.Ensure(rule_idx)->AddItem(item);
     return this;
   }
 

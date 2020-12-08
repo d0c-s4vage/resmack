@@ -38,6 +38,7 @@ namespace items {
     rules.AddRule("decl", ID("varname"))
       ->AddRule("scoped_decl", SCOPE(REF("decl")))
       ->AddRule("test", AND(REF("decl"), V(" "), REF("scoped_decl")));
+    rules.Finalize();
 
     Rand rand(100);
     std::string output;

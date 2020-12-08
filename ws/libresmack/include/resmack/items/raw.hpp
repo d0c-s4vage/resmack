@@ -20,7 +20,7 @@ namespace items {
     //Raw(char* data);
     //Raw(const char* data);
     Raw(std::string data);
-    ~Raw();
+    ~Raw() {}
 
     ItemType Type();
     void Build(BuildContext* ctx);
