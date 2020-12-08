@@ -51,7 +51,11 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
   }
 
   size_t meta_size = sizeof(StateMetadata);
-  this->corpus.Init((void*)((char*)this->state_map + meta_size), state_max_size - meta_size);
+  this->corpus.Init(
+    this->state_path,
+    (void*)((char*)this->state_map + meta_size),
+    state_max_size - meta_size
+  );
   this->corpus.SetCurrIterPtr(&this->metadata->iterations);
 
   char sem_path[2 + (SHA_DIGEST_LENGTH * 2)]; // leading '/' + SHA_DIGEST_LENGTH + NULL

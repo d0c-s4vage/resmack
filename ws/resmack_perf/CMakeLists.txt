@@ -2,12 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(resmack_perf)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
-
-#find_package(libresmack)
+include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
 if(NOT BUILD_TEST)
     include_directories(

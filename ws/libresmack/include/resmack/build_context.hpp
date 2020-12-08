@@ -25,7 +25,7 @@ namespace resmack {
     size_t ref_depth;
     size_t max_depth;
 
-    Vector<RandSnapshot>* replay;
+    const Vector<RandSnapshot>* replay;
     size_t replay_idx;
     bool did_replay;
 
@@ -33,7 +33,7 @@ namespace resmack {
     ~BuildContext();
 
     // reset replay and other state fields
-    void SetReplay(Vector<RandSnapshot>* replay);
+    void SetReplay(const Vector<RandSnapshot>* replay);
     void MaybeDoRandReplay(uint32_t tmp_state[]);
     void MaybeUndoRandReplay(uint32_t tmp_state[]);
 

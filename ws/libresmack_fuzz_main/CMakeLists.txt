@@ -8,11 +8,7 @@ set(RESMACK_FUZZ_MAIN_LIB libresmack_fuzz_main)
 
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-#set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -flto")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
+include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
