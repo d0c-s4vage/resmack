@@ -26,9 +26,6 @@ namespace fuzz {
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
     size_t uint_no = (*guard - 1) / 32;
     size_t bit_no = (*guard - 1) % 32;
-    if (bit_no != 0) {
-      uint_no++;
-    }
     COV_FLAGS[uint_no] |= (1 << bit_no);
   }
 

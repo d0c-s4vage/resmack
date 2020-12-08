@@ -138,8 +138,8 @@ TEST="*"
 tests: libs-test/googletest test-libresmack test-libresmack-fuzz
 
 run-tests: test-libresmack test-libresmack-fuzz
-	build/test/test_libresmack --gtest_filter=$(TEST)
-	build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/test_libresmack --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 clean-tests:
 	rm -rf build/test
@@ -149,14 +149,14 @@ test-libresmack-fuzz: build/test
 	make -j $(NPROCS)
 
 run-test-libresmack-fuzz: test-libresmack-fuzz
-	build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 test-libresmack: build/test
 	cd build/test/ws/libresmack/test ; \
 	make -j $(NPROCS)
 
 run-test-libresmack: test-libresmack
-	build/test/test_libresmack --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/test_libresmack --gtest_filter=$(TEST)
 
 libs-test/googletest: libs-test/googletest/build/lib/libgtest_main.a
 

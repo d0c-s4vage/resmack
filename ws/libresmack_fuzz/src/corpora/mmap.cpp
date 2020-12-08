@@ -54,7 +54,10 @@ void MmapCorpus::Init(
     std::exit(1);
   }
 
-  this->Sync();
+  // *ALWAYS* sync when in Init (don't use Sync())
+  WITH_LOCK(this->corpus_lock, Syncing corpus, {
+    this->SyncInner();
+  });
 }
 
 bool MmapCorpus::AddRandSnapshotIfNotSeen(
@@ -229,6 +232,7 @@ Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
     }
   } else {
     uint32_t next = rand->Next();
+    printf("CORPUS LENGTH: %lu\n", corpus_len);
     rand_idx = next % corpus_len;
   }
 

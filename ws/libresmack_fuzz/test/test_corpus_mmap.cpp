@@ -19,6 +19,7 @@ namespace fuzz {
     rand.Next();
     rand.SnapshotState(2, 200);
 
+    size_t curr_iter_count = 0;
     size_t map_size = 0x1000;
     void* map;
 
@@ -28,6 +29,7 @@ namespace fuzz {
     memset(map, 0, map_size);
 
     corpora::MmapCorpus corpus;
+    corpus.SetCurrIterPtr(&curr_iter_count);
     corpus.Init("resmack-test", map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 

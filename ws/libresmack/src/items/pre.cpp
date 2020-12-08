@@ -5,7 +5,9 @@ namespace resmack {
 namespace items {
 
   Pre::Pre(Item* item) : item_(item) {}
-  Pre::~Pre() {}
+  Pre::~Pre() {
+    delete this->item_;
+  }
 
   ItemType Pre::Type() {
     return ItemType::PRE;

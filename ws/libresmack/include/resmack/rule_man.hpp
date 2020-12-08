@@ -1,5 +1,5 @@
-#ifndef RESMACK_RULE_MAN
-#define RESMACK_RULE_MAN
+#ifndef RESMACK_RULE_MAN_H
+#define RESMACK_RULE_MAN_H
 
 #include <string>
 
@@ -38,6 +38,7 @@ namespace resmack {
     bool ValidRule(std::string rule_name);
 
     items::Or* Ensure(std::string rule_name);
+    items::Or* Ensure(size_t rule_idx);
     void Prune(std::string rule_name);
     void Prune(size_t rule_idx);
     items::Or* GetRule(std::string rule_name);

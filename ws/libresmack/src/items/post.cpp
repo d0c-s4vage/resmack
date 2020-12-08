@@ -5,7 +5,9 @@ namespace resmack {
 namespace items {
 
   Post::Post(Item* item) : item_(item) {}
-  Post::~Post() {}
+  Post::~Post() {
+    delete this->item_;
+  }
 
   ItemType Post::Type() {
     return ItemType::POST;

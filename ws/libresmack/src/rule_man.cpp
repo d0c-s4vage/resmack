@@ -11,6 +11,11 @@ namespace resmack {
       // that it existed at one point, but was pruned
       this->rules_[idx] = NULL;
     }
+
+    if (this->parent_ == NULL) {
+      delete this->rule_idx_to_name_;
+      delete this->rule_name_to_idx_;
+    }
   }
 
   void RuleManager::Init() {
@@ -19,6 +24,7 @@ namespace resmack {
   }
 
   void RuleManager::SetParent(RuleManager* parent) {
+    this->parent_ = parent;
     this->rule_idx_to_name_ = parent->rule_idx_to_name_;
     this->rule_name_to_idx_ = parent->rule_name_to_idx_;
 
@@ -96,6 +102,15 @@ namespace resmack {
     return res;
   }
 
+  items::Or* RuleManager::Ensure(size_t rule_idx) {
+    items::Or* res = this->GetRule(rule_idx);
+    if (res == NULL) {
+      res = new items::Or();
+      this->rules_[rule_idx] = res;
+    }
+    return res;
+  }
+
   void RuleManager::Prune(std::string rule_name) {
     size_t rule_idx;
     if (!this->IndexOf(rule_name, &rule_idx)) { return; }
@@ -135,7 +150,9 @@ namespace resmack {
   }
 
   items::Or* RuleManager::GetRule(size_t rule_idx) {
-    if (rule_idx >= this->rules_.size()) { return NULL; }
+    if (rule_idx >= this->rules_.size()) {
+      return NULL;
+    }
     return this->rules_[rule_idx];
   }
 

@@ -34,7 +34,7 @@ namespace resmack {
   }
 
   Rules* Rules::AddRule(size_t rule_idx, Item* item) {
-    this->rule_man_.GetRule(rule_idx)->AddItem(item);
+    this->rule_man_.Ensure(rule_idx)->AddItem(item);
     return this;
   }
 

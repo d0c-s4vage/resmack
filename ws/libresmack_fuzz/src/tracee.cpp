@@ -64,6 +64,7 @@ Tracee::Tracee() {
 
 Tracee::~Tracee() {
   munmap(this->shared, this->shared_max_size);
+  munmap(this->asan_shared, this->asan_shared_max_size);
   this->shared_last_corpus_index = NULL;
   this->shared_last_max_depth = NULL;
   this->shared_last_gen_state = NULL;

@@ -61,7 +61,7 @@ namespace items {
 
   TEST(Or, SetsChoiceIndices)
   {
-    Or *or_ = new Or();
+    Or* or_ = new Or();
     or_->AddItems(
         new Raw("hello"),
         new Raw("world"),
@@ -69,6 +69,7 @@ namespace items {
         NULL);
 
     RuleManager rule_man;
+    rule_man.Init();
     calc::Reach reach(&rule_man);
     calc::RefDepth ref_depth(&rule_man);
     reach.CalcItem(or_);
@@ -76,6 +77,8 @@ namespace items {
 
     EXPECT_EQ(or_->NumChoicesItems(), 3u);
     EXPECT_EQ(or_->NumShortestItems(), 3u);
+
+    delete or_;
   }
 
   TEST(Or, SetsShortestIndices)

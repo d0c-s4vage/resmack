@@ -9,9 +9,6 @@ namespace items {
   //Raw::Raw(char* data) : data_(data) {}
   //Raw::Raw(const char* data) : data_((char *)data) {}
 
-  Raw::~Raw() {
-  }
-
   ItemType Raw::Type() {
    return ItemType::RAW;
   }
