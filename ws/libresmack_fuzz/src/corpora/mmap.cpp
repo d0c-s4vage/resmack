@@ -315,10 +315,6 @@ size_t MmapCorpus::UpdateStats(CorpusEntry* entry, size_t level) {
   };
   size_t max_level = 0;
 
-  if (level == 10) {
-    std::exit(1);
-  }
-
   for (size_t i = 0; i < 2; i++) {
     size_t parent_idx = parents[i];
     if (parent_idx == 0) { continue; }

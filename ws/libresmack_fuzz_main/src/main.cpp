@@ -10,9 +10,12 @@
 #include <openssl/sha.h>
 #include <pthread.h>
 #include <ratio>
+#include <semaphore.h>
 #include <set>
 #include <signal.h>
 #include <string>
+#include <thread>
+#include <unistd.h>
 
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
@@ -53,6 +56,7 @@ extern "C" {
 
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 static bool SHUTTING_DOWN = false;
+pthread_t STATUS_THREAD;
 
 struct FuzzOptions {
   int help;
@@ -61,11 +65,13 @@ struct FuzzOptions {
   size_t max_iters;
   int show_stats;
   int mute_stdio;
+  float print_interval;
   size_t stats_interval;
   char* crash_output;
   size_t create_threshhold;
   char* dump_corpus_path;
   int run_direct;
+  char* state_path;
 };
 
 static FuzzOptions OPTS {
@@ -75,22 +81,49 @@ static FuzzOptions OPTS {
   .max_iters = 0,
   .show_stats = false,
   .mute_stdio = true,
+  .print_interval = 0.0f,
   .stats_interval = 0x1000,
   .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
   .run_direct = 0,
+  .state_path = (char*)"",
 };
 
+bool MAIN_PROCESS = false;
+
 void sigint_handler(int signum) {
+  if (!MAIN_PROCESS) { return; }
+
   SHUTTING_DOWN = true;
   printf(
     "\nCaught signal %d on main process, terminating fuzzing procs\n",
     signum
   );
+
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Stop();
   }
+  
+  char sem_path[2 + (SHA_DIGEST_LENGTH * 2)];
+
+  resmack::fuzz::utils::sha1_hex(OPTS.state_path, strlen(OPTS.state_path), sem_path+1);
+  sem_path[0] = '/';
+  if(sem_unlink(sem_path) != 0) {
+    printf("Could not unlink semaphore at: %s\n", sem_path);
+    perror("Error unlinking state semaphore");
+  }
+
+  char corpus_path[4096];
+  snprintf(corpus_path, sizeof(corpus_path), "%s-corpus", OPTS.state_path);
+  resmack::fuzz::utils::sha1_hex(corpus_path, strlen(corpus_path), sem_path+1);
+  sem_path[0] = '/';
+  if(sem_unlink(sem_path) != 0) {
+    printf("Could not unlink semaphore at: %s\n", sem_path);
+    perror("Error unlinking corpus semaphore");
+  }
+
+  pthread_kill(STATUS_THREAD, SIGKILL);
 }
 
 void PrintHelp(char* prog_name) {
@@ -107,8 +140,10 @@ void PrintHelp(char* prog_name) {
   std::cout << "        --max-depth,-d MAX_DEPTH  Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
   std::cout << "        --max-iters,-m MAX_ITERS  Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
   std::cout << "       --show-stats,-s            Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
+  std::cout << "       --state-path,-S            Path to where the state file should be stored (" << OPTS.state_path << ")" << std::endl;
   std::cout << "      --dump-corpus,-D DIR        Dump the corpus to DIR" << std::endl;
   std::cout << "   --stats-interval,-i INTERVAL   Collect stats on every Nth iteration (" << OPTS.stats_interval << ")" << std::endl;
+  std::cout << "   --print-interval,-p INTERVAL   Print at set intervals with no backoff (" << OPTS.print_interval << ")" << std::endl;
   std::cout << "--create-threshhold,-t THRESHOLD  The threshold to create new inputs (" << OPTS.create_threshhold << ")" << std::endl;
   std::cout << std::endl;
   std::cout << "Example:" << std::endl << std::endl;
@@ -127,15 +162,21 @@ bool ParseOptions(int argc, char**argv) {
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
       { "show-stats", no_argument, &OPTS.show_stats, 's' },
+      { "state-path", required_argument, 0, 'S' },
       { "dump-corpus", required_argument, 0, 'D' },
       { "stats-interval", required_argument, 0, 'i' },
+      { "print-interval", required_argument, 0, 'p' },
       { "create-threshhold", required_argument, 0, 't' },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
 
+    static char state_path[4096];
+    snprintf(state_path, sizeof(state_path), "%s.resmack-state", argv[0]);
+    OPTS.state_path = state_path;
+
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:S:p:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -176,6 +217,12 @@ bool ParseOptions(int argc, char**argv) {
         case OPT_RUN_DIRECT:
           OPTS.run_direct = true;
           break;
+        case 'S':
+          OPTS.state_path = optarg;
+          break;
+        case 'p':
+          OPTS.print_interval = std::stof(optarg);
+          break;
       }
     }
 
@@ -195,17 +242,29 @@ void* LoopPrintStatus(void* args_ptr) {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   std::chrono::high_resolution_clock::time_point end;
   uint64_t start_iters = state->GetNumIterations();
-  int sleep_amt = 1;
+
+  size_t sleep_amt;
+  if (OPTS.print_interval != 0.0f) {
+    sleep_amt = (size_t)(OPTS.print_interval * 1000);
+  } else {
+    sleep_amt  = 1 * 1000; // ms
+  }
+
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   while (true) {
-    sleep_amt++;
-    for (int i = 0; i < sleep_amt; i++) {
+    if (OPTS.print_interval == 0.0f) {
+      sleep_amt += 1000;
+    }
+    size_t total_slept = 0;
+    size_t increment = 50;
+    while(total_slept < sleep_amt) {
       if (!args->should_run) {
         return NULL;
       }
-      sleep(1);
+      std::this_thread::sleep_for(std::chrono::milliseconds(increment));
+      total_slept += increment;
     }
     if (!args->should_run) {
       return NULL;
@@ -322,7 +381,7 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key, used_corpus)) {
         past_create_threshhold = false;
-        std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
       }
     });
   }
@@ -443,17 +502,13 @@ int main(int argc, char** argv) {
 
   resmack::fuzz::Coverage cov;
   //resmack::fuzz::NoopCoverage noop_cov;
-  char state_path[4096];
-  snprintf(state_path, sizeof(state_path), "%s.resmack-state", argv[0]);
-  resmack::fuzz::states::MmapState mmap_state(state_path);
+  resmack::fuzz::states::MmapState mmap_state(OPTS.state_path);
   resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
 
   if (OPTS.dump_corpus_path) {
     DumpCorpus(&rules, corpus, rule_idx);
     return 0;
   }
-
-  bool is_main_proc = true;
 
   if (OPTS.run_direct) {
     FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, NULL);
@@ -485,21 +540,20 @@ int main(int argc, char** argv) {
     TRACERS.push_back(tracer);
   }
 
-  pthread_t status_thread;
+  MAIN_PROCESS = true;
+
   LoopPrintStatusArgs status_args {
     .state = &mmap_state,
     .show_stats = OPTS.show_stats,
     .should_run = true,
   };
-  if (is_main_proc) {
-    pthread_create(&status_thread, NULL, LoopPrintStatus, (void*)&status_args);
-    signal(SIGINT, sigint_handler);
-  }
+  pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&status_args);
+  signal(SIGINT, sigint_handler);
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
   }
 
   status_args.should_run = false;
-  pthread_join(status_thread, NULL);
+  pthread_join(STATUS_THREAD, NULL);
 }

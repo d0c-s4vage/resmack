@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(libresmack_fuzz VERSION 0.0.1 DESCRIPTION "resmack fuzzing library")
 
 option(BUILD_TEST "Build the unit tests" OFF)
+option(DEBUG_IPC "Debug IPC waits/releases" OFF)
 
 include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
@@ -30,6 +31,10 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
 
 add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
+
+if (DEBUG_IPC)
+  add_definitions(-DDEBUG_IPC)
+endif()
 
 target_link_libraries(
     ${RESMACK_FUZZ_LIB}

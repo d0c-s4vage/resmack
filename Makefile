@@ -4,6 +4,8 @@ clean:
 
 all: clean debug release
 
+OPTS=
+
 RESMACK_EXE=resmack
 RESMACK_PERF_EXE=resmack_perf
 
@@ -40,7 +42,7 @@ gdb-test-libresmack-fuzz: test-libresmack-fuzz
 build/debug:
 	mkdir -p build/debug ; \
 	cd build/debug ; \
-	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
+	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $(OPTS) ; \
 	cp -u compile_commands.json ../../
 
 .PHONY: build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
@@ -125,7 +127,7 @@ $(RELEASE_PATH)/$(RESMACK_PERF_EXE): $(RELEASE_PATH)
 $(RELEASE_PATH):
 	mkdir -p $(RELEASE_PATH) ; \
 	cd $(RELEASE_PATH) ; \
-	cmake ../../ -DCMAKE_BUILD_TYPE=$(RELEASE_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+	cmake ../../ -DCMAKE_BUILD_TYPE=$(RELEASE_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $(OPTS)
 
 # -----------------------------------------------------------------------------
 # TEST ------------------------------------------------------------------------
@@ -166,13 +168,13 @@ libs-test/googletest/build/lib/libgtest_main.a:
 	cd libs-test/googletest ; \
 		mkdir build ; \
 		cd build ; \
-		cmake ../ ; \
+		cmake ../ $(OPTS) ; \
 		make -j $(NPROCS)
 
 build/test:
 	mkdir -p build/test ; \
 	cd build/test ; \
-	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ; \
+	cmake ../../ -DBUILD_TEST=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $(OPTS) ; \
 	cp -u compile_commands.json ../../
 
 # -----------------------------------------------------------------------------
