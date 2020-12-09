@@ -54,9 +54,16 @@ extern "C" {
   }
 };
 
+struct LoopPrintStatusArgs {
+  resmack::fuzz::states::MmapState* state;
+  int show_stats;
+  bool should_run;
+};
+
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 static bool SHUTTING_DOWN = false;
 pthread_t STATUS_THREAD;
+LoopPrintStatusArgs STATUS_ARGS;
 
 struct FuzzOptions {
   int help;
@@ -123,7 +130,7 @@ void sigint_handler(int signum) {
     perror("Error unlinking corpus semaphore");
   }
 
-  pthread_kill(STATUS_THREAD, SIGKILL);
+  STATUS_ARGS.should_run = false;
 }
 
 void PrintHelp(char* prog_name) {
@@ -229,12 +236,6 @@ bool ParseOptions(int argc, char**argv) {
     return true;
 }
 
-struct LoopPrintStatusArgs {
-  resmack::fuzz::states::MmapState* state;
-  int show_stats;
-  bool should_run;
-};
-
 void* LoopPrintStatus(void* args_ptr) {
   LoopPrintStatusArgs* args = (LoopPrintStatusArgs*)args_ptr;
   resmack::fuzz::states::MmapState* state = args->state;
@@ -253,7 +254,7 @@ void* LoopPrintStatus(void* args_ptr) {
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
   resmack::fuzz::StateStats* stats = state->GetStats();
 
-  while (true) {
+  while (args->should_run) {
     if (OPTS.print_interval == 0.0f) {
       sleep_amt += 1000;
     }
@@ -267,9 +268,8 @@ void* LoopPrintStatus(void* args_ptr) {
       total_slept += increment;
     }
     if (!args->should_run) {
-      return NULL;
+      break;
     }
-    corpus->Sync();
 
     end = std::chrono::high_resolution_clock::now();
     uint64_t num_iters = state->GetNumIterations();
@@ -280,7 +280,7 @@ void* LoopPrintStatus(void* args_ptr) {
       num_iters,
       (float)session_iters / span.count(),
       state->GetNumCrashes(),
-      corpus->NumItems(),
+      corpus->NumItemsRaw(),
       span.count()
     );
 
@@ -539,21 +539,19 @@ int main(int argc, char** argv) {
     tracer->Trace();
     TRACERS.push_back(tracer);
   }
-
   MAIN_PROCESS = true;
 
-  LoopPrintStatusArgs status_args {
-    .state = &mmap_state,
-    .show_stats = OPTS.show_stats,
-    .should_run = true,
-  };
-  pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&status_args);
+  STATUS_ARGS.state = &mmap_state;
+  STATUS_ARGS.show_stats = OPTS.show_stats;
+  STATUS_ARGS.should_run = true;
+
+  pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
   signal(SIGINT, sigint_handler);
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
   }
 
-  status_args.should_run = false;
+  STATUS_ARGS.should_run = false;
   pthread_join(STATUS_THREAD, NULL);
 }

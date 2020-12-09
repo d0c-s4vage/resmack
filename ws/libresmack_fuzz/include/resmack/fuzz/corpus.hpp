@@ -50,6 +50,7 @@ class Corpus {
    **/
   virtual void Sync() = 0;
   virtual size_t NumItems() = 0;
+  virtual size_t NumItemsRaw() = 0;
   virtual bool SeenFeedback(size_t key) = 0;
   virtual size_t ItersSinceNewItem() = 0;
   virtual void IncLastItemCrashes() = 0;
