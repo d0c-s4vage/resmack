@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
 
+export LD_LIBRARY_PATH=build/debug
 
 CMD=(
-    clang++
-        -Ofast
-        -march=native
-        -fsanitize-coverage=trace-pc-guard
-        -std=c++20
-        -I ws/libresmack/include
-        -lpthread
-        -lunwind-ptrace
-        -lunwind-generic
-        -lcrypto
-        test.cpp
-        #alpha_grammar.cpp
-        run_on_grammar.cpp
-        build/debug/ws/libresmack_fuzz_main/libresmack_fuzz_main.a
-        build/debug/ws/libresmack_fuzz/libresmack_fuzz.a
-        build/debug/ws/libresmack/libresmack.a
+clang++
+    -fno-omit-frame-pointer
+    -Iws/libresmack/include
+    -lpthread
+    -lcrypto
+    -lunwind
+    -lunwind-ptrace
+    -lunwind-generic
+    -lresmack_fuzz_main
+    -lresmack_fuzz
+    -lresmack
+    -Ofast
+    -march=native
+    -fsanitize-coverage=trace-pc-guard
+    -std=c++20
+    test.cpp
+    run_on_grammar.cpp
+    -Lbuild/debug
+    -fsanitize=address
 )
 "${CMD[@]}"

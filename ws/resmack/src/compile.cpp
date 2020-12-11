@@ -2,14 +2,13 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
-#include "getopt.h"
-#include "sys/wait.h"
+#include <getopt.h>
+#include <sys/wait.h>
 #include <vector>
 
 #include "resmack/logo.hpp"
 
 namespace resmack {
-
 namespace cli {
 namespace compile {
 

@@ -67,10 +67,10 @@ void* Tracer::MonitorTracee(void* this_arg) {
       // SIGILL -- illegal instruction
       // SIGSEGV - reading/writing outside of valid memory
       // SIGBUS - invalid pointer dereferenced
-      if (crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS) {
+      //if (crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS) {
         this_->last_crash.crashed = true;
         this_->CalcHashes();
-      }
+      //}
     } else if (asan_info != NULL) {
       this_->last_crash.crashed = true;
       this_->last_crash.major_stack.clear();

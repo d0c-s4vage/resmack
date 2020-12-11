@@ -4,8 +4,9 @@
 #include "inttypes.h"
 #include "semaphore.h"
 
-#include "resmack/fuzz/corpus.hpp"
 #include "resmack/types.hpp"
+#include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/serialized.hpp"
 
 namespace resmack {
@@ -23,6 +24,7 @@ class MmapCorpus : public Corpus {
   Vector<size_t> most_descendants_desc;
   Vector<size_t> most_ancestors_desc;
   Vector<size_t> most_crashes_desc;
+  Vector<size_t> most_feedback;
 
   ser::CorpusMetadata* meta;
   size_t next_item_index;
@@ -51,12 +53,12 @@ class MmapCorpus : public Corpus {
   void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
   void AddRandSnapshot(
     const resmack::Vector<RandSnapshot>* snapshot,
-    size_t feedback_key,
+    FeedbackStats stats,
     bool descendant_of_last
   );
   bool AddRandSnapshotIfNotSeen(
     const resmack::Vector<RandSnapshot>* snapshot,
-    size_t feedback_key,
+    FeedbackStats stats,
     bool descendant_of_last
   );
   virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
@@ -73,7 +75,7 @@ class MmapCorpus : public Corpus {
  private:
   void AddRandSnapshotInner(
     const resmack::Vector<RandSnapshot>* snapshot,
-    size_t feedback_key,
+    FeedbackStats stats,
     bool descendant_of_last
   );
   void SyncInner();

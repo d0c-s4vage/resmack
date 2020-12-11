@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "resmack/rand.hpp"
+#include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
 #include "resmack/fuzz/serialized.hpp"
 
@@ -37,7 +38,11 @@ namespace fuzz {
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0, false);
+      corpus.AddRandSnapshot(
+        &snapshots,
+        { .new_coverage = false, .key = 0, .num = 1 },
+        false
+      );
       std::exit(1);
     } else {
       int status;
@@ -99,6 +104,8 @@ namespace fuzz {
     rand.Next();
     rand.SnapshotState(2, 200);
 
+    size_t iteration_count = 0;
+
     size_t map_size = 0x1000;
     void* map;
 
@@ -108,6 +115,7 @@ namespace fuzz {
     memset(map, 0, map_size);
 
     corpora::MmapCorpus corpus;
+    corpus.SetCurrIterPtr(&iteration_count);
     corpus.Init("resmack-test-2", map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
@@ -115,7 +123,11 @@ namespace fuzz {
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0, false);
+      corpus.AddRandSnapshot(
+        &snapshots,
+        { .new_coverage = false, .key = 0, .num = 1 },
+        false
+      );
       std::exit(1);
     } else {
       int status;
@@ -148,6 +160,7 @@ namespace fuzz {
     rand.SnapshotState(2, 200);
 
     size_t map_size = 0x1000;
+    size_t total_count_ptr = 0;
     void* map;
 
     if((map = mmap(NULL, map_size, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0)) == MAP_FAILED) {
@@ -157,13 +170,18 @@ namespace fuzz {
 
     corpora::MmapCorpus corpus;
     corpus.Init("resmack-test-3", map, map_size);
+    corpus.SetCurrIterPtr(&total_count_ptr);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
 
     pid_t pid;
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0, false);
+      corpus.AddRandSnapshot(
+        &snapshots,
+        { .new_coverage = false, .key = 0, .num = 1 },
+        false
+      );
       std::exit(1);
     } else {
       int status;
@@ -185,7 +203,11 @@ namespace fuzz {
 
     // fork again, add another snapshot (same one)
     if (!(pid = fork())) {
-      corpus.AddRandSnapshot(&snapshots, 0, false);
+      corpus.AddRandSnapshot(
+        &snapshots,
+        { .new_coverage = false, .key = 0, .num = 1 },
+        false
+      );
       std::exit(1);
     } else {
       int status;
@@ -194,6 +216,21 @@ namespace fuzz {
 
     corpus.Sync();
     EXPECT_EQ(corpus.NumItems(), 2u);
+
+    const Vector<CorpusEntry>* items = corpus.GetItems();
+    for (size_t i = 0; i < items->size(); i++) {
+      const CorpusEntry* entry = &items->at(i);
+      EXPECT_EQ(entry->parent1_one_based_idx, 0u);
+      EXPECT_EQ(entry->parent2_one_based_idx, 0u);
+      EXPECT_EQ(entry->index, i);
+      EXPECT_EQ(entry->iter_discovered, 0u);
+      EXPECT_EQ(entry->num_ancestors, 0u);
+      EXPECT_EQ(entry->num_direct_descendants, 0u);
+      EXPECT_EQ(entry->num_descendants, 0u);
+      EXPECT_EQ(entry->num_crashes, 0u);
+
+      EXPECT_EQ(entry->snapshot.size(), 2u);
+    }
 
     munmap(map, map_size);
   }

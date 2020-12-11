@@ -8,6 +8,7 @@ namespace resmack {
 namespace fuzz {
 
   struct FeedbackStats {
+    bool new_coverage;
     size_t key;
     // total number of BBs hit
     size_t num;

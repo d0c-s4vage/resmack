@@ -9,7 +9,7 @@ namespace fuzz {
   // Returns the new index into orig_ss that iteration should continue at
   __attribute__((noinline))
   size_t CascadeMutatedState(
-    uint32_t new_state[],
+    uint32_t* new_state,
     const RandSnapshot& item,
     size_t item_idx,
     const Vector<RandSnapshot>* orig_ss,
@@ -35,9 +35,12 @@ namespace fuzz {
     size_t curr_idx = 0;
     new_ss->clear();
 
+    // skip the first index, and only mutate *ONE* at a time
+    size_t idx_to_mutate = (rand->Next() % (orig_ss->size() - 1)) + 1;
+
     while (curr_idx < orig_ss->size()) {
       const RandSnapshot& curr = orig_ss->at(curr_idx);
-      if (rand->Maybe()) {
+      if (curr_idx == idx_to_mutate) {
         curr_idx = CascadeMutatedState(rand->GetState(), curr, curr_idx, orig_ss, new_ss);
       } else {
         new_ss->emplace_back(curr.ref_depth, curr.rule_idx, curr.state);

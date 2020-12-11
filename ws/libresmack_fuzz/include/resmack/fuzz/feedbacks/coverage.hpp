@@ -14,8 +14,11 @@ namespace fuzz {
   class Coverage : public Feedback {
    private:
     size_t hash;
+    void* shared;
 
    public:
+    Coverage();
+    ~Coverage();
     void Start();
     void Stop();
     FeedbackStats GetStats();
