@@ -97,10 +97,10 @@ static FuzzOptions OPTS {
   .state_path = (char*)"",
 };
 
-bool MAIN_PROCESS = false;
+int MAIN_PID;
 
 void sigint_handler(int signum) {
-  if (!MAIN_PROCESS) { return; }
+  if (::getpid() != MAIN_PID) { return; }
 
   SHUTTING_DOWN = true;
   printf(
@@ -313,19 +313,20 @@ void FuzzLoop(
   resmack::fuzz::Tracee* tracee
 ) {
   std::cout << "." ;
-  resmack::Rand* meta_rand = new resmack::Rand();;
-  resmack::Rand* build_rand = new resmack::Rand(meta_rand->Next());
-  build_rand->SetShouldRecord(true);
+  resmack::Rand meta_rand;
+  resmack::Rand build_rand(meta_rand.Next());
+  build_rand.SetShouldRecord(true);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() % 0xff));
 
   std::string output;
 
   resmack::fuzz::DirectTarget target;
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats(OPTS.stats_interval);
-  resmack::BuildContext ctx(&output, build_rand, OPTS.max_depth);
+  resmack::BuildContext ctx(&output, &build_rand, OPTS.max_depth);
 
-  resmack::Vector<resmack::RandSnapshot> *mutated_replay =
-    new resmack::Vector<resmack::RandSnapshot>();
+  resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
   size_t counts = 0;
   bool past_create_threshhold = true;
@@ -341,22 +342,22 @@ void FuzzLoop(
 
     size_t last_corpus_idx = 0;
     bool used_corpus = false;
-    if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand->Maybe())) {
+    if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand.Maybe())) {
       ctx.SetReplay(NULL);
     } else {
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-        replay = corpus->GetItem(meta_rand);
+        replay = corpus->GetItem(&meta_rand);
       });
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
-        resmack::fuzz::MutateRandSnapshot(meta_rand, replay, mutated_replay);
+        resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
       });
-      ctx.SetReplay(mutated_replay);
+      ctx.SetReplay(&mutated_replay);
     }
 
     output.clear();
-    build_rand->SnapshotClear();
+    build_rand.SnapshotClear();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules->Build(rule_idx, &ctx);
@@ -367,7 +368,7 @@ void FuzzLoop(
     // used to save crash information and update corpus stats
     if (tracee != NULL) {
       tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, OPTS.max_depth);
-      tracee->SaveLastReplay(mutated_replay);
+      tracee->SaveLastReplay(&mutated_replay);
     }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
@@ -376,19 +377,15 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
     });
-    size_t cov_key = feedback->GetStats().key;
+    resmack::fuzz::FeedbackStats feedback_stats = feedback->GetStats();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-      if (corpus->AddRandSnapshotIfNotSeen(build_rand->GetSnapshots(), cov_key, used_corpus)) {
+      if (feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
         past_create_threshhold = false;
-        //std::cout << "New coverage with: " << output << ", key: " << cov_key << ", num: " << feedback->GetStats().num << ", iters: " << counts << std::endl;
+        std::cout << "New coverage with: " << output << ", " << ", iters: " << counts << std::endl;
       }
     });
   }
-
-  delete meta_rand;
-  delete build_rand;
-  delete mutated_replay;
 }
 
 bool HandleException(
@@ -488,6 +485,8 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
 
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
+  MAIN_PID = getpid();
+
   ParseOptions(argc, argv);
   if (OPTS.help) {
     PrintHelp(argv[0]);
@@ -500,10 +499,10 @@ int main(int argc, char** argv) {
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
   rules.Finalize();
 
-  resmack::fuzz::Coverage cov;
-  //resmack::fuzz::NoopCoverage noop_cov;
   resmack::fuzz::states::MmapState mmap_state(OPTS.state_path);
   resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
+  resmack::fuzz::Coverage cov;
+  //resmack::fuzz::NoopCoverage noop_cov;
 
   if (OPTS.dump_corpus_path) {
     DumpCorpus(&rules, corpus, rule_idx);
@@ -539,7 +538,6 @@ int main(int argc, char** argv) {
     tracer->Trace();
     TRACERS.push_back(tracer);
   }
-  MAIN_PROCESS = true;
 
   STATUS_ARGS.state = &mmap_state;
   STATUS_ARGS.show_stats = OPTS.show_stats;

@@ -15,12 +15,13 @@ struct GenState {
 };
 
 struct GenStateHeader {
-  uint32_t num_states;
+  uint64_t num_states;
 };
 
 struct CorpusItemHeader {
-  uint32_t size;
-  size_t feedback_key;
+  uint64_t size;
+  uint64_t feedback_key;
+  uint64_t feedback_num; // *something* where higher == more coverage
   uint64_t iter_discovered;
   uint64_t parent1_one_based_idx; // 1-based!!! 0 == no parent
   uint64_t parent2_one_based_idx;

@@ -1,6 +1,8 @@
 #include <cstring>
-#include <stdio.h>
+#include <fcntl.h>
 #include <iostream>
+#include <stdio.h>
+#include <sys/mman.h>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
@@ -10,6 +12,7 @@ namespace fuzz {
   static size_t GUARD_COUNTER = 0;
   static uint32_t* COV_FLAGS;
   static size_t NUM_COV_FLAGS;
+  static bool IS_NEW = false;
 
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
     if (start == stop || *start) return;  // Initialize only once.
@@ -20,13 +23,21 @@ namespace fuzz {
     if ((GUARD_COUNTER - 1) % 32 != 0) {
       NUM_COV_FLAGS++;
     }
-    COV_FLAGS = new uint32_t[NUM_COV_FLAGS];
+
+    printf("Total Basic Blocks: %zu\n", GUARD_COUNTER);
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
+    if (COV_FLAGS == NULL) { return; }
+
     size_t uint_no = (*guard - 1) / 32;
     size_t bit_no = (*guard - 1) % 32;
-    COV_FLAGS[uint_no] |= (1 << bit_no);
+    size_t bit = (1 << bit_no);
+
+    if (COV_FLAGS[uint_no] & bit) { return; }
+
+    COV_FLAGS[uint_no] |= bit;
+    IS_NEW = true;
   }
 
   size_t _NumBits(uint32_t val) {
@@ -35,8 +46,33 @@ namespace fuzz {
      return (((val + (val >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
   }
 
+  // --------------------------------------------------------------------------
+
+  Coverage::Coverage() {
+    this->shared = mmap(
+      NULL,
+      NUM_COV_FLAGS * sizeof(uint32_t),
+      PROT_READ | PROT_WRITE,
+      MAP_SHARED | MAP_ANONYMOUS,
+      -1,
+     0
+    );
+
+    if (this->shared == MAP_FAILED) {
+      perror("Could not create coverage mmap");
+      std::exit(1);
+    }
+
+    COV_FLAGS = (uint32_t*)this->shared;
+  }
+
+  Coverage::~Coverage() {
+    munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
+  }
+
   void Coverage::Start() {
-    memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    IS_NEW = false;
+    //memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
   }
 
   void Coverage::Stop() {
@@ -61,6 +97,7 @@ namespace fuzz {
     }
 
     return {
+      .new_coverage = IS_NEW,
       .key = this->hash,
       .num = num_bits,
     };
