@@ -27,6 +27,7 @@ pid_t Fork::Spawn(Tracee* tracee) {
     }
 
     resmack::fuzz::asan::SetAsanCallback([tracee](const char* report) {
+      if (tracee == NULL) { return; }
       tracee->SaveAsanInfo(report);
       // let it die, the tracer knows to look for the ASAN_EXIT_CODE
     });
