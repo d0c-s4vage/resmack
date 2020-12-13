@@ -24,7 +24,7 @@ namespace fuzz {
       NUM_COV_FLAGS++;
     }
 
-    printf("Total Basic Blocks: %zu\n", GUARD_COUNTER);
+    printf("Total Edges: %zu\n", GUARD_COUNTER);
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
