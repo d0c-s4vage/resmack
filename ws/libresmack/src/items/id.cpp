@@ -15,7 +15,7 @@ namespace items {
   Id::~Id() {}
 
   ItemType Id::Type() {
-    return ItemType::ID;
+    return TYPE_ID;
   }
 
   void Id::Build(BuildContext *ctx) {

@@ -25,56 +25,76 @@ namespace resmack {
   class Rules;
 
   enum ItemType {
-    RAW,
-    STR,
-    INT,
-    OR,
-    AND,
-    REF,
-    OPT,
-    ID,
-    SCOPE,
-    PRE,
-    POST,
-    CUSTOM,
+    TYPE_RAW,
+    TYPE_STR,
+    TYPE_INT,
+    TYPE_OR,
+    TYPE_AND,
+    TYPE_REF,
+    TYPE_OPT,
+    TYPE_ID,
+    TYPE_SCOPE,
+    TYPE_SCOPE_ACTION,
+    TYPE_PRE,
+    TYPE_POST,
+    TYPE_CAPTURE,
+    TYPE_CAPTURED,
+    TYPE_FLUSHD,
+    TYPE_FLUSHED,
+    TYPE_CUSTOM,
   };
 
   static std::string ItemTypeName(ItemType type) {
     switch (type) {
-      case ItemType::RAW:
+      case TYPE_RAW:
         return "RAW";
         break;
-      case ItemType::STR:
+      case TYPE_STR:
         return "STR";
         break;
-      case ItemType::INT:
+      case TYPE_INT:
         return "INT";
         break;
-      case ItemType::OR:
+      case TYPE_OR:
         return "OR";
         break;
-      case ItemType::AND:
+      case TYPE_AND:
         return "AND";
         break;
-      case ItemType::REF:
+      case TYPE_REF:
         return "REF";
         break;
-      case ItemType::OPT:
+      case TYPE_OPT:
         return "OPT";
         break;
-      case ItemType::ID:
+      case TYPE_ID:
         return "ID";
         break;
-      case ItemType::SCOPE:
+      case TYPE_SCOPE:
         return "SCOPE";
         break;
-      case ItemType::PRE:
+      case TYPE_PRE:
         return "PRE";
         break;
-      case ItemType::POST:
+      case TYPE_POST:
         return "POST";
         break;
-      case ItemType::CUSTOM:
+      case TYPE_CAPTURE:
+        return "CAPTURE";
+        break;
+      case TYPE_CAPTURED:
+        return "CAPTURED";
+        break;
+      case TYPE_FLUSHD:
+        return "FLUSH";
+        break;
+      case TYPE_FLUSHED:
+        return "FLUSHED";
+        break;
+      case TYPE_SCOPE_ACTION:
+        return "SCOPE_ACTION";
+        break;
+      case TYPE_CUSTOM:
         return "CUSTOM";
         break;
     };
@@ -86,6 +106,7 @@ namespace resmack {
      virtual ~Item() { };
      virtual ItemType Type() = 0;
      virtual void Build(BuildContext* ctx) = 0;
+     virtual bool IntendsOutput() { return true; }
      virtual std::string ToString() {
        return std::string("<") + ItemTypeName(this->Type()) + ">";
      }

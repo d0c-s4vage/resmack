@@ -38,7 +38,7 @@ namespace test_utils {
   }
 
   __attribute__((unused))
-  static void SplitStr(std::string input, std::string split, std::vector<std::string>* output) {
+  static void SplitStr(const std::string& input, const std::string& split, std::vector<std::string>* output) {
     size_t last_idx = 0;
     size_t split_idx = input.find(split, last_idx);
     while (split_idx != std::string::npos) {

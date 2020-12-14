@@ -22,6 +22,7 @@ namespace items {
 
     ItemType Type();
     void Build(BuildContext* ctx);
+    bool IntendsOutput() { return false; }
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_calc);
     std::string ToString();

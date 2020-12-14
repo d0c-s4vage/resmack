@@ -79,11 +79,6 @@ namespace resmack {
       ctx->pre_output = &tmp_pre_output;
     }
 
-    std::string tmp_post_output;
-    if (ctx->post_output == NULL) {
-      ctx->post_output = &tmp_post_output;
-    }
-
     items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
     if (NULL == rule) { return false; }
 
@@ -98,15 +93,9 @@ namespace resmack {
     }
     ctx->MaybeUndoRandReplay(tmp_rand_state);
 
+    // flush all pre/post output
     if (ctx->ref_depth == 0) {
-      if (ctx->pre_output->size() > 0) {
-        (*ctx->output) = *ctx->pre_output + *ctx->output;
-        ctx->pre_output->clear();
-      }
-      if (ctx->post_output->size() > 0) {
-        (*ctx->output) += *ctx->post_output;
-        ctx->post_output->clear();
-      }
+      ctx->FlushPrePost();
     }
 
     return true;

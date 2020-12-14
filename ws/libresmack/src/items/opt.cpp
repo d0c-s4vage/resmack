@@ -8,7 +8,7 @@ namespace items {
   Opt::~Opt() { delete this->item_; }
 
   ItemType Opt::Type() {
-   return ItemType::OPT;
+   return TYPE_OPT;
   }
 
   void Opt::Build(BuildContext* ctx) {

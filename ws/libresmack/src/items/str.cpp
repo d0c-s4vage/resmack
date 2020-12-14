@@ -25,7 +25,7 @@ namespace items {
   Str::~Str() {}
 
   ItemType Str::Type() {
-    return ItemType::STR;
+    return TYPE_STR;
   }
 
   void Str::Build(BuildContext *ctx) {

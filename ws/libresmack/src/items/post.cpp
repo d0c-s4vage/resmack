@@ -10,22 +10,11 @@ namespace items {
   }
 
   ItemType Post::Type() {
-    return ItemType::POST;
+    return TYPE_POST;
   }
 
   void Post::Build(BuildContext* ctx) {
-    std::string tmp_post_output;
-    std::string* orig_output = ctx->output;
-
-    ctx->output = ctx->post_output;
-    ctx->post_output = &tmp_post_output;
-
-    this->item_->Build(ctx);
-
-    ctx->post_output = ctx->output;
-    ctx->output = orig_output;
-
-    (*ctx->post_output) += tmp_post_output;
+    ctx->post_items.push_back(this->item_);
   }
 
   bool Post::CalcReachability(calc::Reach* reach_calc) {

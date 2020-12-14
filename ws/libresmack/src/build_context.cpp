@@ -3,6 +3,7 @@
 
 #include "resmack/build_context.hpp"
 #include "resmack/rand.hpp"
+#include "resmack/item.hpp"
 
 namespace resmack {
 
@@ -10,7 +11,6 @@ namespace resmack {
       rules(NULL),
       pre_output(NULL),
       output(output),
-      post_output(NULL),
       rand(rand),
       ref_depth(0),
       max_depth(max_depth),
@@ -78,7 +78,7 @@ namespace resmack {
   void BuildContext::PrintDebugIo() {
     this->Message(std::string("CTX: ") + " pre_output: " + *this->pre_output);
     this->Message(std::string("CTX: ") + "     output: " + *this->output);
-    this->Message(std::string("CTX: ") + "post_output: " + *this->post_output);
+    this->Message(std::string("CTX: ") + " post_items: " + std::to_string(this->post_items.size()));
   }
 
   void BuildContext::Message(std::string msg) {
@@ -95,6 +95,23 @@ namespace resmack {
       std::cout << indent << msg.substr(last_idx, newline_idx - last_idx) << std::endl;
     }
     std::cout << indent << msg.substr(last_idx, msg.size() - last_idx) << std::endl;
+  }
+
+  void BuildContext::FlushPrePost() {
+    if (this->pre_output->size() > 0) {
+      (*this->output) = *this->pre_output + *this->output;
+      this->pre_output->clear();
+    }
+
+    // iterate through the post_items in reverse order, building them
+    auto it = this->post_items.begin();
+    auto end = this->post_items.end();
+    for (; it != end; it++) {
+      (*it)->Build(this);
+    }
+
+    // clear the post items
+    this->post_items.clear();
   }
 
 }

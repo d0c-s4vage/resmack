@@ -12,7 +12,7 @@ namespace items {
   Ref::~Ref() {}
 
   ItemType Ref::Type() {
-    return ItemType::REF;
+    return TYPE_REF;
   }
 
   void Ref::Build(BuildContext *ctx) {

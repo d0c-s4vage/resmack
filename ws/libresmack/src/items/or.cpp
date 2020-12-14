@@ -20,7 +20,7 @@ namespace items {
   }
 
   ItemType Or::Type() {
-    return ItemType::OR;
+    return TYPE_OR;
   }
 
   void Or::Build(BuildContext* ctx) {

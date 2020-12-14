@@ -23,6 +23,7 @@ namespace resmack {
     Rules(Rules* parent);
     ~Rules();
 
+    Rules* GetParent() { return this->parent_; }
     Rules* AddRule(std::string name, Item* item);
     Rules* AddRule(std::string name, std::string data);
     Rules* AddRule(size_t rule_idx, Item* item);

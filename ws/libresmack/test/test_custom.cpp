@@ -22,7 +22,7 @@ namespace items {
     }
 
     ItemType Type() {
-      return ItemType::CUSTOM;
+      return TYPE_CUSTOM;
     }
 
     void Build(BuildContext *ctx) {
