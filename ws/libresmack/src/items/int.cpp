@@ -1,4 +1,4 @@
-#include <fmt/compile.h>
+#include "fmt/compile.h"
 
 #include "resmack/items/int.hpp"
 
@@ -20,7 +20,7 @@ namespace items {
   Int::~Int() {}
 
   ItemType Int::Type() {
-   return ItemType::INT;
+   return TYPE_INT;
   }
 
   void Int::Build(BuildContext *ctx) {

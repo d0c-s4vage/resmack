@@ -10,7 +10,7 @@ namespace items {
   //Raw::Raw(const char* data) : data_((char *)data) {}
 
   ItemType Raw::Type() {
-   return ItemType::RAW;
+   return TYPE_RAW;
   }
 
   void Raw::Build(BuildContext *ctx) {

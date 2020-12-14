@@ -12,7 +12,7 @@ namespace items {
   }
 
   ItemType Scope::Type() {
-    return ItemType::SCOPE;
+    return TYPE_SCOPE;
   }
 
   void Scope::Build(BuildContext *ctx) {
@@ -42,7 +42,7 @@ namespace items {
   ScopeAction::ScopeAction(bool push): push(push) {}
   ScopeAction::~ScopeAction() {}
 
-  ItemType ScopeAction::Type() { return ItemType::SCOPE_ACTION; }
+  ItemType ScopeAction::Type() { return TYPE_SCOPE_ACTION; }
 
   void ScopeAction::Build(BuildContext* ctx) {
     if (this->push) {

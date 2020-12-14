@@ -5,6 +5,7 @@
 
 #define STR_ALL(MIN, MAX) (new resmack::items::Str(MIN, MAX, resmack::items::CHARSET_ALL, sizeof(resmack::items::CHARSET_ALL)))
 
+#define STR1(SIZE) STR2(SIZE, SIZE+1)
 #define STR2(MIN, MAX) (new resmack::items::Str(MIN, MAX))
 #define STR3(MIN, MAX, CHAR_ARY) DO-NOT-USE-THIS-MUST-SPECIFY-SIZE
 #define STR4(MIN, MAX, CHARSET, CHARSET_SIZE) (new resmack::items::Str(MIN, MAX, CHARSET, CHARSET_SIZE))

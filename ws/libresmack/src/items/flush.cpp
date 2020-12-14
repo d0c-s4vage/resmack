@@ -5,7 +5,7 @@ namespace resmack {
 namespace items {
 
   ItemType Flush::Type() {
-    return ItemType::FLUSHD;
+    return TYPE_FLUSHD;
   }
 
   void Flush::Build(BuildContext* ctx) {
@@ -18,7 +18,7 @@ namespace items {
   Flushed::~Flushed() { delete this->item_; }
 
   ItemType Flushed::Type() {
-    return ItemType::FLUSHED;
+    return TYPE_FLUSHED;
   }
 
   void Flushed::Build(BuildContext* ctx) {

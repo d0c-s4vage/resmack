@@ -10,7 +10,7 @@ namespace items {
   }
 
   ItemType Pre::Type() {
-    return ItemType::PRE;
+    return TYPE_PRE;
   }
 
   void Pre::Build(BuildContext* ctx) {
@@ -25,8 +25,7 @@ namespace items {
     ctx->pre_output = ctx->output;
     ctx->output = orig_output;
     // OUCH!
-    //(*ctx->pre_output) = tmp_pre_output + *ctx->pre_output;
-    (*ctx->pre_output) = *ctx->pre_output + tmp_pre_output;
+    ctx->pre_output->insert(0, tmp_pre_output);
   }
 
   bool Pre::CalcReachability(calc::Reach* reach_calc) {

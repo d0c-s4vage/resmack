@@ -41,7 +41,7 @@ namespace calc {
     bool fully_reachable = item->CalcReachability(this);
 
     switch(item->Type()) {
-      case ItemType::REF:
+      case TYPE_REF:
         if (!fully_reachable) {
           this->unresolved_refs_.emplace(((items::Ref*)item)->rule_name_);
         }

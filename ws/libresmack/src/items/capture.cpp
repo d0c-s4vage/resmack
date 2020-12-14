@@ -2,6 +2,24 @@
 
 namespace resmack {
 namespace items {
+  // one per ref level, can be overridden. The ref levels act as our stack
+  // of CAPTURES (which is definitely possible)
+  // consider:
+  //
+  //   Obj1 := AND(
+  //     PRE(AND(
+  //        V("var "), CAPTURE(STR(5, 6)), V(" = new Object()")
+  //     )),
+  //     CAPTURED
+  //   )
+  //   Obj2 := 
+  //     PRE(AND(
+  //        V("var "), CAPTURE(STR(5, 6)), V(" = "), REF("Obj1")
+  //     )),
+  //     CAPTURED
+  //   )
+  //
+  Vector<std::string> CAPTURES;
 
   // --------------------------------------------------------------------------
   // CAPTURE ------------------------------------------------------------------
@@ -10,7 +28,7 @@ namespace items {
   Capture::Capture(Item* item) : item_(item) {}
   Capture::~Capture() { delete this->item_; }
 
-  ItemType Capture::Type() { return ItemType::CAPTURE; }
+  ItemType Capture::Type() { return TYPE_CAPTURE; }
 
   bool Capture::CalcReachability(calc::Reach* calc) {
     return this->item_->CalcReachability(calc);
@@ -25,7 +43,10 @@ namespace items {
     this->item_->Build(ctx);
     size_t len = ctx->output->size() - start_pos;
 
-    CAPTURED_DATA.assign(ctx->output->data() + start_pos, len);
+    while (CAPTURES.size() <= ctx->ref_depth) {
+      CAPTURES.emplace_back();
+    }
+    CAPTURES[ctx->ref_depth].assign(ctx->output->data() + start_pos, len);
   }
 
   // --------------------------------------------------------------------------
@@ -33,11 +54,11 @@ namespace items {
   // --------------------------------------------------------------------------
 
   ItemType Captured::Type() {
-    return ItemType::CAPTURED;
+    return TYPE_CAPTURED;
   }
 
-  void Build(BuildContext* ctx) {
-    *(ctx->output) += CAPTURED_DATA;
+  void Captured::Build(BuildContext* ctx) {
+    *(ctx->output) += CAPTURES[ctx->ref_depth];
   }
 }
 }

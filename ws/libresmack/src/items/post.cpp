@@ -10,7 +10,7 @@ namespace items {
   }
 
   ItemType Post::Type() {
-    return ItemType::POST;
+    return TYPE_POST;
   }
 
   void Post::Build(BuildContext* ctx) {

@@ -21,6 +21,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack",
+  "command": "/usr/bin/clang++  -Dlibresmack_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack/src -I/home/guts/ws/dev/resmack/ws/libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/capture.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack/src/items/capture.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack/src/items/capture.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack",
   "command": "/usr/bin/clang++  -Dlibresmack_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack/src -I/home/guts/ws/dev/resmack/ws/libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/flush.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack/src/items/flush.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack/src/items/flush.cpp"
 },
@@ -113,6 +118,11 @@
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack/test",
   "command": "/usr/bin/clang++   -I/home/guts/ws/dev/resmack/ws/libresmack/src -I/home/guts/ws/dev/resmack/ws/libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include -I/home/guts/ws/dev/resmack/ws/libresmack/test -I/home/guts/ws/dev/resmack/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_and.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack/test/test_and.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack/test/test_and.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack/test",
+  "command": "/usr/bin/clang++   -I/home/guts/ws/dev/resmack/ws/libresmack/src -I/home/guts/ws/dev/resmack/ws/libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack/libs -I/home/guts/ws/dev/resmack/ws/libresmack/libs/fmt/include -I/home/guts/ws/dev/resmack/ws/libresmack/test -I/home/guts/ws/dev/resmack/ws/libresmack/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack/../../libs-test/googletest/googlemock/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address   -std=gnu++2a -o CMakeFiles/test_libresmack.dir/test_capture.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack/test/test_capture.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack/test/test_capture.cpp"
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack/test",

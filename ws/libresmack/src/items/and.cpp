@@ -18,7 +18,7 @@ namespace items {
   }
 
   ItemType And::Type() {
-   return ItemType::AND;
+   return TYPE_AND;
   }
 
   void And::Build(BuildContext *ctx) {

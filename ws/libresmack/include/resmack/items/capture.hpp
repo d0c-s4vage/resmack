@@ -3,9 +3,11 @@
 
 #include "../item.hpp"
 
+#define CAPTURE(VAL) (new resmack::items::Capture(VAL))
+#define CAPTURED (new resmack::items::Captured())
+
 namespace resmack {
 namespace items {
-  std::string CAPTURED_DATA;
 
   // Remember the last value that was generated throug this instance
   class Capture: public resmack::Item {
