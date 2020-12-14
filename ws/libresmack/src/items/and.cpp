@@ -24,12 +24,22 @@ namespace items {
   void And::Build(BuildContext *ctx) {
    uint32_t count = 0;
    bool add_sep = (this->sep_.size() > 0);
+   bool had_prev_intends_output = false;
    for (Item* item: this->items_) {
-      if (add_sep && count > 0 && count <= this->items_.size()) {
+     bool this_intends_output = item->IntendsOutput();
+      if (
+          had_prev_intends_output &&
+          this_intends_output &&
+          add_sep &&
+          count > 0 &&
+          count <= this->items_.size()
+      ) {
         *ctx->output += this->sep_;
       }
+
       count++;
       item->Build(ctx);
+      had_prev_intends_output |= this_intends_output;
    }
   }
 

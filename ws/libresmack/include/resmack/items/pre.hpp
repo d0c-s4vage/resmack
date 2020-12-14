@@ -21,6 +21,7 @@ namespace items {
     ~Pre();
 
     ItemType Type();
+    bool IntendsOutput() { return false; }
     void Build(BuildContext* ctx);
     bool CalcReachability(calc::Reach* reach_calc);
     size_t CalcRefDepth(calc::RefDepth* ref_calc);

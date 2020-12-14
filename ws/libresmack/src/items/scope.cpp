@@ -37,5 +37,22 @@ namespace items {
     return std::string("<SCOPE ") + this->item_->ToString() + ">";
   }
 
+  // -------------------------------------------------------------------------
+
+  ScopeAction::ScopeAction(bool push): push(push) {}
+  ScopeAction::~ScopeAction() {}
+
+  ItemType ScopeAction::Type() { return ItemType::SCOPE_ACTION; }
+
+  void ScopeAction::Build(BuildContext* ctx) {
+    if (this->push) {
+      ctx->rules = ctx->rules->GetParent()->NewChild();
+    } else {
+      Rules* child_rules = ctx->rules;
+      ctx->rules = child_rules->GetParent();
+      delete child_rules;
+    }
+  }
+
 }
 }

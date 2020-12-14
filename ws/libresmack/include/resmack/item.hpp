@@ -24,7 +24,7 @@ namespace resmack {
 
   class Rules;
 
-  enum ItemType {
+  enum class ItemType {
     RAW,
     STR,
     INT,
@@ -34,8 +34,13 @@ namespace resmack {
     OPT,
     ID,
     SCOPE,
+    SCOPE_ACTION,
     PRE,
     POST,
+    CAPTURE,
+    CAPTURED,
+    FLUSHD,
+    FLUSHED,
     CUSTOM,
   };
 
@@ -74,6 +79,21 @@ namespace resmack {
       case ItemType::POST:
         return "POST";
         break;
+      case ItemType::CAPTURE:
+        return "CAPTURE";
+        break;
+      case ItemType::CAPTURED:
+        return "CAPTURED";
+        break;
+      case ItemType::FLUSHD:
+        return "FLUSH";
+        break;
+      case ItemType::FLUSHED:
+        return "FLUSHED";
+        break;
+      case ItemType::SCOPE_ACTION:
+        return "SCOPE_ACTION";
+        break;
       case ItemType::CUSTOM:
         return "CUSTOM";
         break;
@@ -86,6 +106,7 @@ namespace resmack {
      virtual ~Item() { };
      virtual ItemType Type() = 0;
      virtual void Build(BuildContext* ctx) = 0;
+     virtual bool IntendsOutput() { return true; }
      virtual std::string ToString() {
        return std::string("<") + ItemTypeName(this->Type()) + ">";
      }

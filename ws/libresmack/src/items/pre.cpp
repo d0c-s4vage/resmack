@@ -24,8 +24,9 @@ namespace items {
 
     ctx->pre_output = ctx->output;
     ctx->output = orig_output;
-
-    (*ctx->pre_output) = tmp_pre_output + *ctx->pre_output;
+    // OUCH!
+    //(*ctx->pre_output) = tmp_pre_output + *ctx->pre_output;
+    (*ctx->pre_output) = *ctx->pre_output + tmp_pre_output;
   }
 
   bool Pre::CalcReachability(calc::Reach* reach_calc) {

@@ -14,13 +14,14 @@
 namespace resmack {
 
   class Rules;
+  class Item;
 
   class BuildContext {
    public:
     Rules* rules;
     std::string* pre_output;
     std::string* output;
-    std::string* post_output;
+    Vector<Item*> post_items;
     Rand* rand;
     size_t ref_depth;
     size_t max_depth;
@@ -42,6 +43,7 @@ namespace resmack {
     size_t DecDepth();
     void PrintDebugIo();
     void Message(std::string msg);
+    void FlushPrePost();
   };
 
 }
