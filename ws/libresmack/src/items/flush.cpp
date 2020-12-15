@@ -22,8 +22,6 @@ namespace items {
   }
 
   void Flushed::Build(BuildContext* ctx) {
-    size_t curr_pre_size = ctx->pre_output->size();
-    size_t curr_output_size = ctx->output->size();
     size_t curr_post_item_idx = ctx->post_items.size();
 
     std::string tmp_output;

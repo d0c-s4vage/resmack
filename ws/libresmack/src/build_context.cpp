@@ -66,7 +66,7 @@ namespace resmack {
   }
 
   size_t BuildContext::IncDepth() {
-    if (this->ref_depth == std::numeric_limits<size_t>::max()) {
+    if (this->ref_depth == std::numeric_limits<uint32_t>::max()) {
       throw std::overflow_error("Attempted to increment ref depth past size_t max");
     }
     return this->ref_depth++;
