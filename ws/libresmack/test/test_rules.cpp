@@ -27,7 +27,8 @@ namespace items {
     rand.SetShouldRecord(true);
 
     std::string output;
-    BuildContext ctx(&output, &rand, 10);
+    uint32_t max_depth = 10;
+    BuildContext ctx(&output, &rand, max_depth);
 
     size_t rule_idx = 0;
     EXPECT_TRUE(rules.GetRuleMan()->IndexOf("test", &rule_idx));
@@ -36,7 +37,7 @@ namespace items {
 
     Vector<RandSnapshot> replay;
     for (auto& item: *rand.GetSnapshots()) {
-      replay.emplace_back(item.ref_depth, item.rule_idx, item.state);
+      replay.emplace_back(item.ref_depth, item.max_depth, item.rule_idx, item.state);
     }
     RandSnapshot* snap = &replay[0];
     snap->state[0] = 0u;

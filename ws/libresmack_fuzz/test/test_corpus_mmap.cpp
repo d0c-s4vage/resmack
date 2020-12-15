@@ -16,9 +16,9 @@ namespace fuzz {
     Rand rand;
     rand.SetShouldRecord(true);
     rand.Next();
-    rand.SnapshotState(1, 100);
+    rand.SnapshotState(1, 5, 100);
     rand.Next();
-    rand.SnapshotState(2, 200);
+    rand.SnapshotState(2, 5, 200);
 
     size_t curr_iter_count = 0;
     size_t map_size = 0x1000;
@@ -100,9 +100,9 @@ namespace fuzz {
     Rand rand;
     rand.SetShouldRecord(true);
     rand.Next();
-    rand.SnapshotState(1, 100);
+    rand.SnapshotState(1, 5, 100);
     rand.Next();
-    rand.SnapshotState(2, 200);
+    rand.SnapshotState(2, 5, 200);
 
     size_t iteration_count = 0;
 
@@ -155,9 +155,9 @@ namespace fuzz {
     Rand rand;
     rand.SetShouldRecord(true);
     rand.Next();
-    rand.SnapshotState(1, 100);
+    rand.SnapshotState(1, 5, 100);
     rand.Next();
-    rand.SnapshotState(2, 200);
+    rand.SnapshotState(2, 5, 200);
 
     size_t map_size = 0x1000;
     size_t total_count_ptr = 0;

@@ -84,15 +84,16 @@ namespace resmack {
     if (NULL == rule) { return false; }
 
     uint32_t tmp_rand_state[4] = { 0, 0, 0, 0 };
-    ctx->MaybeDoRandReplay(tmp_rand_state);
+    uint32_t tmp_max_depth = ctx->max_depth;
+    ctx->MaybeDoRandReplay(tmp_rand_state, &tmp_max_depth);
     {
       if (ctx->rand->ShouldRecord()) {
-        ctx->rand->SnapshotState(ctx->ref_depth, rule_idx);
+        ctx->rand->SnapshotState(ctx->ref_depth, ctx->max_depth, rule_idx);
       }
 
       rule->Build(ctx);
     }
-    ctx->MaybeUndoRandReplay(tmp_rand_state);
+    ctx->MaybeUndoRandReplay(tmp_rand_state, tmp_max_depth);
 
     // flush all pre/post output
     if (ctx->ref_depth == 0) {

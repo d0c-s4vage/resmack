@@ -17,7 +17,7 @@ namespace fuzz {
 
     Vector<RandSnapshot> snapshots;
     uint32_t state[4] = {1, 2, 3, 4};
-    snapshots.emplace_back(900, 1000, state);
+    snapshots.emplace_back(900, 5, 1000, state);
 
     pid_t pid;
     if ((pid = fork()) == 0) {
@@ -37,6 +37,7 @@ namespace fuzz {
     t.LoadLastReplay(&snapshots);
     EXPECT_EQ(snapshots.size(), 1u);
     EXPECT_EQ(snapshots[0].ref_depth, 900u);
+    EXPECT_EQ(snapshots[0].max_depth, 5u);
     EXPECT_EQ(snapshots[0].rule_idx, 1000u);
     EXPECT_EQ(snapshots[0].state[0], 1u);
     EXPECT_EQ(snapshots[0].state[1], 2u);
