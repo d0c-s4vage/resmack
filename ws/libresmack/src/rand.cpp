@@ -8,8 +8,14 @@
 
 namespace resmack {
 
-  RandSnapshot::RandSnapshot(size_t ref_depth, uint32_t rule_idx, const uint32_t state[]) :
+  RandSnapshot::RandSnapshot(
+      uint32_t ref_depth,
+      uint32_t max_depth,
+      uint32_t rule_idx,
+      const uint32_t state[]
+  ) :
     ref_depth(ref_depth),
+    max_depth(max_depth),
     rule_idx(rule_idx)
   {
     memcpy(this->state, state, sizeof(uint32_t) * 4);
@@ -28,7 +34,12 @@ namespace resmack {
     this->should_record_ = other.should_record_;
     memcpy(this->s_, other.s_, sizeof(this->s_));
     for (const RandSnapshot& item: other.snapshots_) {
-      this->snapshots_.emplace_back(item.ref_depth, item.rule_idx, item.state);
+      this->snapshots_.emplace_back(
+        item.ref_depth,
+        item.max_depth,
+        item.rule_idx,
+        item.state
+      );
     }
   }
 
@@ -40,7 +51,12 @@ namespace resmack {
     this->should_record_ = other.should_record_;
     memcpy(this->s_, other.s_, sizeof(this->s_));
     for (const RandSnapshot& item: other.snapshots_) {
-      this->snapshots_.emplace_back(item.ref_depth, item.rule_idx, item.state);
+      this->snapshots_.emplace_back(
+        item.ref_depth,
+        item.max_depth,
+        item.rule_idx,
+        item.state
+      );
     }
     return *this;
   }
@@ -68,8 +84,12 @@ namespace resmack {
     return this->Next() % 2 == 0;
   }
 
-  void Rand::SnapshotState(size_t ref_depth, uint32_t rule_idx) {
-    this->snapshots_.emplace_back(ref_depth, rule_idx, this->s_);
+  void Rand::SnapshotState(
+      uint32_t ref_depth,
+      uint32_t max_depth,
+      uint32_t rule_idx
+  ) {
+    this->snapshots_.emplace_back(ref_depth, max_depth, rule_idx, this->s_);
   }
 
   void Rand::SnapshotClear() {

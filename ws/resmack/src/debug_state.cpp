@@ -58,26 +58,27 @@ namespace debug_state {
 
   void DebugCorpusEntry(char** curr_entry) {
     fuzz::ser::CorpusItemHeader* header = (fuzz::ser::CorpusItemHeader*)*curr_entry;
-    printf("    size:                   %u\n", header->size);
+    printf("    size:                   %zu\n", header->size);
     printf("    feedback_key:           0x%zx\n", header->feedback_key);
     printf("    feedback_num:           %zu\n", header->feedback_num);
-    printf("    iter_discovered:        %u\n", header->iter_discovered);
-    printf("    parent1_one_based_idx:  %u\n", header->parent1_one_based_idx);
-    printf("    parent2_one_based_idx:  %u\n", header->parent2_one_based_idx);
-    printf("    num_crashes:            %u\n", header->num_crashes);
-    printf("    num_ancestors:          %u\n", header->num_ancestors);
-    printf("    num_descendants:        %u\n", header->num_descendants);
-    printf("    num_direct_descendants: %u\n", header->num_direct_descendants);
-    printf("    reserved1:              %u\n", header->reserved1);
-    printf("    reserved2:              %u\n", header->reserved2);
+    printf("    iter_discovered:        %zu\n", header->iter_discovered);
+    printf("    parent1_one_based_idx:  %zu\n", header->parent1_one_based_idx);
+    printf("    parent2_one_based_idx:  %zu\n", header->parent2_one_based_idx);
+    printf("    num_crashes:            %zu\n", header->num_crashes);
+    printf("    num_ancestors:          %zu\n", header->num_ancestors);
+    printf("    num_descendants:        %zu\n", header->num_descendants);
+    printf("    num_direct_descendants: %zu\n", header->num_direct_descendants);
+    printf("    reserved1:              %zu\n", header->reserved1);
+    printf("    reserved2:              %zu\n", header->reserved2);
     printf("    item_header:\n");
-    printf("      num_states: %u\n", header->item_header.num_states);
+    printf("      num_states: %zu\n", header->item_header.num_states);
 
     fuzz::ser::GenState* curr = (fuzz::ser::GenState*)(header + 1);
     for (size_t i = 0; i < header->item_header.num_states; i++) {
-      printf("        state[%3lu]: ref_depth: %5u rule_idx: %5u rand_state: %08x|%08x|%08x|%08x\n",
+      printf("        state[%3lu]: ref_depth: %5u max_depth: %5u rule_idx: %5u rand_state: %08x|%08x|%08x|%08x\n",
         i,
         curr->ref_depth,
+        curr->max_depth,
         curr->rule_idx,
         curr->rand_state[0],
         curr->rand_state[1],

@@ -144,11 +144,17 @@ void MmapCorpus::AddRandSnapshotInner(
 
   for (const RandSnapshot& item: *snapshot) {
     curr_state->ref_depth = item.ref_depth;
+    curr_state->max_depth = item.max_depth;
     curr_state->rule_idx = item.rule_idx;
     memcpy(curr_state->rand_state, item.state, sizeof(uint32_t) * 4);
 
     curr_state++;
-    new_snapshot->snapshot.emplace_back(item.ref_depth, item.rule_idx, item.state);
+    new_snapshot->snapshot.emplace_back(
+      item.ref_depth,
+      item.max_depth,
+      item.rule_idx,
+      item.state
+    );
   }
 
   this->last_updated_seq = this->last_updated_seq = ++this->meta->updated_seq;
@@ -220,7 +226,12 @@ void MmapCorpus::SyncInner() {
       rand_state_idx++
     ) {
       state = (ser::GenState*)((char*)curr + header_size + state_offset);
-      entry.snapshot.emplace_back(state->ref_depth, state->rule_idx, state->rand_state);
+      entry.snapshot.emplace_back(
+        state->ref_depth,
+        state->max_depth,
+        state->rule_idx,
+        state->rand_state
+      );
       state_offset += state_size;
     }
 
@@ -241,7 +252,6 @@ Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
 
   uint32_t choice_val = rand->Next();
   uint32_t rand_val = rand->Next();
-  size_t top_fourth = corpus_len / 4;
   size_t top_ten = corpus_len >= 10 ? 10 : corpus_len;
   size_t rand_top_ten = rand_val % top_ten;
   size_t total_options = 7;
@@ -256,31 +266,26 @@ Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
   }
 
   switch (choice_val % total_options) {
-    // random
     case 0: {
       rand_idx = rand->Next() % corpus_len;
       break;
     }
 
-    // pick one of the most recent ten items
     case 1: {
       rand_idx = corpus_len - rand_top_ten - 1;
       break;
     }
 
-    // top 4th of largest ancestor chain
     case 2: {
       rand_idx = this->most_ancestors_desc[rand_top_ten];
       break;
     }
 
-    // top 4th of most direct descendants
     case 3: {
       rand_idx = this->most_direct_descendants_desc[rand_top_ten];
       break;
     }
 
-    // top 4th of most total descendants
     case 4: {
       rand_idx = this->most_descendants_desc[rand_top_ten];
       break;
@@ -291,7 +296,6 @@ Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
       break;
     }
 
-    // top 4th of most crashes
     case 6: {
       rand_idx = this->most_crashes_desc[rand_top_ten];
       break;

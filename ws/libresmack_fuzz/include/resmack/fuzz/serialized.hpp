@@ -10,6 +10,7 @@ namespace ser {
 
 struct GenState {
   uint32_t ref_depth;
+  uint32_t max_depth;
   uint32_t rule_idx;
   uint32_t rand_state[4];
 };

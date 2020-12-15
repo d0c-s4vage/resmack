@@ -23,20 +23,20 @@ namespace resmack {
     std::string* output;
     Vector<Item*> post_items;
     Rand* rand;
-    size_t ref_depth;
-    size_t max_depth;
+    uint32_t ref_depth;
+    uint32_t max_depth;
 
     const Vector<RandSnapshot>* replay;
     size_t replay_idx;
     bool did_replay;
 
-    BuildContext(std::string* output, Rand* rand, size_t max_depth);
+    BuildContext(std::string* output, Rand* rand, uint32_t max_depth);
     ~BuildContext();
 
     // reset replay and other state fields
     void SetReplay(const Vector<RandSnapshot>* replay);
-    void MaybeDoRandReplay(uint32_t tmp_state[]);
-    void MaybeUndoRandReplay(uint32_t tmp_state[]);
+    void MaybeDoRandReplay(uint32_t tmp_state[], uint32_t* tmp_max_depth);
+    void MaybeUndoRandReplay(uint32_t tmp_state[], uint32_t tmp_max_depth);
 
     bool DoShortest();
     size_t IncDepth();

@@ -343,6 +343,7 @@ void FuzzLoop(
     bool used_corpus = false;
     if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand.Maybe())) {
       ctx.SetReplay(NULL);
+      ctx.max_depth = (meta_rand.Next() % (OPTS.max_depth - 1)) + 1;
     } else {
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
@@ -350,7 +351,12 @@ void FuzzLoop(
         replay = corpus->GetItem(&meta_rand);
       });
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
-        resmack::fuzz::MutateRandSnapshot(&meta_rand, replay, &mutated_replay);
+        resmack::fuzz::MutateRandSnapshot(
+          &meta_rand,
+          replay,
+          &mutated_replay,
+          OPTS.max_depth
+        );
       });
       ctx.SetReplay(&mutated_replay);
     }

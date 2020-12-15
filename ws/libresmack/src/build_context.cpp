@@ -7,7 +7,7 @@
 
 namespace resmack {
 
-  BuildContext::BuildContext(std::string* output, Rand* rand, size_t max_depth):
+  BuildContext::BuildContext(std::string* output, Rand* rand, uint32_t max_depth):
       rules(NULL),
       pre_output(NULL),
       output(output),
@@ -32,7 +32,7 @@ namespace resmack {
     this->replay_idx = 0;
   }
 
-  void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[]) {
+  void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[], uint32_t* tmp_max_depth) {
     if (NULL == this->replay || this->replay_idx >= this->replay->size()) {
       this->did_replay = false;
       return;
@@ -47,15 +47,18 @@ namespace resmack {
     this->did_replay = true;
     this->rand->CopyState(tmp_state);
     this->rand->SetState(snapshot.state);
+    this->max_depth = snapshot.max_depth;
+    *tmp_max_depth = this->max_depth;
     this->replay_idx++;
   }
 
-  void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[]) {
+  void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[], uint32_t tmp_max_depth) {
     if (!this->did_replay) {
       return;
     }
 
     this->rand->SetState(tmp_state);
+    this->max_depth = tmp_max_depth;
   }
 
   bool BuildContext::DoShortest() {
