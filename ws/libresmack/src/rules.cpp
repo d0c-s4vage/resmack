@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <signal.h>
 #include <cstring>
 #include <signal.h>
 
@@ -17,8 +18,8 @@ namespace resmack {
 
   Rules::Rules(Rules* parent): finalized_(false) {
     this->parent_ = parent;
-    if (this->parent_ != NULL) {
-      this->rule_man_.SetParent(this->parent_->GetRuleMan());
+    if (parent != NULL) {
+      this->rule_man_.SetParent(parent->GetRuleMan());
     } else {
       this->rule_man_.Init();
     }

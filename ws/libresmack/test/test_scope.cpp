@@ -11,6 +11,9 @@
 #include "resmack/items/raw.hpp"
 #include "resmack/items/ref.hpp"
 #include "resmack/items/scope.hpp"
+#include "resmack/items/pre.hpp"
+#include "resmack/items/post.hpp"
+#include "resmack/items/capture.hpp"
 
 #include "test_utils.hpp"
 
@@ -19,21 +22,6 @@ namespace items {
 
   TEST(Scope, Works)
   {
-    /*
-    rules.AddRule("dbContext", AND(
-        PRE(AND(REF("db"), V(".Context(function(e) { var "), ID("dbContextId"), " = e.target;")),
-        REF("dbContextId"),
-        POST(V("})")),
-    ));
-    // when is the POST stream finalized? With each new rule that is built?
-    rules.AddRule("dbContext.Test", AND(REF("dbContext"), V(".Test()")));
-
-    (new Database()).Context(function(e) { var adsfkj = e.target; adsfkj.Test(); });
-
-    post_output is prepended, not appended like the pre_output, potentially very
-    slow
-    */
-
     Rules rules;
     rules.AddRule("decl", ID("varname"))
       ->AddRule("scoped_decl", SCOPE(REF("decl")))
@@ -53,6 +41,35 @@ namespace items {
     test_utils::SplitStr(output, " ", &parts);
 
     EXPECT_NE(parts[0], parts[1]);
+  }
+
+  TEST(Scope, WithPrePostCapture) {
+    Rand rand;
+    Rules rules;
+    std::string output;
+
+    rules
+      .AddRule("CacheStorage", V("window.caches"))
+
+      ->AddRule("Cache", AND(
+        PRE(AND(
+          REF("CacheStorage"), V(".open('"), ID("CacheName"), V("').then(function("), SCOPE_PUSH, CAPTURE(ID("Cache")), V(") {")
+        )),
+        CAPTURED,
+        POST(AND(V("})"), SCOPE_POP))
+      ))
+      ->AddRule("Cache.keys", AND(
+        PRE(AND(
+          REF("Cache"), V(".keys().then(function("), SCOPE_PUSH, CAPTURE(ID("Cache.keys")), V(") {")
+        )),
+        CAPTURED,
+        POST(AND(V("})"), SCOPE_POP))
+      ))
+      ->AddRule("Cache.delete", AND(REF("Cache"), V(".delete("), REF("Cache.keys"), V("[0])")));
+
+    EXPECT_EQ(rules.GetRuleMan()->GetRule("Cache")->NumItems(), 1u);
+    rules.Build("Cache.delete", &output, &rand);
+    EXPECT_EQ(rules.GetRuleMan()->GetRule("Cache")->NumItems(), 1u);
   }
 
 }

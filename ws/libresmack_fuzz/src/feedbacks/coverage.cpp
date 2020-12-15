@@ -10,7 +10,7 @@ namespace resmack {
 namespace fuzz {
 
   static size_t GUARD_COUNTER = 0;
-  static uint32_t* COV_FLAGS;
+  static uint32_t* COV_FLAGS = NULL;
   static size_t NUM_COV_FLAGS;
   static bool IS_NEW = false;
 
@@ -23,6 +23,7 @@ namespace fuzz {
     if ((GUARD_COUNTER - 1) % 32 != 0) {
       NUM_COV_FLAGS++;
     }
+    COV_FLAGS = new uint32_t[NUM_COV_FLAGS];
 
     printf("Total Edges: %zu\n", GUARD_COUNTER);
   }

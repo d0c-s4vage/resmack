@@ -42,10 +42,13 @@
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 
+static bool SHUTTING_DOWN = false;
+
 extern "C" {
   int __lsan_is_turned_off() { return 1; }
 
   void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var) {
+    if (SHUTTING_DOWN) { return; }
     resmack::fuzz::HandleSanitizerCovTracePcGuard(guard_var);
   }
 
@@ -61,7 +64,6 @@ struct LoopPrintStatusArgs {
 };
 
 static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
-static bool SHUTTING_DOWN = false;
 pthread_t STATUS_THREAD;
 LoopPrintStatusArgs STATUS_ARGS;
 
@@ -312,12 +314,9 @@ void FuzzLoop(
   resmack::fuzz::Corpus* corpus,
   resmack::fuzz::Tracee* tracee
 ) {
-  std::cout << "." ;
   resmack::Rand meta_rand;
   resmack::Rand build_rand(meta_rand.Next());
   build_rand.SetShouldRecord(true);
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() % 0xff));
 
   std::string output;
 

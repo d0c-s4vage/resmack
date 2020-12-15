@@ -1,3 +1,5 @@
+#include <signal.h>
+
 #include "resmack/rules.hpp"
 #include "resmack/item.hpp"
 #include "resmack/build_context.hpp"
@@ -46,7 +48,7 @@ namespace items {
 
   void ScopeAction::Build(BuildContext* ctx) {
     if (this->push) {
-      ctx->rules = ctx->rules->GetParent()->NewChild();
+      ctx->rules = ctx->rules->NewChild();
     } else {
       Rules* child_rules = ctx->rules;
       ctx->rules = child_rules->GetParent();

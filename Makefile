@@ -11,6 +11,8 @@ RESMACK_PERF_EXE=resmack_perf
 
 NPROCS=$(shell nproc)
 
+TEST="*"
+
 export CXX=clang++
 
 # -----------------------------------------------------------------------------
@@ -34,10 +36,10 @@ gdb-perf-debug: debug
 	gdb -ex run $(DEBUG_PATH)/$(RESMACK_PERF_EXE)
 
 gdb-test-libresmack: test-libresmack
-	gdb -ex run build/test/test_libresmack
+	gdb -ex run --args build/test/test_libresmack --gtest_filter=$(TEST)
 
 gdb-test-libresmack-fuzz: test-libresmack-fuzz
-	gdb -ex run build/test/test_libresmack_fuzz
+	gdb -ex run --args build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 build/debug:
 	mkdir -p build/debug ; \
@@ -132,8 +134,6 @@ $(RELEASE_PATH):
 # -----------------------------------------------------------------------------
 # TEST ------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-TEST="*"
 
 .PHONY: tests clean-tests test-libresmack-fuzz test-libresmack libs-test/googletest
 

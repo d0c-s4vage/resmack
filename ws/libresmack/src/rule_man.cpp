@@ -121,6 +121,12 @@ namespace resmack {
   void RuleManager::Prune(size_t rule_idx) {
     if (rule_idx >= this->rules_.size()) { return; }
 
+    std::string rule_name;
+
+    if (this->NameOf(rule_idx, &rule_name)) {
+      std::cout << "Pruning rule: " << rule_name << std::endl;
+    }
+
     delete this->rules_[rule_idx];
     this->rules_[rule_idx] = 0;
   }
