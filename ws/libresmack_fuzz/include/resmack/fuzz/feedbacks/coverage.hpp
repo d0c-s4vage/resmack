@@ -19,6 +19,7 @@ namespace fuzz {
    public:
     Coverage();
     ~Coverage();
+    std::string GetSummary();
     void Start();
     void Stop();
     FeedbackStats GetStats();

@@ -31,6 +31,8 @@ namespace resmack {
      uint32_t s_[4];
      Vector<RandSnapshot> snapshots_;
      bool should_record_;
+     double last_gaussian;
+     bool use_last_gaussian;
 
     public: 
      Rand();
@@ -40,6 +42,9 @@ namespace resmack {
      Rand(uint32_t seed);
 
      uint32_t Next();
+     uint32_t NextInRangeGaussian(uint32_t min_val, uint32_t max_val);
+     void ReinitSeed();
+     void InitState(uint32_t seed);
      const Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
      bool Maybe();
      void SnapshotState(uint32_t ref_depth, uint32_t max_depth, uint32_t rule_idx);

@@ -1,7 +1,8 @@
-
 #include <cstring>
 #include <iostream>
+#include <math.h>
 #include <thread>
+#include <signal.h>
 
 #include "resmack/rand.hpp"
 
@@ -22,8 +23,7 @@ namespace resmack {
   }
 
   Rand::Rand() {
-    std::random_device rd;
-    this->Init(rd());
+    this->ReinitSeed();
   }
 
   Rand::Rand(uint32_t seed) {
@@ -84,6 +84,37 @@ namespace resmack {
     return this->Next() % 2 == 0;
   }
 
+  uint32_t Rand::NextInRangeGaussian(uint32_t min_val, uint32_t max_val) {
+    double mean = ((double)max_val + (double)min_val) / 2.0;
+    double standard_dev = double(max_val - min_val) / 8.0;
+
+    float tmp;
+    if (this->use_last_gaussian) {
+      tmp = this->last_gaussian;
+      this->use_last_gaussian = !this->use_last_gaussian;
+    } else {
+      double u, v, s;
+      do {
+        //std::cout << "next_raw: " << this->Next() << " next: " << (double)this->Next() << " max: " << (double)std::numeric_limits<uint32_t>::max() << std::endl;
+        u = ((double)this->Next() / (double)std::numeric_limits<uint32_t>::max()) * 2.0 - 1.0;
+        v = ((double)this->Next() / (double)std::numeric_limits<uint32_t>::max()) * 2.0 - 1.0;
+        s = u * u + v * v;
+        //std::cout << "u: " << u << " v: " << v << " s: " << s << std::endl;
+      } while (s >= 1.0 || s == 0.0);
+
+      s = sqrt(-2.0 * log(s) / s);
+      this->last_gaussian = v * s;
+      tmp = u * s;
+      this->use_last_gaussian = true;
+    }
+
+    double res = mean + standard_dev * tmp;
+    if (res < min_val || res > max_val) {
+      return this->NextInRangeGaussian(min_val, max_val);
+    }
+    return res;
+  }
+
   void Rand::SnapshotState(
       uint32_t ref_depth,
       uint32_t max_depth,
@@ -98,7 +129,15 @@ namespace resmack {
 
   void Rand::Init(uint32_t seed) {
     this->should_record_ = false;
+    this->InitState(seed);
+  }
 
+  void Rand::ReinitSeed() {
+    std::random_device rd;
+    this->Init(rd());
+  }
+
+  void Rand::InitState(uint32_t seed) {
     std::mt19937 gen;
     gen.seed(seed);
 
@@ -109,7 +148,11 @@ namespace resmack {
   }
 
   void Rand::SetState(const uint32_t state[]) {
+    this->use_last_gaussian = false;
     memcpy(this->s_, state, sizeof(uint32_t) * 4);
+    if (this->s_[0] == 0 && this->s_[1] == 0 && this->s_[2] == 0 && this->s_[3] == 0) {
+      raise(SIGINT);
+    }
   }
 
   void Rand::CopyState(uint32_t state[]) {

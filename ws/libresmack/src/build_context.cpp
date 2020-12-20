@@ -15,8 +15,7 @@ namespace resmack {
       ref_depth(0),
       max_depth(max_depth),
       replay(NULL),
-      replay_idx(0),
-      did_replay(false)
+      replay_idx(0)
   {
   }
 
@@ -32,19 +31,19 @@ namespace resmack {
     this->replay_idx = 0;
   }
 
-  void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[], uint32_t* tmp_max_depth) {
+  void BuildContext::MaybeDoRandReplay(uint32_t tmp_state[], uint32_t* tmp_max_depth, bool* tmp_did_replay) {
     if (NULL == this->replay || this->replay_idx >= this->replay->size()) {
-      this->did_replay = false;
+      *tmp_did_replay = false;
       return;
     }
 
     const RandSnapshot& snapshot = (*this->replay)[this->replay_idx];
     if (this->ref_depth != snapshot.ref_depth) {
-      this->did_replay = false;
+      *tmp_did_replay = false;
       return;
     }
 
-    this->did_replay = true;
+    *tmp_did_replay = true;
     this->rand->CopyState(tmp_state);
     this->rand->SetState(snapshot.state);
     this->max_depth = snapshot.max_depth;
@@ -52,8 +51,8 @@ namespace resmack {
     this->replay_idx++;
   }
 
-  void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[], uint32_t tmp_max_depth) {
-    if (!this->did_replay) {
+  void BuildContext::MaybeUndoRandReplay(uint32_t tmp_state[], uint32_t tmp_max_depth, bool tmp_did_replay) {
+    if (!tmp_did_replay) {
       return;
     }
 

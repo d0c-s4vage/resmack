@@ -14,6 +14,7 @@ struct TraceeShared {
 };
 
 class Tracee {
+  uint32_t idx;
   size_t shared_max_size;
   // mmap'd shared space for IPC communication
   void* shared;
@@ -32,10 +33,11 @@ class Tracee {
   ser::AsanInfo* asan_info;
 
  public:
-  Tracee();
+  Tracee(uint32_t idx);
   ~Tracee();
 
   void Reset();
+  uint32_t GetIdx() { return this->idx; }
 
   void SaveAsanInfo(const char* report);
   ser::AsanInfo* GetAsanInfo() {

@@ -22,8 +22,16 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
 
   if (stat(this->state_path, &info) == 0) {
     this->state_file = fopen(this->state_path, "r+b");
+    if (this->state_file == NULL) {
+      perror("Could not create new state file");
+      std::exit(1);
+    }
   } else {
     this->state_file = fopen(this->state_path, "w+b");
+    if (this->state_file == NULL) {
+      perror("Could not open existing state file");
+      std::exit(1);
+    }
     if (ftruncate(fileno(this->state_file), this->state_max_size) != 0) {
       perror("Could not create resmack state mmap");
       std::exit(1);
@@ -65,6 +73,11 @@ MmapState::MmapState(const char* state_path) : state_path(state_path) {
   if ((this->state_lock = sem_open(sem_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
     perror("Could not create semaphore");
     std::exit(1);
+  }
+
+  int sval;
+  while (sem_getvalue(this->state_lock, &sval) == 0 && sval < 1) {
+    sem_post(this->state_lock);
   }
 }
 

@@ -1,8 +1,9 @@
 #ifndef RESMACK_FUZZ_CORPORA_MMAP_H
 #define RESMACK_FUZZ_CORPORA_MMAP_H
 
-#include "inttypes.h"
-#include "semaphore.h"
+#include <algorithm>
+#include <inttypes.h>
+#include <semaphore.h>
 
 #include "resmack/types.hpp"
 #include "resmack/fuzz/corpus.hpp"
@@ -13,78 +14,106 @@ namespace resmack {
 namespace fuzz {
 namespace corpora {
 
-class MmapCorpus : public Corpus {
- private:
-  void* corpus_map;
-  size_t max_corpus_size;
-  sem_t* corpus_lock;
-  Set<size_t> seen_keys;
-  Vector<CorpusEntry> snapshots;
-  Vector<size_t> most_direct_descendants_desc;
-  Vector<size_t> most_descendants_desc;
-  Vector<size_t> most_ancestors_desc;
-  Vector<size_t> most_crashes_desc;
-  Vector<size_t> most_feedback;
+  enum CorpusStrat : uint32_t {
+    STRAT_RAND                     = 0b1,
+    STRAT_MOST_FEEDBACK            = 0b10,
+    STRAT_LEAST_FEEDBACK           = 0b100,
+    STRAT_MOST_RECENT              = 0b1000,
+    STRAT_LEAST_RECENT             = 0b10000,
+    STRAT_MOST_ANCESTORS           = 0b100000,
+    STRAT_LEAST_ANCESTORS          = 0b1000000,
+    STRAT_MOST_DIRECT_DESCENDANTS  = 0b10000000,
+    STRAT_LEAST_DIRECT_DESCENDANTS = 0b100000000,
+    STRAT_MOST_DESCENDANTS         = 0b1000000000,
+    STRAT_LEAST_DESCENDANTS        = 0b10000000000,
+  };
 
-  ser::CorpusMetadata* meta;
-  size_t next_item_index;
-  ser::CorpusItemHeader* first_item;
-  ser::CorpusItemHeader* next_item;
-  uint32_t last_updated_seq; 
-  uint32_t last_reorg_seq; 
+  class MmapCorpus : public Corpus {
+   private:
+    void* corpus_map;
+    size_t max_corpus_size;
+    uint32_t strats;
+    Vector<size_t(*)(MmapCorpus*, Rand*, size_t)> strat_handlers;
+    sem_t* corpus_lock;
+    Set<size_t> seen_keys;
+    Vector<CorpusEntry> snapshots;
+    Vector<size_t> most_direct_descendants_desc;
+    Vector<size_t> most_descendants_desc;
+    Vector<size_t> most_ancestors_desc;
+    Vector<size_t> most_feedback;
 
-  size_t last_item1_one_based_idx;
-  size_t last_item2_one_based_idx; // only used if crossover between two parents was used
+    ser::CorpusMetadata* meta;
+    size_t next_item_index;
+    ser::CorpusItemHeader* first_item;
+    ser::CorpusItemHeader* next_item;
+    uint32_t last_updated_seq; 
+    uint32_t last_reorg_seq; 
 
-  // pointer to the current number of iterations. READ ONLY!
-  // WILL NOT BE EXACT! Iteration counts are synced every X intervals, not
-  // with each iteration
-  const size_t* curr_iter_count;
-  size_t last_discovered_iteration;
+    size_t last_item1_one_based_idx;
+    size_t last_item2_one_based_idx; // only used if crossover between two parents was used
 
- public:
-  MmapCorpus();
-  ~MmapCorpus();
+    // pointer to the current number of iterations. READ ONLY!
+    // WILL NOT BE EXACT! Iteration counts are synced every X intervals, not
+    // with each iteration
+    const size_t* curr_iter_count;
+    size_t last_discovered_iteration;
 
-  void SetCurrIterPtr(size_t* curr_iter_count) {
-    this->curr_iter_count = curr_iter_count;
-  }
+   public:
+    MmapCorpus();
+    ~MmapCorpus();
 
-  void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
-  void AddRandSnapshot(
-    const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
-    bool descendant_of_last
-  );
-  bool AddRandSnapshotIfNotSeen(
-    const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
-    bool descendant_of_last
-  );
-  virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
-  Vector<RandSnapshot>* GetItem(Rand* rand);
-  void Sync();
-  bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
-  size_t NumItems() { return this->snapshots.size(); }
-  size_t NumItemsRaw() { return this->meta->num_entries; }
-  size_t ItersSinceNewItem() {
-    return *this->curr_iter_count - this->last_discovered_iteration;
-  }
-  void IncLastItemCrashes();
+    void SetCurrIterPtr(size_t* curr_iter_count) {
+      this->curr_iter_count = curr_iter_count;
+    }
 
- private:
-  void AddRandSnapshotInner(
-    const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
-    bool descendant_of_last
-  );
-  void SyncInner();
-  size_t UpdateStats(CorpusEntry* entry, size_t level);
-  ser::CorpusItemHeader* GetItemHeader(size_t index);
-  void SortedsAdd(size_t index);
-  void SortedsClear();
-  void SortedsResort();
-};
+    void SetStrats(uint32_t strats);
+    void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
+    void AddRandSnapshot(
+      const resmack::Vector<RandSnapshot>* snapshot,
+      FeedbackStats stats,
+      bool descendant_of_last
+    );
+    bool AddRandSnapshotIfNotSeen(
+      const resmack::Vector<RandSnapshot>* snapshot,
+      FeedbackStats stats,
+      bool descendant_of_last
+    );
+    virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
+    Vector<RandSnapshot>* GetItem(Rand* rand);
+    void Sync();
+    bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
+    size_t NumItems() { return this->snapshots.size(); }
+    size_t NumItemsRaw() { return this->meta->num_entries; }
+    size_t ItersSinceNewItem() {
+      return *this->curr_iter_count - this->last_discovered_iteration;
+    }
+    void IncLastItemCrashes();
+
+   private:
+    void AddRandSnapshotInner(
+      const resmack::Vector<RandSnapshot>* snapshot,
+      FeedbackStats stats,
+      bool descendant_of_last
+    );
+    void SyncInner();
+    size_t UpdateStats(CorpusEntry* entry, size_t level);
+    ser::CorpusItemHeader* GetItemHeader(size_t index);
+    void SortedsAdd(size_t index);
+    void SortedsClear();
+    void SortedsResort();
+
+    static size_t HandleRandStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleMostFeedbackStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleLeastFeedbackStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleMostRecentStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleLeastRecentStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleMostAncestorsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleLeastAncestorsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleMostDirectDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleLeastDirectDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleMostDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    static size_t HandleLeastDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+  };
 
 }
 }

@@ -18,7 +18,7 @@ size_t ResmackGrammarInit(resmack::Rules* rules) {
       "devour", "mock", "ridicule", "praise", "return", "investigate",
       "detest", "abhor", "congratulate"
     ))
-    ->AddRule("subject", OR("I", "we", "you"))
+    ->AddRule("subject", OR("I", "we", "you", "they"))
     ->AddRule("sentence", AND_S(" ", REF("subject"), REF("verb"), REF("fruit-list")))
     ->AddRule("run-on-sentence", AND(
       REF("sentence"),

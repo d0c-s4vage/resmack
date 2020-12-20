@@ -10,6 +10,7 @@
 #include <openssl/sha.h>
 #include <pthread.h>
 #include <ratio>
+#include <sched.h>
 #include <semaphore.h>
 #include <set>
 #include <signal.h>
@@ -59,6 +60,7 @@ extern "C" {
 
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
+  resmack::fuzz::Feedback* feedback;
   int show_stats;
   bool should_run;
 };
@@ -72,6 +74,7 @@ struct FuzzOptions {
   size_t nprocs;
   size_t max_depth;
   size_t max_iters;
+  size_t max_crashes;
   int show_stats;
   int mute_stdio;
   float print_interval;
@@ -79,6 +82,7 @@ struct FuzzOptions {
   char* crash_output;
   size_t create_threshhold;
   char* dump_corpus_path;
+  uint32_t corpus_strats;
   int run_direct;
   char* state_path;
 };
@@ -88,6 +92,7 @@ static FuzzOptions OPTS {
   .nprocs = 1,
   .max_depth = 10,
   .max_iters = 0,
+  .max_crashes = 0,
   .show_stats = false,
   .mute_stdio = true,
   .print_interval = 0.0f,
@@ -95,6 +100,7 @@ static FuzzOptions OPTS {
   .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
+  .corpus_strats = 0,
   .run_direct = 0,
   .state_path = (char*)"",
 };
@@ -119,8 +125,7 @@ void sigint_handler(int signum) {
   resmack::fuzz::utils::sha1_hex(OPTS.state_path, strlen(OPTS.state_path), sem_path+1);
   sem_path[0] = '/';
   if(sem_unlink(sem_path) != 0) {
-    printf("Could not unlink semaphore at: %s\n", sem_path);
-    perror("Error unlinking state semaphore");
+    // doesn't exist, so no problem!
   }
 
   char corpus_path[4096];
@@ -128,8 +133,7 @@ void sigint_handler(int signum) {
   resmack::fuzz::utils::sha1_hex(corpus_path, strlen(corpus_path), sem_path+1);
   sem_path[0] = '/';
   if(sem_unlink(sem_path) != 0) {
-    printf("Could not unlink semaphore at: %s\n", sem_path);
-    perror("Error unlinking corpus semaphore");
+    // doesn't exist, so no problem!
   }
 
   STATUS_ARGS.should_run = false;
@@ -141,19 +145,27 @@ void PrintHelp(char* prog_name) {
   std::cout << prog_name << std::endl << std::endl;
   std::cout << "  Fuzz the compiled target" << std::endl << std::endl;
   std::cout << prog_name << " [-d MAX_DEPTH] [-n NPROCS] [-s] [-i INTERVAL] [--help]"  << std::endl << std::endl;
-  std::cout << "             --help,-h            Show this help message" << std::endl;
-  std::cout << "           --direct               Run the fuzzing loop and target in the main thread (" << OPTS.run_direct << ")" << std::endl;
-  std::cout << "           --nprocs,-n NPROCS     Number of times to fork (" << OPTS.nprocs << ")" << std::endl;
-  std::cout << "          --crashes,-c CRASH_DIR  Where to store crashing inputs (" << OPTS.crash_output << ")" << std::endl;
-  std::cout << "          --no-mute               Do not mute stdio of fuzz procs (" << !OPTS.mute_stdio << ")" << std::endl;
-  std::cout << "        --max-depth,-d MAX_DEPTH  Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
-  std::cout << "        --max-iters,-m MAX_ITERS  Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
-  std::cout << "       --show-stats,-s            Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
-  std::cout << "       --state-path,-S            Path to where the state file should be stored (" << OPTS.state_path << ")" << std::endl;
-  std::cout << "      --dump-corpus,-D DIR        Dump the corpus to DIR" << std::endl;
-  std::cout << "   --stats-interval,-i INTERVAL   Collect stats on every Nth iteration (" << OPTS.stats_interval << ")" << std::endl;
-  std::cout << "   --print-interval,-p INTERVAL   Print at set intervals with no backoff (" << OPTS.print_interval << ")" << std::endl;
-  std::cout << "--create-threshhold,-t THRESHOLD  The threshold to create new inputs (" << OPTS.create_threshhold << ")" << std::endl;
+  std::cout << "             --help,-h             Show this help message" << std::endl;
+  std::cout << "           --direct                Run the fuzzing loop and target in the main thread (" << OPTS.run_direct << ")" << std::endl;
+  std::cout << "           --nprocs,-n NPROCS      Number of times to fork (" << OPTS.nprocs << ")" << std::endl;
+  std::cout << "          --crashes,-c CRASH_DIR   Where to store crashing inputs (" << OPTS.crash_output << ")" << std::endl;
+  std::cout << "          --no-mute                Do not mute stdio of fuzz procs (" << !OPTS.mute_stdio << ")" << std::endl;
+  std::cout << "        --max-depth,-d MAX_DEPTH   Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
+  std::cout << "        --max-iters,-m MAX_ITERS   Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
+  std::cout << "      --max-crashes,-M MAX_CRASHES Maximum number of crashes (" << OPTS.max_crashes << ")" << std::endl;
+  std::cout << "       --show-stats,-s             Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
+  std::cout << "       --state-path,-S             Path to where the state file should be stored (" << OPTS.state_path << ")" << std::endl;
+  std::cout << "      --dump-corpus,-D DIR         Dump the corpus to DIR" << std::endl;
+  std::cout << "     --corpus-strat,-C STRAT       Enable the corpus strategy STRAT, must be one of below options." << std::endl;
+  std::cout << "                                   May be used multiple times:" << std::endl;
+  std::cout << "                                      MOST_FEEDBACK            MOST_ANCESTORS   MOST_DESCENDANTS" << std::endl;
+  std::cout << "                                     LEAST_FEEDBACK           LEAST_ANCESTORS  LEAST_DESCENDANTS" << std::endl;
+  std::cout << "                                        MOST_RECENT   MOST_DIRECT_DESCENDANTS               RAND" << std::endl;
+  std::cout << "                                       LEAST_RECENT  LEAST_DIRECT_DESCENDANTS" << std::endl;
+  std::cout << "                                       LEAST_RECENT  LEAST_DIRECT_DESCENDANTS" << std::endl;
+  std::cout << "   --stats-interval,-i INTERVAL    Collect stats on every Nth iteration (" << OPTS.stats_interval << ")" << std::endl;
+  std::cout << "   --print-interval,-p INTERVAL    Print at set intervals with no backoff (" << OPTS.print_interval << ")" << std::endl;
+  std::cout << "--create-threshhold,-t THRESHOLD   The threshold to create new inputs (" << OPTS.create_threshhold << ")" << std::endl;
   std::cout << std::endl;
   std::cout << "Example:" << std::endl << std::endl;
   std::cout << prog_name << " -n 3 --show-stats" << std::endl;
@@ -170,8 +182,10 @@ bool ParseOptions(int argc, char**argv) {
       { "no-mute", no_argument, 0, OPT_NO_MUTE },
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
+      { "max-crashes", required_argument, 0, 'M' },
       { "show-stats", no_argument, &OPTS.show_stats, 's' },
       { "state-path", required_argument, 0, 'S' },
+      { "corpus-strat", required_argument, 0, 'C' },
       { "dump-corpus", required_argument, 0, 'D' },
       { "stats-interval", required_argument, 0, 'i' },
       { "print-interval", required_argument, 0, 'p' },
@@ -185,7 +199,7 @@ bool ParseOptions(int argc, char**argv) {
     OPTS.state_path = state_path;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:S:p:", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:S:p:M:C:", long_options, &opt_index);
       if (c == -1) {
         break;
       }
@@ -204,6 +218,9 @@ bool ParseOptions(int argc, char**argv) {
           break;
         case 'm':
           OPTS.max_iters = strtoull(optarg, NULL, 10);
+          break;
+        case 'M':
+          OPTS.max_crashes = strtoull(optarg, NULL, 10);
           break;
         case 'n':
           OPTS.nprocs = strtoull(optarg, NULL, 10);
@@ -229,6 +246,34 @@ bool ParseOptions(int argc, char**argv) {
         case 'S':
           OPTS.state_path = optarg;
           break;
+        case 'C':
+          if (strcmp(optarg, "MOST_FEEDBACK") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_FEEDBACK;
+          } else if (strcmp(optarg, "LEAST_FEEDBACK") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_FEEDBACK;
+          } else if (strcmp(optarg, "MOST_RECENT") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_RECENT;
+          } else if (strcmp(optarg, "LEAST_RECENT") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_RECENT;
+          } else if (strcmp(optarg, "MOST_ANCESTORS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_ANCESTORS;
+          } else if (strcmp(optarg, "LEAST_ANCESTORS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_ANCESTORS;
+          } else if (strcmp(optarg, "MOST_DIRECT_DESCENDANTS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_DIRECT_DESCENDANTS;
+          } else if (strcmp(optarg, "LEAST_DIRECT_DESCENDANTS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_DIRECT_DESCENDANTS;
+          } else if (strcmp(optarg, "MOST_DESCENDANTS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_DESCENDANTS;
+          } else if (strcmp(optarg, "LEAST_DESCENDANTS") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_DESCENDANTS;
+          } else if (strcmp(optarg, "RAND") == 0) {
+            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_RAND;
+          } else {
+            std::cout << "Invalid corpus strategy: " << optarg << std::endl;
+            std::exit(1);
+          }
+          break;
         case 'p':
           OPTS.print_interval = std::stof(optarg);
           break;
@@ -238,12 +283,53 @@ bool ParseOptions(int argc, char**argv) {
     return true;
 }
 
-void* LoopPrintStatus(void* args_ptr) {
-  LoopPrintStatusArgs* args = (LoopPrintStatusArgs*)args_ptr;
+void PrintStatus(
+  LoopPrintStatusArgs* args,
+  std::chrono::high_resolution_clock::time_point start,
+  uint64_t start_iters
+) {
+  std::chrono::high_resolution_clock::time_point end;
   resmack::fuzz::states::MmapState* state = args->state;
   bool show_stats = args->show_stats;
+
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  resmack::fuzz::StateStats* stats = state->GetStats();
+
+  end = std::chrono::high_resolution_clock::now();
+  uint64_t num_iters = state->GetNumIterations();
+  uint64_t session_iters = num_iters - start_iters;
+  std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+  printf(
+    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | Feedback: %s | %0.2f s\n",
+    num_iters,
+    (float)session_iters / span.count(),
+    state->GetNumCrashes(),
+    corpus->NumItemsRaw(),
+    args->feedback->GetSummary().c_str(),
+    span.count()
+  );
+
+  if (!show_stats) {
+    return;
+  }
+
+  double tmp = 0;
+  double total_time = 0;
+#define STAT(NAME) total_time += stats->duration_##NAME;
+#include "resmack/fuzz/stats.def"
+#undef STAT
+
+#define STAT(NAME) \
+  tmp = stats->duration_##NAME / total_time; \
+  printf("%5.2f%% - "#NAME"\n", tmp * 100);
+#include "resmack/fuzz/stats.def"
+#undef STAT
+}
+
+void* LoopPrintStatus(void* args_ptr) {
+  LoopPrintStatusArgs* args = (LoopPrintStatusArgs*)args_ptr;
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-  std::chrono::high_resolution_clock::time_point end;
+  resmack::fuzz::states::MmapState* state = args->state;
   uint64_t start_iters = state->GetNumIterations();
 
   size_t sleep_amt;
@@ -253,9 +339,6 @@ void* LoopPrintStatus(void* args_ptr) {
     sleep_amt  = 1 * 1000; // ms
   }
 
-  resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  resmack::fuzz::StateStats* stats = state->GetStats();
-
   while (args->should_run) {
     if (OPTS.print_interval == 0.0f) {
       sleep_amt += 1000;
@@ -264,7 +347,7 @@ void* LoopPrintStatus(void* args_ptr) {
     size_t increment = 50;
     while(total_slept < sleep_amt) {
       if (!args->should_run) {
-        return NULL;
+        break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(increment));
       total_slept += increment;
@@ -273,35 +356,10 @@ void* LoopPrintStatus(void* args_ptr) {
       break;
     }
 
-    end = std::chrono::high_resolution_clock::now();
-    uint64_t num_iters = state->GetNumIterations();
-    uint64_t session_iters = num_iters - start_iters;
-    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    printf(
-      "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | %0.2f s\n",
-      num_iters,
-      (float)session_iters / span.count(),
-      state->GetNumCrashes(),
-      corpus->NumItemsRaw(),
-      span.count()
-    );
-
-    if (!show_stats) {
-      continue;
-    }
-
-    double tmp = 0;
-    double total_time = 0;
-#define STAT(NAME) total_time += stats->duration_##NAME;
-#include "resmack/fuzz/stats.def"
-#undef STAT
-
-#define STAT(NAME) \
-    tmp = stats->duration_##NAME / total_time; \
-    printf("%5.2f%% - "#NAME"\n", tmp * 100);
-#include "resmack/fuzz/stats.def"
-#undef STAT
+    PrintStatus(args, start, start_iters);
   }
+  // one final status print
+  PrintStatus(args, start, start_iters);
 
   return NULL;
 }
@@ -327,15 +385,25 @@ void FuzzLoop(
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
+  corpus->Sync();
+
   size_t counts = 0;
   bool past_create_threshhold = true;
-  while (OPTS.max_iters == 0 || state->GetNumIterations() < OPTS.max_iters) {
+  while (
+      (OPTS.max_iters == 0 || state->GetNumIterations() < OPTS.max_iters) &&
+      (OPTS.max_crashes == 0 || state->GetNumCrashes() < OPTS.max_crashes)
+  ) {
     counts++;
     if ((counts % OPTS.stats_interval) == 0) {
       state->IncNumIterations(OPTS.stats_interval);
       state->SyncStats(&stats);
       stats.Clear();
-      past_create_threshhold = corpus->ItersSinceNewItem() > OPTS.create_threshhold;
+      bool tmp = (corpus->ItersSinceNewItem() > OPTS.create_threshhold);
+      if (tmp && !past_create_threshhold) {
+        meta_rand.ReinitSeed();
+        build_rand.ReinitSeed();
+      }
+      past_create_threshhold = tmp;
     }
     stats.Tick();
 
@@ -343,7 +411,8 @@ void FuzzLoop(
     bool used_corpus = false;
     if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand.Maybe())) {
       ctx.SetReplay(NULL);
-      ctx.max_depth = (meta_rand.Next() % (OPTS.max_depth - 1)) + 1;
+      ctx.max_depth = meta_rand.NextInRangeGaussian(1, OPTS.max_depth);
+      //ctx.max_depth = (meta_rand.Next() % (OPTS.max_depth - 1)) + 1;
     } else {
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
@@ -449,6 +518,12 @@ bool HandleException(
   });
 
   // always restart the traced program
+  if (OPTS.max_crashes != 0 && state->GetNumCrashes() >= OPTS.max_crashes) {
+    // this only applies to *THIS* forked process - we need to stop
+    // capturing coverage data
+    SHUTTING_DOWN = true;
+    return false;
+  }
   return true;
 }
 
@@ -501,6 +576,10 @@ int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 
   resmack::Rules rules;
+  if (EF.ResmackGrammarInit == NULL) {
+    std::cout << "ResmackGrammarInit is not defined" << std::endl;
+    return 1;
+  }
   size_t rule_idx = EF.ResmackGrammarInit(&rules);
   rules.Finalize();
 
@@ -508,6 +587,10 @@ int main(int argc, char** argv) {
   resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
   resmack::fuzz::Coverage cov;
   //resmack::fuzz::NoopCoverage noop_cov;
+  
+  if (OPTS.corpus_strats != 0) {
+    reinterpret_cast<resmack::fuzz::corpora::MmapCorpus*>(corpus)->SetStrats(OPTS.corpus_strats);
+  }
 
   if (OPTS.dump_corpus_path) {
     DumpCorpus(&rules, corpus, rule_idx);
@@ -519,10 +602,25 @@ int main(int argc, char** argv) {
     std::exit(0);
   }
 
+  //may return 0 when not able to detect
+  const auto nproc = std::thread::hardware_concurrency();
+
   resmack::fuzz::trace_targets::Fork trace_target(
     OPTS.mute_stdio,
-    [rule_idx, &rules, &cov, &mmap_state, corpus](resmack::fuzz::Tracee* tracee) {
+    [nproc, rule_idx, &rules, &cov, &mmap_state, corpus](resmack::fuzz::Tracee* tracee) {
+      uint32_t idx = tracee->GetIdx();
+
+      // just in case the number of forks is set to be higher than
+      // nproc
+      if (idx < nproc) {
+        cpu_set_t cpus;
+        CPU_ZERO(&cpus);
+        CPU_SET(idx, &cpus);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpus);
+      }
+
       FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, tracee);
+      SHUTTING_DOWN = true;
     }
   );
 
@@ -538,7 +636,8 @@ int main(int argc, char** argv) {
         resmack::fuzz::Tracee* tracee
       ) -> bool {
         return HandleException(&rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
-      }
+      },
+      child_num
     );
     tracer->Trace();
     TRACERS.push_back(tracer);
@@ -547,6 +646,7 @@ int main(int argc, char** argv) {
   STATUS_ARGS.state = &mmap_state;
   STATUS_ARGS.show_stats = OPTS.show_stats;
   STATUS_ARGS.should_run = true;
+  STATUS_ARGS.feedback = &cov;
 
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
   signal(SIGINT, sigint_handler);
@@ -554,6 +654,8 @@ int main(int argc, char** argv) {
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
   }
+
+  SHUTTING_DOWN = true;
 
   STATUS_ARGS.should_run = false;
   pthread_join(STATUS_THREAD, NULL);

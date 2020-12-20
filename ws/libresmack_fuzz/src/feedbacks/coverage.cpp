@@ -69,6 +69,15 @@ namespace fuzz {
     munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
   }
 
+  std::string Coverage::GetSummary() {
+    size_t total_bits = 0;
+    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+      total_bits += _NumBits(COV_FLAGS[idx]);
+    }
+
+    return std::to_string(total_bits) + " edges";
+  }
+
   void Coverage::Start() {
     IS_NEW = false;
     //memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);

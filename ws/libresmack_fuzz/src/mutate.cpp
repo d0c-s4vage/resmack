@@ -43,7 +43,12 @@ namespace fuzz {
     while (curr_idx < orig_ss->size()) {
       const RandSnapshot& curr = orig_ss->at(curr_idx);
       if (curr_idx == idx_to_mutate) {
-        uint32_t new_max_depth = rand->Next() % total_max_depth;
+        uint32_t new_max_depth = curr.max_depth;
+        if (rand->Maybe()) {
+          new_max_depth = rand->Next() % total_max_depth;
+        }
+        //uint32_t range = total_max_depth - curr.max_depth;
+        //uint32_t new_max_depth = rand->Next() % range + curr.max_depth;
         curr_idx = CascadeMutatedState(
           rand->GetState(),
           new_max_depth,

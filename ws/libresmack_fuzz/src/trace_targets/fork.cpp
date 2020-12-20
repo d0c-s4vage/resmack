@@ -34,7 +34,7 @@ pid_t Fork::Spawn(Tracee* tracee) {
 
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     this->cb(tracee);
-    std::exit(0);
+    _exit(0);
   }
   return res;
 }
