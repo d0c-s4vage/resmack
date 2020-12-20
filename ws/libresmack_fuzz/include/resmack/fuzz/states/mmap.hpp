@@ -65,6 +65,7 @@ class MmapState : public State {
   void IncNumCrashes(uint64_t amt);
 
   Corpus* GetCorpus();
+  corpora::MmapCorpus* GetMmapCorpus();
 
   void SyncLockAcquire();
   void SyncLockRelease();

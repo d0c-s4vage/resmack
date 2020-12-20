@@ -58,18 +58,19 @@ namespace debug_state {
 
   void DebugCorpusEntry(char** curr_entry) {
     fuzz::ser::CorpusItemHeader* header = (fuzz::ser::CorpusItemHeader*)*curr_entry;
-    printf("    size:                   %zu\n", header->size);
-    printf("    feedback_key:           0x%zx\n", header->feedback_key);
-    printf("    feedback_num:           %zu\n", header->feedback_num);
-    printf("    iter_discovered:        %zu\n", header->iter_discovered);
-    printf("    parent1_one_based_idx:  %zu\n", header->parent1_one_based_idx);
-    printf("    parent2_one_based_idx:  %zu\n", header->parent2_one_based_idx);
-    printf("    num_crashes:            %zu\n", header->num_crashes);
-    printf("    num_ancestors:          %zu\n", header->num_ancestors);
-    printf("    num_descendants:        %zu\n", header->num_descendants);
-    printf("    num_direct_descendants: %zu\n", header->num_direct_descendants);
-    printf("    reserved1:              %zu\n", header->reserved1);
-    printf("    reserved2:              %zu\n", header->reserved2);
+    printf("    size:                       %zu\n", header->size);
+    printf("    feedback_key:               0x%zx\n", header->feedback_key);
+    printf("    feedback_num:               %zu\n", header->feedback_num);
+    printf("    iter_discovered:            %zu\n", header->iter_discovered);
+    printf("    parent1_one_based_idx:      %zu\n", header->parent1_one_based_idx);
+    printf("    parent2_one_based_idx:      %zu\n", header->parent2_one_based_idx);
+    printf("    mutations_since_offspring:  %zu\n", header->mutations_since_offspring);
+    printf("    num_crashes:                %zu\n", header->num_crashes);
+    printf("    num_ancestors:              %zu\n", header->num_ancestors);
+    printf("    num_descendants:            %zu\n", header->num_descendants);
+    printf("    num_direct_descendants:     %zu\n", header->num_direct_descendants);
+    printf("    reserved1:                  %zu\n", header->reserved1);
+    printf("    reserved2:                  %zu\n", header->reserved2);
     printf("    item_header:\n");
     printf("      num_states: %zu\n", header->item_header.num_states);
 

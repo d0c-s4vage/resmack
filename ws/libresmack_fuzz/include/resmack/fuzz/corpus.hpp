@@ -11,6 +11,7 @@ struct CorpusEntry {
   size_t parent1_one_based_idx; // 0 == NOT SET
   size_t parent2_one_based_idx; // 0 == NOT SET
   uint64_t index;
+  uint64_t mutations_since_offspring;
   uint64_t feedback_key;
   uint64_t feedback_num;
   uint64_t iter_discovered;
@@ -18,18 +19,21 @@ struct CorpusEntry {
   uint64_t num_direct_descendants;
   uint64_t num_descendants;
   uint64_t num_crashes;
+  float decay_pct;
   Vector<RandSnapshot> snapshot;
 
   CorpusEntry() :
     parent1_one_based_idx(0),
     parent2_one_based_idx(0),
     index(0),
+    mutations_since_offspring(0),
     feedback_num(0),
     iter_discovered(0),
     num_ancestors(0),
     num_direct_descendants(0),
     num_descendants(0),
-    num_crashes(0)
+    num_crashes(0),
+    decay_pct(1.0)
   {}
 };
 

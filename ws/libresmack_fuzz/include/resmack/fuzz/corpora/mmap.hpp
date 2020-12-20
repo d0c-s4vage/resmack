@@ -52,19 +52,29 @@ namespace corpora {
     size_t last_item1_one_based_idx;
     size_t last_item2_one_based_idx; // only used if crossover between two parents was used
 
+    size_t corpus_decay;
+
     // pointer to the current number of iterations. READ ONLY!
     // WILL NOT BE EXACT! Iteration counts are synced every X intervals, not
     // with each iteration
     const size_t* curr_iter_count;
     size_t last_discovered_iteration;
 
+    void SyncCounters();
+
    public:
     MmapCorpus();
     ~MmapCorpus();
 
+    void SetCorpusDecay(size_t corpus_decay) {
+      this->corpus_decay = corpus_decay;
+    }
+
     void SetCurrIterPtr(size_t* curr_iter_count) {
       this->curr_iter_count = curr_iter_count;
     }
+
+    float GetDecayPercent();
 
     void SetStrats(uint32_t strats);
     void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);

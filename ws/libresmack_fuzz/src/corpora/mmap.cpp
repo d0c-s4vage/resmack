@@ -18,7 +18,8 @@ namespace corpora {
   MmapCorpus::MmapCorpus() :
     next_item_index(0),
     first_item(NULL),
-    next_item(NULL)
+    next_item(NULL),
+    corpus_decay(1000000) // 1 million iters with no new offspring == 0 priority
   {
   }
 
@@ -131,6 +132,7 @@ namespace corpora {
     this->next_item->feedback_key = stats.key;
     this->next_item->feedback_num = stats.num;
     this->next_item->iter_discovered = this->last_discovered_iteration;
+    this->next_item->mutations_since_offspring = new_snapshot->mutations_since_offspring;
     this->next_item->num_crashes = new_snapshot->num_crashes;
     this->next_item->num_ancestors = new_snapshot->num_ancestors;
     this->next_item->num_direct_descendants = new_snapshot->num_direct_descendants;
@@ -200,6 +202,7 @@ namespace corpora {
 
       CorpusEntry& entry = this->snapshots.emplace_back();
       entry.index = snapshot_idx;
+      entry.mutations_since_offspring = curr->mutations_since_offspring;
       entry.feedback_key = curr->feedback_key;
       entry.feedback_num = curr->feedback_num;
       this->SortedsAdd(snapshot_idx);
@@ -242,7 +245,41 @@ namespace corpora {
     this->next_item_index = snapshot_idx;
     this->next_item = curr;
 
+    this->SyncCounters();
     this->SortedsResort();
+  }
+
+  // Update all mutations_since_offspring counters. Assumed to be only called
+  // from within an IPC-safe context (from within a WITH_LOCK block)
+  void MmapCorpus::SyncCounters() {
+    size_t header_size = sizeof(ser::CorpusItemHeader);
+    size_t state_size = sizeof(ser::GenState);
+
+    ser::CorpusItemHeader* curr = this->first_item;
+    size_t snapshot_idx = 0;
+    for (; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
+      this->snapshots[snapshot_idx].mutations_since_offspring = curr->mutations_since_offspring;
+      curr = (ser::CorpusItemHeader*)((char*)curr + header_size + (state_size * curr->item_header.num_states));
+    }
+  }
+
+  float MmapCorpus::GetDecayPercent() {
+    float total = 0.0;
+
+    size_t header_size = sizeof(ser::CorpusItemHeader);
+    size_t state_size = sizeof(ser::GenState);
+
+    ser::CorpusItemHeader* curr = this->first_item;
+    size_t snapshot_idx = 0;
+    size_t num_items = this->meta->num_entries;
+    for (; snapshot_idx < num_items; snapshot_idx++) {
+      size_t num = curr->mutations_since_offspring;
+      float pct = (float)(this->corpus_decay - num) / (float)this->corpus_decay;
+      total += pct;
+      curr = (ser::CorpusItemHeader*)((char*)curr + header_size + (state_size * curr->item_header.num_states));
+    }
+
+    return total / (float)num_items;
   }
 
   void MmapCorpus::SetStrats(uint32_t strats) {
@@ -349,7 +386,12 @@ namespace corpora {
     this->last_item1_one_based_idx = rand_idx + 1;
     this->last_item2_one_based_idx = 0;
 
-    return &(this->snapshots[rand_idx].snapshot);
+    CorpusEntry* entry = &this->snapshots[rand_idx];
+    entry->mutations_since_offspring++;
+    entry->decay_pct = (float)(this->corpus_decay - entry->mutations_since_offspring) /
+      (float)this->corpus_decay;
+
+    return &entry->snapshot;
   }
 
   // returns the maximum ancestor depth max(ancestor_parent1, ancestor_parent2)
@@ -372,6 +414,8 @@ namespace corpora {
       CorpusEntry* parent = &this->snapshots[parent_idx];
       ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
       if (level == 0) {
+        // a new offspring was found! reset back to 0
+        parent->mutations_since_offspring = 0;
         parent->num_direct_descendants++;
         parent_header->num_direct_descendants++;
       }
@@ -430,8 +474,11 @@ namespace corpora {
       this->most_direct_descendants_desc.begin(),
       this->most_direct_descendants_desc.end(),
       [snapshots](size_t left_idx, size_t right_idx) -> bool {
-        return (*snapshots)[left_idx].num_direct_descendants >
-          (*snapshots)[right_idx].num_direct_descendants;
+        CorpusEntry& left = snapshots->at(left_idx);
+        CorpusEntry& right = snapshots->at(right_idx);
+
+        return left.decay_pct * left.num_direct_descendants >
+          right.decay_pct * right.num_direct_descendants;
       }
     );
 
@@ -439,8 +486,11 @@ namespace corpora {
       this->most_descendants_desc.begin(),
       this->most_descendants_desc.end(),
       [snapshots](size_t left_idx, size_t right_idx) -> bool {
-        return (*snapshots)[left_idx].num_descendants >
-          (*snapshots)[right_idx].num_descendants;
+        CorpusEntry& left = snapshots->at(left_idx);
+        CorpusEntry& right = snapshots->at(right_idx);
+
+        return left.decay_pct * left.num_descendants >
+          right.decay_pct * right.num_descendants;
       }
     );
 
@@ -448,8 +498,11 @@ namespace corpora {
       this->most_ancestors_desc.begin(),
       this->most_ancestors_desc.end(),
       [snapshots](size_t left_idx, size_t right_idx) -> bool {
-        return (*snapshots)[left_idx].num_ancestors >
-          (*snapshots)[right_idx].num_ancestors;
+        CorpusEntry& left = snapshots->at(left_idx);
+        CorpusEntry& right = snapshots->at(right_idx);
+
+        return left.decay_pct * left.num_ancestors >
+          right.decay_pct * right.num_ancestors;
       }
     );
 
@@ -457,8 +510,11 @@ namespace corpora {
       this->most_feedback.begin(),
       this->most_feedback.end(),
       [snapshots](size_t left_idx, size_t right_idx) -> bool {
-        return (*snapshots)[left_idx].feedback_num >
-          (*snapshots)[right_idx].feedback_num;
+        CorpusEntry& left = snapshots->at(left_idx);
+        CorpusEntry& right = snapshots->at(right_idx);
+
+        return left.decay_pct * left.feedback_num >
+          right.decay_pct * right.feedback_num;
       }
     );
   }
