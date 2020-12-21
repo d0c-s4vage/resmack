@@ -106,7 +106,7 @@ static FuzzOptions OPTS {
   .run_direct = 0,
   .state_path = (char*)"",
   .pin_cpus = true,
-  .corpus_decay = 100000, // 100,000 default decay
+  .corpus_decay = 1000000, // 100,000 default decay
 };
 
 int MAIN_PID;
