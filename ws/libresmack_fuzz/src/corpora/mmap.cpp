@@ -302,48 +302,37 @@ namespace corpora {
     this->strats = strats;
 
     if (STRAT_RAND & strats) {
-      std::cout << "Corpus: enabling STRAT_RAND" << std::endl;
       this->strat_handlers.push_back(this->HandleRandStrat);
     }
     if (STRAT_MOST_FEEDBACK & strats) {
       this->strat_handlers.push_back(this->HandleMostFeedbackStrat);
-      std::cout << "Corpus: enabling STRAT_MOST_FEEDBACK" << std::endl;
     }
     if (STRAT_LEAST_FEEDBACK & strats) {
       this->strat_handlers.push_back(this->HandleLeastFeedbackStrat);
-      std::cout << "Corpus: enabling STRAT_LEAST_FEEDBACK" << std::endl;
     }
     if (STRAT_MOST_RECENT & strats) {
       this->strat_handlers.push_back(this->HandleMostRecentStrat);
-      std::cout << "Corpus: enabling STRAT_MOST_RECENT" << std::endl;
     }
     if (STRAT_LEAST_RECENT & strats) {
       this->strat_handlers.push_back(this->HandleLeastRecentStrat);
-      std::cout << "Corpus: enabling STRAT_LEAST_RECENT" << std::endl;
     }
     if (STRAT_MOST_ANCESTORS & strats) {
       this->strat_handlers.push_back(this->HandleMostAncestorsStrat);
-      std::cout << "Corpus: enabling STRAT_MOST_ANCESTORS" << std::endl;
     }
     if (STRAT_LEAST_ANCESTORS & strats) {
       this->strat_handlers.push_back(this->HandleLeastAncestorsStrat);
-      std::cout << "Corpus: enabling STRAT_LEAST_ANCESTORS" << std::endl;
     }
     if (STRAT_MOST_DIRECT_DESCENDANTS & strats) {
       this->strat_handlers.push_back(this->HandleMostDirectDescendantsStrat);
-      std::cout << "Corpus: enabling STRAT_MOST_DIRECT_DESCENDANTS" << std::endl;
     }
     if (STRAT_LEAST_DIRECT_DESCENDANTS & strats) {
       this->strat_handlers.push_back(this->HandleLeastDirectDescendantsStrat);
-      std::cout << "Corpus: enabling STRAT_LEAST_DIRECT_DESCENDANTS" << std::endl;
     }
     if (STRAT_MOST_DESCENDANTS & strats) {
       this->strat_handlers.push_back(this->HandleMostDescendantsStrat);
-      std::cout << "Corpus: enabling STRAT_MOST_DESCENDANTS" << std::endl;
     }
     if (STRAT_LEAST_DESCENDANTS & strats) {
       this->strat_handlers.push_back(this->HandleLeastDescendantsStrat);
-      std::cout << "Corpus: enabling STRAT_LEAST_DESCENDANTS" << std::endl;
     }
   }
 

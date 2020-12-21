@@ -363,8 +363,10 @@ void* LoopPrintStatus(void* args_ptr) {
     }
     size_t total_slept = 0;
     size_t increment = 50;
+    size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
+    size_t prev_crash_count = state->GetNumCrashes();
     while(total_slept < sleep_amt) {
-      if (!args->should_run) {
+      if (!args->should_run || state->GetCorpus()->NumItemsRaw() != prev_corpus_count || state->GetNumCrashes() != prev_crash_count) {
         break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(increment));
@@ -373,6 +375,8 @@ void* LoopPrintStatus(void* args_ptr) {
     if (!args->should_run) {
       break;
     }
+    // in case we broke early to show immediate status
+    sleep_amt -= (sleep_amt - total_slept);
 
     PrintStatus(args, start, start_iters);
   }
