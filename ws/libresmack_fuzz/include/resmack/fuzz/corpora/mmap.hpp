@@ -60,8 +60,6 @@ namespace corpora {
     const size_t* curr_iter_count;
     size_t last_discovered_iteration;
 
-    void SyncCounters();
-
    public:
     MmapCorpus();
     ~MmapCorpus();
@@ -91,6 +89,8 @@ namespace corpora {
     virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
     Vector<RandSnapshot>* GetItem(Rand* rand);
     void Sync();
+    void SyncCounters();
+    void SyncCountersInner();
     bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
     size_t NumItems() { return this->snapshots.size(); }
     size_t NumItemsRaw() { return this->meta->num_entries; }

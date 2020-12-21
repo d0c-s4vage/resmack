@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
   float start = clock() / (float)CLOCKS_PER_SEC;
 
   size_t rule_idx = 0;
-  if (!rules.rule_man_.IndexOf("run-on-sentence", &rule_idx)) {
+  if (!rules.rule_man_.IndexOf("TestRule2", &rule_idx)) {
     return 0;
   }
 

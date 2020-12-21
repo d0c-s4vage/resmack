@@ -11,6 +11,7 @@ struct CorpusEntry {
   size_t parent1_one_based_idx; // 0 == NOT SET
   size_t parent2_one_based_idx; // 0 == NOT SET
   uint64_t index;
+  uint64_t mutations_since_offspring_new;
   uint64_t mutations_since_offspring;
   uint64_t feedback_key;
   uint64_t feedback_num;
@@ -26,6 +27,7 @@ struct CorpusEntry {
     parent1_one_based_idx(0),
     parent2_one_based_idx(0),
     index(0),
+    mutations_since_offspring_new(0),
     mutations_since_offspring(0),
     feedback_num(0),
     iter_discovered(0),

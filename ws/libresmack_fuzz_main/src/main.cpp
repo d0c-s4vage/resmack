@@ -457,6 +457,8 @@ void FuzzLoop(
       rules->Build(rule_idx, &ctx);
     });
 
+    //output = "I mock apples and bananas and grapes or bananas or apples without peaches without bananas with peaches or pears and apples and bananas";
+
     // this occurs *in* the traced process (after forking/*).
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats

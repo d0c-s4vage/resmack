@@ -245,20 +245,34 @@ namespace corpora {
     this->next_item_index = snapshot_idx;
     this->next_item = curr;
 
-    this->SyncCounters();
+    this->SyncCountersInner();
     this->SortedsResort();
   }
 
   // Update all mutations_since_offspring counters. Assumed to be only called
   // from within an IPC-safe context (from within a WITH_LOCK block)
   void MmapCorpus::SyncCounters() {
+    WITH_LOCK(this->corpus_lock, Syncing Counters, {
+      this->SyncCountersInner();
+    });
+    this->SortedsResort();
+  }
+
+  void MmapCorpus::SyncCountersInner() {
     size_t header_size = sizeof(ser::CorpusItemHeader);
     size_t state_size = sizeof(ser::GenState);
 
     ser::CorpusItemHeader* curr = this->first_item;
     size_t snapshot_idx = 0;
     for (; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
-      this->snapshots[snapshot_idx].mutations_since_offspring = curr->mutations_since_offspring;
+      CorpusEntry& entry = this->snapshots[snapshot_idx];
+      if (~((uint64_t)0) - curr->mutations_since_offspring < entry.mutations_since_offspring_new) {
+        curr->mutations_since_offspring = ~((uint64_t)0);
+      } else {
+        curr->mutations_since_offspring += entry.mutations_since_offspring_new;
+      }
+      entry.mutations_since_offspring_new = 0;
+      entry.mutations_since_offspring = curr->mutations_since_offspring;
       curr = (ser::CorpusItemHeader*)((char*)curr + header_size + (state_size * curr->item_header.num_states));
     }
   }
@@ -273,13 +287,15 @@ namespace corpora {
     size_t snapshot_idx = 0;
     size_t num_items = this->meta->num_entries;
     for (; snapshot_idx < num_items; snapshot_idx++) {
-      size_t num = curr->mutations_since_offspring;
+      size_t num = curr->mutations_since_offspring > this->corpus_decay ?
+        this->corpus_decay :
+        curr->mutations_since_offspring;
       float pct = (float)(this->corpus_decay - num) / (float)this->corpus_decay;
       total += pct;
       curr = (ser::CorpusItemHeader*)((char*)curr + header_size + (state_size * curr->item_header.num_states));
     }
 
-    return total / (float)num_items;
+    return total / (float)num_items * 100.0;
   }
 
   void MmapCorpus::SetStrats(uint32_t strats) {
@@ -336,6 +352,12 @@ namespace corpora {
     return rand->Next() % corpus_len;
   }
   size_t MmapCorpus::HandleMostFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
+    static size_t last_most_feedback_idx {0};
+    size_t idx = this_->most_feedback[0];
+    if (idx != last_most_feedback_idx) {
+      std::cout << "Using new index for most feedback: " << idx << ", top feedback: " << std::endl;
+    }
+    last_most_feedback_idx = idx;
     return this_->most_feedback[rand_top_ten];
   }
   size_t MmapCorpus::HandleLeastFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
@@ -376,7 +398,7 @@ namespace corpora {
     uint32_t choice_val = rand->Next();
     uint32_t rand_val = rand->Next();
     size_t corpus_len = this->snapshots.size();
-    size_t top_ten = corpus_len >= 10 ? 10 : corpus_len;
+    size_t top_ten = corpus_len >= 10 ? corpus_len / 5 : corpus_len;
     size_t rand_top_ten = rand_val % top_ten;
 
     size_t rand_idx = this->strat_handlers[choice_val % this->strat_handlers.size()](
@@ -387,8 +409,9 @@ namespace corpora {
     this->last_item2_one_based_idx = 0;
 
     CorpusEntry* entry = &this->snapshots[rand_idx];
-    entry->mutations_since_offspring++;
-    entry->decay_pct = (float)(this->corpus_decay - entry->mutations_since_offspring) /
+    entry->mutations_since_offspring_new++;
+    entry->decay_pct =
+      (float)(this->corpus_decay - entry->mutations_since_offspring) /
       (float)this->corpus_decay;
 
     return &entry->snapshot;

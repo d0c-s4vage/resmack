@@ -94,6 +94,8 @@ namespace states {
   }
 
   void MmapState::SyncStats(TargetStats* stats) {
+    this->corpus.SyncCounters();
+
     if (sem_wait(this->state_lock) == -1) {
       perror("SyncStats (sem_wait)");
       std::exit(1);
