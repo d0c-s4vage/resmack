@@ -366,8 +366,14 @@ void* LoopPrintStatus(void* args_ptr) {
     size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
     size_t prev_crash_count = state->GetNumCrashes();
     while(total_slept < sleep_amt) {
-      if (!args->should_run || state->GetCorpus()->NumItemsRaw() != prev_corpus_count || state->GetNumCrashes() != prev_crash_count) {
+      if (!args->should_run) {
         break;
+      }
+      if (OPTS.print_interval == 0.0f && (
+        state->GetCorpus()->NumItemsRaw() != prev_corpus_count
+        || state->GetNumCrashes() != prev_crash_count
+      )) {
+          break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(increment));
       total_slept += increment;
