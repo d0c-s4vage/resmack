@@ -46,6 +46,10 @@ namespace fuzz {
         uint32_t new_max_depth = curr.max_depth;
         if (rand->Maybe()) {
           new_max_depth = rand->Next() % total_max_depth;
+          if (rand->Maybe()) {
+            new_ss->emplace_back(curr.ref_depth, new_max_depth, curr.rule_idx, curr.state);
+            continue;
+          }
         }
         //uint32_t range = total_max_depth - curr.max_depth;
         //uint32_t new_max_depth = rand->Next() % range + curr.max_depth;

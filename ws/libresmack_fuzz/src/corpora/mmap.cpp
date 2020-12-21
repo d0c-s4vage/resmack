@@ -352,12 +352,6 @@ namespace corpora {
     return rand->Next() % corpus_len;
   }
   size_t MmapCorpus::HandleMostFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    static size_t last_most_feedback_idx {0};
-    size_t idx = this_->most_feedback[0];
-    if (idx != last_most_feedback_idx) {
-      std::cout << "Using new index for most feedback: " << idx << ", top feedback: " << std::endl;
-    }
-    last_most_feedback_idx = idx;
     return this_->most_feedback[rand_top_ten];
   }
   size_t MmapCorpus::HandleLeastFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
@@ -398,7 +392,7 @@ namespace corpora {
     uint32_t choice_val = rand->Next();
     uint32_t rand_val = rand->Next();
     size_t corpus_len = this->snapshots.size();
-    size_t top_ten = corpus_len >= 10 ? corpus_len / 5 : corpus_len;
+    size_t top_ten = corpus_len >= 10 ? 10 : corpus_len;
     size_t rand_top_ten = rand_val % top_ten;
 
     size_t rand_idx = this->strat_handlers[choice_val % this->strat_handlers.size()](
