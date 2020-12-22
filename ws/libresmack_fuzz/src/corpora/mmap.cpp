@@ -381,7 +381,7 @@ namespace corpora {
 
   Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
     if (this->strat_handlers.size() == 0) {
-      this->SetStrats(STRAT_RAND | STRAT_MOST_FEEDBACK | STRAT_MOST_RECENT | STRAT_LEAST_DESCENDANTS);
+      this->SetStrats(STRAT_RAND | STRAT_MOST_RECENT | STRAT_LEAST_DIRECT_DESCENDANTS);
     }
 
     this->Sync();
