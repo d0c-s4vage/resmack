@@ -252,6 +252,11 @@ namespace corpora {
   // Update all mutations_since_offspring counters. Assumed to be only called
   // from within an IPC-safe context (from within a WITH_LOCK block)
   void MmapCorpus::SyncCounters() {
+    if (this->NumItems() != this->meta->num_entries) {
+      this->Sync();
+      return;
+    }
+
     WITH_LOCK(this->corpus_lock, Syncing Counters, {
       this->SyncCountersInner();
     });

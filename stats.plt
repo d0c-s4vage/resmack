@@ -52,7 +52,7 @@ set samples 10000
 #   for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
 
 plot \
-    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc i \
+    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc i, \
     for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc i
 
 #fstr(N) = sprintf('f%d(x) = a%d*x**2 + b%d*x + c%d', N, N, N, N)
