@@ -85,6 +85,8 @@ struct FuzzOptions {
   uint32_t corpus_strats;
   int run_direct;
   char* state_path;
+  bool pin_cpus;
+  size_t corpus_decay;
 };
 
 static FuzzOptions OPTS {
@@ -103,6 +105,8 @@ static FuzzOptions OPTS {
   .corpus_strats = 0,
   .run_direct = 0,
   .state_path = (char*)"",
+  .pin_cpus = true,
+  .corpus_decay = 1000000, // 100,000 default decay
 };
 
 int MAIN_PID;
@@ -152,10 +156,13 @@ void PrintHelp(char* prog_name) {
   std::cout << "          --no-mute                Do not mute stdio of fuzz procs (" << !OPTS.mute_stdio << ")" << std::endl;
   std::cout << "        --max-depth,-d MAX_DEPTH   Maximum grammar depth during recursion (" << OPTS.max_depth << ")" << std::endl;
   std::cout << "        --max-iters,-m MAX_ITERS   Maximum number of iterations (" << OPTS.max_iters << ")" << std::endl;
+  std::cout << "       --no-pin-cpu                Don't pin processes to specific CPUs (" << !OPTS.pin_cpus << ")" << std::endl;
   std::cout << "      --max-crashes,-M MAX_CRASHES Maximum number of crashes (" << OPTS.max_crashes << ")" << std::endl;
   std::cout << "       --show-stats,-s             Show stat percentages (" << OPTS.show_stats << ")" << std::endl;
   std::cout << "       --state-path,-S             Path to where the state file should be stored (" << OPTS.state_path << ")" << std::endl;
   std::cout << "      --dump-corpus,-D DIR         Dump the corpus to DIR" << std::endl;
+  std::cout << "     --corpus-decay                The number of mutation attempts that causes a" << std::endl;
+  std::cout << "                                   corpus entry to be fully deprioritized (" << OPTS.corpus_decay << ")" << std::endl;
   std::cout << "     --corpus-strat,-C STRAT       Enable the corpus strategy STRAT, must be one of below options." << std::endl;
   std::cout << "                                   May be used multiple times:" << std::endl;
   std::cout << "                                      MOST_FEEDBACK            MOST_ANCESTORS   MOST_DESCENDANTS" << std::endl;
@@ -172,8 +179,10 @@ void PrintHelp(char* prog_name) {
 }
 
 bool ParseOptions(int argc, char**argv) {
-#define OPT_NO_MUTE    1000
-#define OPT_RUN_DIRECT 1001
+#define OPT_NO_MUTE      1000
+#define OPT_RUN_DIRECT   1001
+#define OPT_NO_PIN_CPU   1002
+#define OPT_CORPUS_DECAY 1003
     static struct option long_options[] = {
       { "help", no_argument, 0, 'h' },
       { "nprocs", required_argument, 0, 'n' },
@@ -190,6 +199,8 @@ bool ParseOptions(int argc, char**argv) {
       { "stats-interval", required_argument, 0, 'i' },
       { "print-interval", required_argument, 0, 'p' },
       { "create-threshhold", required_argument, 0, 't' },
+      { "no-pin-cpu", no_argument, 0, OPT_NO_PIN_CPU },
+      { "corpus-decay", required_argument, 0, OPT_CORPUS_DECAY },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
@@ -277,6 +288,12 @@ bool ParseOptions(int argc, char**argv) {
         case 'p':
           OPTS.print_interval = std::stof(optarg);
           break;
+        case OPT_NO_PIN_CPU:
+          OPTS.pin_cpus = false;
+          break;
+        case OPT_CORPUS_DECAY:
+          OPTS.corpus_decay = strtoull(optarg, NULL, 10);
+          break;
       }
     }
 
@@ -292,7 +309,7 @@ void PrintStatus(
   resmack::fuzz::states::MmapState* state = args->state;
   bool show_stats = args->show_stats;
 
-  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   end = std::chrono::high_resolution_clock::now();
@@ -300,11 +317,12 @@ void PrintStatus(
   uint64_t session_iters = num_iters - start_iters;
   std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
   printf(
-    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | Feedback: %s | %0.2f s\n",
+    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu (D:%05.2f) | Feedback: %s | %0.2f s\n",
     num_iters,
     (float)session_iters / span.count(),
     state->GetNumCrashes(),
     corpus->NumItemsRaw(),
+    corpus->GetDecayPercent(),
     args->feedback->GetSummary().c_str(),
     span.count()
   );
@@ -345,9 +363,17 @@ void* LoopPrintStatus(void* args_ptr) {
     }
     size_t total_slept = 0;
     size_t increment = 50;
+    size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
+    size_t prev_crash_count = state->GetNumCrashes();
     while(total_slept < sleep_amt) {
       if (!args->should_run) {
         break;
+      }
+      if (OPTS.print_interval == 0.0f && (
+        state->GetCorpus()->NumItemsRaw() != prev_corpus_count
+        || state->GetNumCrashes() != prev_crash_count
+      )) {
+          break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(increment));
       total_slept += increment;
@@ -355,6 +381,8 @@ void* LoopPrintStatus(void* args_ptr) {
     if (!args->should_run) {
       break;
     }
+    // in case we broke early to show immediate status
+    sleep_amt -= (sleep_amt - total_slept);
 
     PrintStatus(args, start, start_iters);
   }
@@ -382,6 +410,8 @@ void FuzzLoop(
   resmack::fuzz::TargetSettings settings;
   resmack::fuzz::TargetStats stats(OPTS.stats_interval);
   resmack::BuildContext ctx(&output, &build_rand, OPTS.max_depth);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() & 0xff));
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
@@ -436,6 +466,8 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::GENERATE, {
       rules->Build(rule_idx, &ctx);
     });
+
+    //output = "I mock apples and bananas and grapes or bananas or apples without peaches without bananas with peaches or pears and apples and bananas";
 
     // this occurs *in* the traced process (after forking/*).
     // If an exception occurs, these values are extracted and
@@ -584,7 +616,8 @@ int main(int argc, char** argv) {
   rules.Finalize();
 
   resmack::fuzz::states::MmapState mmap_state(OPTS.state_path);
-  resmack::fuzz::Corpus* corpus = mmap_state.GetCorpus();
+  resmack::fuzz::corpora::MmapCorpus* corpus = mmap_state.GetMmapCorpus();
+  corpus->SetCorpusDecay(OPTS.corpus_decay);
   resmack::fuzz::Coverage cov;
   //resmack::fuzz::NoopCoverage noop_cov;
   
@@ -612,7 +645,7 @@ int main(int argc, char** argv) {
 
       // just in case the number of forks is set to be higher than
       // nproc
-      if (idx < nproc) {
+      if (OPTS.pin_cpus && idx < nproc) {
         cpu_set_t cpus;
         CPU_ZERO(&cpus);
         CPU_SET(idx, &cpus);

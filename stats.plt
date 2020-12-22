@@ -32,15 +32,28 @@ set logscale x
 
 set samples 10000 
 
-# first dataset is always RAND
-plot \
-  for [i=0:5] 'corpus_tests_data.txt' using 1:5 index i with points lc (i+1), \
-  for [i=0:5] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
-  for [i=(STATS_blocks-6):(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc (STATS_blocks-i+9), \
-  for [i=(STATS_blocks-6):(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5:(0.1) index i smooth bezier lw 2 lc (STATS_blocks-i+14)
+# # --------------------------------------------------
+# # PLOT TOP 5 + BOTTOM 5 + RAND + smooth bezier lines
+# # --------------------------------------------------
+# #
+# # first dataset is always RAND, so do the first six items (want RAND as a
+# # baseline)
+# plot \
+#   for [i=0:5] 'corpus_tests_data.txt' using 1:5 index i with points lc (i+1), \
+#   for [i=0:5] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
+#   for [i=(STATS_blocks-6):(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc (STATS_blocks-i+9), \
+#   for [i=(STATS_blocks-6):(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5:(0.1) index i smooth bezier lw 2 lc (STATS_blocks-i+14)
 
-#plot \
-#    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc i
+# # --------------------------------------------------
+# # PLOT TOP 20 + RAND with smooth bezier lines
+# # --------------------------------------------------
+# plot \
+#   for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i with points lc (i+1), \
+#   for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
+
+plot \
+    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc i, \
+    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc i
 
 #fstr(N) = sprintf('f%d(x) = a%d*x**2 + b%d*x + c%d', N, N, N, N)
 #fitstr(N) = sprintf('fit f%d(x) ''corpus_tests_data.txt'' using (log($1)):(log($5)) index %d via a%d,b%d,c%d', N, N, N, N, N)

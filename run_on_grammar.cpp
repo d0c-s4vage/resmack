@@ -22,8 +22,9 @@ size_t ResmackGrammarInit(resmack::Rules* rules) {
     ->AddRule("sentence", AND_S(" ", REF("subject"), REF("verb"), REF("fruit-list")))
     ->AddRule("run-on-sentence", AND(
       REF("sentence"),
-      OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence")))
+      REF("run-on-sentence-opt")      
     ))
+    ->AddRule("run-on-sentence-opt", OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence"))))
     ->AddRule("direct", V("A"));
 
   size_t rule_idx;
