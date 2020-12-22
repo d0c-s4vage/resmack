@@ -47,12 +47,13 @@ set samples 10000
 # # --------------------------------------------------
 # # PLOT TOP 20 + RAND with smooth bezier lines
 # # --------------------------------------------------
-plot \
-  for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i with points lc (i+1), \
-  for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
+# plot \
+#   for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i with points lc (i+1), \
+#   for [i=0:20] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc (i+1+5), \
 
-#plot \
-#    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc i
+plot \
+    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i with points lc i \
+    for [i=0:(STATS_blocks-1)] 'corpus_tests_data.txt' using 1:5 index i smooth bezier lw 2 lc i
 
 #fstr(N) = sprintf('f%d(x) = a%d*x**2 + b%d*x + c%d', N, N, N, N)
 #fitstr(N) = sprintf('fit f%d(x) ''corpus_tests_data.txt'' using (log($1)):(log($5)) index %d via a%d,b%d,c%d', N, N, N, N, N)

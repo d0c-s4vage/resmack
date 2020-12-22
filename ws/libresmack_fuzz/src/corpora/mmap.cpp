@@ -273,6 +273,9 @@ namespace corpora {
       }
       entry.mutations_since_offspring_new = 0;
       entry.mutations_since_offspring = curr->mutations_since_offspring;
+      entry.decay_pct =
+        (float)(this->corpus_decay - entry.mutations_since_offspring) /
+        (float)this->corpus_decay;
       curr = (ser::CorpusItemHeader*)((char*)curr + header_size + (state_size * curr->item_header.num_states));
     }
   }
@@ -394,7 +397,7 @@ namespace corpora {
     CorpusEntry* entry = &this->snapshots[rand_idx];
     entry->mutations_since_offspring_new++;
     entry->decay_pct =
-      (float)(this->corpus_decay - entry->mutations_since_offspring) /
+      (float)(this->corpus_decay - entry->mutations_since_offspring - entry->mutations_since_offspring_new) /
       (float)this->corpus_decay;
 
     return &entry->snapshot;
