@@ -22,13 +22,15 @@ Dir.glob("corpus_tests/*.log").each do |file|
   data_name = File.basename(file).gsub(".log", "").gsub("_RAND", "__RAND").gsub("_MOST", "__MOST").gsub("_LEAST", "__LEAST")
   data_name = Set.new(data_name.split("__")).to_a.sort.join("-")
   data_groups[data_name] ||= []
+  puts file
   File.read(file).split("\n").each do |line|
     next unless line.include?("Feedback:")
     datas = line.split(" | ")
     iters = datas[0].gsub("Iters:", "").strip
     feedback = datas[4].gsub("Feedback:", "").gsub("edges", "").strip
 
-    if iters == "200000000"
+    #if iters == "200000000"
+    if iters == "2000000"
       totals[data_name] ||= { "num": 0, "total": 0 }
       totals[data_name][:total] += feedback.to_i
       totals[data_name][:num] += 1
@@ -61,7 +63,10 @@ def save_group(f, group_name, info, data_groups)
 end
 
 f = File.open("corpus_tests_data.txt", "wb")
-save_group(f, "RAND", totals["RAND"], data_groups)
+if totals.has_key?("RAND")
+  save_group(f, "RAND", totals["RAND"], data_groups)
+end
+
 ordered.each do |group_name, info|
   next if group_name == "RAND"
   save_group(f, group_name, info, data_groups)
@@ -104,4 +109,57 @@ if ARGV[0] == "run-test"
       `
     end
 	end
+elsif ARGV[0] == "run-test-top-20"
+  all_names = Set.new([
+    "RAND",
+    "LEAST_DESCENDANTS-LEAST_DIRECT_DESCENDANTS-MOST_FEEDBACK",
+    "LEAST_DESCENDANTS-LEAST_DIRECT_DESCENDANTS",
+    "LEAST_DESCENDANTS-MOST_FEEDBACK-RAND",
+    "LEAST_DIRECT_DESCENDANTS-MOST_RECENT-RAND",
+    "LEAST_DESCENDANTS-MOST_RECENT-RAND",
+    "LEAST_DIRECT_DESCENDANTS-MOST_FEEDBACK-RAND",
+    "LEAST_DIRECT_DESCENDANTS-RAND",
+    "LEAST_DESCENDANTS-LEAST_DIRECT_DESCENDANTS-RAND",
+    "MOST_FEEDBACK-RAND",
+    "LEAST_DESCENDANTS-RAND",
+    "LEAST_DESCENDANTS-LEAST_DIRECT_DESCENDANTS-MOST_RECENT",
+    "LEAST_DESCENDANTS",
+    "MOST_FEEDBACK-MOST_RECENT-RAND",
+    "MOST_RECENT-RAND",
+    "LEAST_DESCENDANTS-MOST_RECENT",
+    "LEAST_DIRECT_DESCENDANTS-MOST_RECENT",
+    "LEAST_DESCENDANTS-MOST_FEEDBACK",
+    "LEAST_DIRECT_DESCENDANTS-MOST_FEEDBACK",
+    "LEAST_DESCENDANTS-MOST_FEEDBACK-MOST_RECENT",
+    "LEAST_DESCENDANTS-LEAST_DIRECT_DESCENDANTS-LEAST_RECENT",
+  ])
+
+  100.times do
+    all_names.each do |names|
+      opts = names.split("-").map{|x| "-C #{x}" }
+      log_path = "corpus_tests/#{names.split("-").join("_")}.log"
+      if totals.has_key?(names)
+        num = 100 - totals[names][:num]
+      else
+        totals[names] = { num: 100 }
+        num = 100
+      end
+      next if num == 0
+
+      sleep 1
+      totals[names][:num] -= 1
+      puts "TESTING #{names}, #{num-1} remaining"
+      `
+        rm -rf gen_test.resmack-state crashes ;
+        LD_LIBRARY_PATH=build/release ./gen_test \
+          -n 36 \
+          -M 2 \
+          -m 20000000 \
+          -t 15000000 \
+          -p 0.5 \
+          #{opts.join(" ")} \
+          -i 1000 >> "#{log_path}" ;
+      `
+    end
+  end
 end

@@ -400,6 +400,12 @@ void FuzzLoop(
   resmack::fuzz::Corpus* corpus,
   resmack::fuzz::Tracee* tracee
 ) {
+  resmack::fuzz::ExternalFunctions EF;
+
+  if (EF.ResmackInit != NULL) {
+    EF.ResmackInit();
+  }
+
   resmack::Rand meta_rand;
   resmack::Rand build_rand(meta_rand.Next());
   build_rand.SetShouldRecord(true);
