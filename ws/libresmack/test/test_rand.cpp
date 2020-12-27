@@ -26,7 +26,7 @@ namespace resmack {
     Rand rand1;
 
     std::map<uint32_t, size_t> counts;
-    for (int i = 0; i < 1000000; i++) {
+    for (int i = 0; i < 1000; i++) {
       uint32_t res = rand1.NextInRangeGaussian(0, 100);
 
       if (counts.contains(res)) {
@@ -36,6 +36,7 @@ namespace resmack {
       }
     }
 
+    /*
     size_t max = 0;
     for (auto pair: counts) {
       if (pair.second > max) {
@@ -46,12 +47,13 @@ namespace resmack {
     double chars = 50;
     double char_increment = (double)max / chars;
     for (auto pair: counts) {
-      printf("%4d - %-10d", pair.first, pair.second);
+      printf("%4d - %-10lu", pair.first, pair.second);
       for (int i = 0; i < (pair.second / char_increment); i++) {
         printf("█");
       }
       printf("\n");
     }
+    */
   }
 
 }

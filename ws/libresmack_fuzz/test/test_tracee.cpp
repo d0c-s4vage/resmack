@@ -13,7 +13,7 @@ namespace resmack {
 namespace fuzz {
 
   TEST(Tracee, CreatesIPCViaMmap) {
-    Tracee t;
+    Tracee t(0);
 
     Vector<RandSnapshot> snapshots;
     uint32_t state[4] = {1, 2, 3, 4};

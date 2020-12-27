@@ -12,7 +12,7 @@ namespace resmack {
 namespace fuzz {
 
   TEST(TraceTargetFork, ForksCorrectly) {
-    Tracee t;
+    Tracee t(0);
     trace_targets::Fork fork_target(true, [](Tracee* tracee) {
       tracee->SaveLastCorpusInfo(true, 99999, 88888);
     });

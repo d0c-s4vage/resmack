@@ -24,7 +24,8 @@ namespace fuzz {
         UNUSED(pid); UNUSED(status); UNUSED(tracer); UNUSED(tracee);
 
         return false;
-      }
+      },
+      0
     );
 
     t.Trace();

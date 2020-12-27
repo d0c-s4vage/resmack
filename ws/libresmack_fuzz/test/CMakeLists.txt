@@ -16,8 +16,8 @@ add_executable(test_${PROJECT_NAME}
 )
 
 target_link_libraries(test_${PROJECT_NAME}
-  libresmack
-  libresmack_fuzz
+  libresmack.so
+  ${RESMACK_FUZZ_LIB}
   ${GTEST_LIB_DIR}/libgtest.a
   pthread
   crypto

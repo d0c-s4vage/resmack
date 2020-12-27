@@ -7,7 +7,6 @@ namespace resmack {
 namespace fuzz {
 
   // Returns the new index into orig_ss that iteration should continue at
-  __attribute__((noinline))
   size_t CascadeMutatedState(
     const uint32_t* new_state,
     uint32_t new_max_depth,
