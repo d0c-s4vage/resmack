@@ -56,17 +56,14 @@ namespace fuzz {
         uint32_t new_max_depth = curr.max_depth;
 
         if (rand->Maybe()) {
-          if (curr.max_depth > 0) {
-            uint32_t rand_next = rand->Next();
-            switch (rand_next % 2) {
-              case 0:
-                new_max_depth = rand->Next() % curr.max_depth;
-                break;
-              case 1:
-                uint32_t range = total_max_depth - curr.max_depth;
-                new_max_depth = rand->Next() % range + curr.max_depth;
-                break;
-            };
+          // increase max depth
+          if (curr.max_depth == 0 || (curr.max_depth < total_max_depth && rand->Maybe())) {
+            uint32_t range = total_max_depth - curr.max_depth;
+            new_max_depth = rand->Next() % range + curr.max_depth;
+
+          // decrease max depth
+          } else {
+            new_max_depth = rand->Next() % curr.max_depth;
           }
 
           // maybe ONLY change the max depth
