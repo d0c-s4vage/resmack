@@ -9,9 +9,9 @@
 size_t ResmackGrammarInit(resmack::Rules* rules) {
   rules->AddRule("fruit", OR("apples", "bananas", "grapes", "pears", "peaches"))
     ->AddRule("conjunction", OR("or", "and", "with", "without"))
-    ->AddRule("fruit-list", AND_S(" ",
+    ->AddRule("fruit-list", AND(
       REF("fruit"),
-      OPT(AND_S(" ", REF("conjunction"), REF("fruit-list")))
+      OPT(AND(V(" "), REF("conjunction"), V(" "), REF("fruit-list")))
     ))
     ->AddRule("verb", OR(
       "eat", "throw", "stomp on", "enjoy", "purchase", "stare at", "saute",
@@ -24,7 +24,12 @@ size_t ResmackGrammarInit(resmack::Rules* rules) {
       REF("sentence"),
       REF("run-on-sentence-opt")      
     ))
-    ->AddRule("run-on-sentence-opt", OPT(AND_S(" ", REF("conjunction"), REF("run-on-sentence"))))
+    ->AddRule("run-on-sentence-opt", OPT(AND(
+      V(" "),
+      REF("conjunction"),
+      V(" "),
+      REF("run-on-sentence")
+    )))
     ->AddRule("direct", V("A"));
 
   size_t rule_idx;
