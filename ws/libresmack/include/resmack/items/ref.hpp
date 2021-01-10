@@ -1,6 +1,7 @@
 #ifndef RESMACK_ITEM_REF
 #define RESMACK_ITEM_REF
 
+#define SCOPED_REF(NAME) (new resmack::items::Ref(NAME, true))
 #define REF(NAME) (new resmack::items::Ref(NAME))
 
 #include <string>
@@ -15,8 +16,10 @@ namespace items {
    public:
     std::string rule_name_;
     size_t rule_idx_;
+    bool scoped_;
 
     Ref(std::string rule_name);
+    Ref(std::string rule_name, bool scoped);
     ~Ref();
 
     ItemType Type();

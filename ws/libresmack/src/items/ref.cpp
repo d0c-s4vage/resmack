@@ -8,7 +8,11 @@
 namespace resmack {
 namespace items {
 
-  Ref::Ref(std::string rule_name) : rule_name_(rule_name) {}
+  Ref::Ref(std::string rule_name): Ref(rule_name, false) {}
+  Ref::Ref(std::string rule_name, bool scoped):
+    rule_name_(rule_name),
+    scoped_(scoped)
+  {}
   Ref::~Ref() {}
 
   ItemType Ref::Type() {
@@ -17,7 +21,7 @@ namespace items {
 
   void Ref::Build(BuildContext *ctx) {
     ctx->IncDepth();
-    ctx->rules->Build(this->rule_idx_, ctx);
+    ctx->rules->Build(this->rule_idx_, ctx, this->scoped_);
     ctx->DecDepth();
   }
 

@@ -79,6 +79,15 @@ namespace items {
     return this;
   }
 
+  void Or::ClearItems() {
+    for (Item *item: this->items_) {
+      delete item;
+    }
+    this->items_.clear();
+    this->choice_indices_.clear();
+    this->shortest_indices_.clear();
+  }
+
   bool Or::CalcReachability(calc::Reach* reach_calc) {
     this->choice_indices_.clear();
 

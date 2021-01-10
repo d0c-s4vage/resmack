@@ -91,6 +91,10 @@ namespace resmack {
         res = new items::Or();
         this->rules_[rule_idx] = res;
       }
+
+      if (this->parent_ != NULL) {
+        res->SetKeep(this->GetRootRule(rule_idx)->ShouldKeep());
+      }
     } else {
       rule_idx = this->rules_.size();
       (*this->rule_name_to_idx_)[rule_name] = rule_idx;
@@ -107,6 +111,10 @@ namespace resmack {
     if (res == NULL) {
       res = new items::Or();
       this->rules_[rule_idx] = res;
+
+      if (this->parent_ != NULL) {
+        res->SetKeep(this->GetRootRule(rule_idx)->ShouldKeep());
+      }
     }
     return res;
   }
@@ -138,6 +146,19 @@ namespace resmack {
     return this->GetRule(rule_idx);
   }
 
+  items::Or* RuleManager::GetUnshadowedRule(size_t rule_idx) {
+    items::Or* res = NULL;
+    RuleManager* curr = this;
+
+    while (curr != NULL) {
+      res = curr->GetRule(rule_idx);
+      if (res != NULL) { return res; }
+      curr = curr->parent_;
+    }
+
+    return res;
+  }
+
   items::Or* RuleManager::GetAnyRule(size_t rule_idx, Rand* rand) {
     if (this->parent_ == NULL) {
       return this->GetRule(rule_idx);
@@ -156,11 +177,32 @@ namespace resmack {
     return options[idx]->GetRule(rule_idx);
   }
 
+  items::Or* RuleManager::GetRootRule(size_t rule_idx) {
+    if (this->parent_ == NULL) {
+      return this->GetRule(rule_idx);
+    }
+
+    RuleManager* curr = this->parent_;
+    while (curr->parent_ != NULL ) { curr = curr->parent_; }
+
+    return curr->GetRule(rule_idx);
+  }
+
   items::Or* RuleManager::GetRule(size_t rule_idx) {
     if (rule_idx >= this->rules_.size()) {
       return NULL;
     }
     return this->rules_[rule_idx];
+  }
+
+  void RuleManager::ClearRuleValues(size_t rule_idx) {
+    if (rule_idx >= this->rules_.size()) {
+      return;
+    }
+    items::Or* rule = this->rules_[rule_idx];
+    if (rule == NULL) { return; }
+
+    rule->ClearItems();
   }
 
   void RuleManager::DebugPrint() {

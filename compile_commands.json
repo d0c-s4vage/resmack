@@ -76,6 +76,11 @@
 },
 {
   "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
+  "command": "/usr/bin/clang++  -Dlibresmack_EXPORTS -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/store.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/store.cpp",
+  "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/store.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack_c11/build/debug/ws/libresmack",
   "command": "/usr/bin/clang++  -Dlibresmack_EXPORTS -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/src -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/include -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs -I/home/saitama/ws/dev/resmack_c11/ws/libresmack/libs/fmt/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack.dir/src/items/str.cpp.o -c /home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/str.cpp",
   "file": "/home/saitama/ws/dev/resmack_c11/ws/libresmack/src/items/str.cpp"
 },

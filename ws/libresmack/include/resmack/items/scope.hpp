@@ -1,5 +1,5 @@
-#ifndef RESMACK_SCOPE
-#define RESMACK_SCOPE
+#ifndef RESMACK_SCOPE_H
+#define RESMACK_SCOPE_H
 
 #include "../item.hpp"
 

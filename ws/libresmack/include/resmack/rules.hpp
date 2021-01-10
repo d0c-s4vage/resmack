@@ -43,6 +43,7 @@ namespace resmack {
                Rand* rand,
                size_t max_depth);
     bool Build(size_t rule_idx, BuildContext* ctx);
+    bool Build(size_t rule_idx, BuildContext* ctx, bool scope_only);
     Rules* NewChild();
     void Finalize();
   };

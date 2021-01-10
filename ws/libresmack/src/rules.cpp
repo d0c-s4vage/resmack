@@ -67,6 +67,11 @@ namespace resmack {
   }
 
   bool Rules::Build(size_t rule_idx, BuildContext* ctx) {
+    return Build(rule_idx, ctx, false);
+  }
+
+  // Do not look into parent scopes when building, only the local scope
+  bool Rules::Build(size_t rule_idx, BuildContext* ctx, bool unshadowed) {
     if (!this->finalized_) {
       this->Finalize();
     }
@@ -80,7 +85,13 @@ namespace resmack {
       ctx->pre_output = &tmp_pre_output;
     }
 
-    items::Or* rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
+    items::Or* rule;
+    if (unshadowed) {
+      rule = this->rule_man_.GetUnshadowedRule(rule_idx);
+    } else {
+      rule = this->rule_man_.GetAnyRule(rule_idx, ctx->rand);
+    }
+
     if (NULL == rule) { return false; }
 
     uint32_t tmp_rand_state[4] = { 0, 0, 0, 0 };

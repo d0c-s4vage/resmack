@@ -43,8 +43,13 @@ namespace resmack {
     void Prune(size_t rule_idx);
     items::Or* GetRule(std::string rule_name);
     items::Or* GetRule(size_t rule_idx);
+    void ClearRuleValues(size_t rule_idx);
 
     items::Or* GetAnyRule(size_t rule_idx, Rand* rand);
+    // Return the first non-NULL rule for rule_idx
+    items::Or* GetUnshadowedRule(size_t rule_idx);
+    // Return the original, unscoped rule
+    items::Or* GetRootRule(size_t rule_idx);
 
     void DebugPrint();
   };
