@@ -77,7 +77,7 @@ namespace fuzz {
         timedout = true;
         break;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     pthread_exit((void*)timedout);
@@ -99,14 +99,12 @@ namespace fuzz {
 
       timeout_args.pid = this_->traced_pid;
       timeout_args.should_monitor_tracee = true;
-      /*
       pthread_create(
         &this_->monitor_timeout_thread,
         NULL,
         &MonitorTraceeTimeout,
         (void*)&timeout_args
       );
-      */
       waitpid(this_->traced_pid, &status, 0);
       timeout_args.should_monitor_tracee = false;
 
@@ -119,9 +117,7 @@ namespace fuzz {
       }
 
       bool timedout = false;
-      /*
       pthread_join(this_->monitor_timeout_thread, (void**)&timedout);
-      */
 
       this_->last_crash.crashed = false;
 
