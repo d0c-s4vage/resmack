@@ -494,7 +494,7 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
         past_create_threshhold = false;
-        std::cout << "New coverage with: " << output << ", " << ", iters: " << counts << std::endl;
+        //std::cout << "New coverage with: " << output << ", " << ", iters: " << counts << std::endl;
       }
     });
   }
