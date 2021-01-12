@@ -1,4 +1,5 @@
 #include <cstring>
+#include <chrono>
 #include <cxxabi.h>
 #include <csignal>
 #include <cstdlib>
@@ -9,6 +10,8 @@
 #include <string.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
+#include <thread>
+#include <time.h>
 #include <unistd.h>
 
 #include "resmack/fuzz/trace.hpp"
@@ -19,11 +22,18 @@
 namespace resmack {
 namespace fuzz {
 
-  Tracer::Tracer(TraceTarget* target, TraceExceptionCb cb, uint32_t idx) :
+  Tracer::Tracer(
+    TraceTarget* target,
+    TraceExceptionCb cb,
+    TraceTimeoutCb timeout_cb,
+    uint32_t idx
+  ) :
     tracee(idx),
     target(target),
     traced_pid(-1),
-    exception_cb(cb)
+    timeout(5.0),
+    exception_cb(cb),
+    timeout_cb(timeout_cb)
   {}
   Tracer::~Tracer() {}
 
@@ -46,23 +56,75 @@ namespace fuzz {
     pthread_join(this->monitor_thread, &rval);
   }
 
+  void* Tracer::MonitorTraceeTimeout(void* args_arg) {
+    MonitorTimeoutArgs* args = (MonitorTimeoutArgs*)args_arg;
+    pid_t pid = args->pid;
+
+    timespec end;
+    float start_f, end_f, span;
+    bool timedout = false;
+
+    while (args->should_monitor_tracee) {
+      start_f = args->tracee->GetIterStart();
+      clock_gettime(CLOCK_MONOTONIC, &end);
+
+      end_f = end.tv_sec + 1e-9 * end.tv_nsec;
+      span = end_f - start_f;
+
+      //printf("%.04f-%.04f = %.04f, timeout: %.04f\n", end_f, start_f, span, args->timeout);
+      if (span > args->timeout) {
+        kill(pid, SIGKILL);
+        timedout = true;
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    pthread_exit((void*)timedout);
+  }
+
   void* Tracer::MonitorTracee(void* this_arg) {
     Tracer* this_ = (Tracer*)this_arg;
 
     int status;
 
+    MonitorTimeoutArgs timeout_args {
+      .timeout = this_->timeout,
+      .tracee = &this_->tracee,
+    };
+
     this_->traced_pid = this_->target->Spawn(&this_->tracee);
     while (this_->should_run) {
       this_->tracee.Reset();
+
+      timeout_args.pid = this_->traced_pid;
+      timeout_args.should_monitor_tracee = true;
+      pthread_create(
+        &this_->monitor_timeout_thread,
+        NULL,
+        &MonitorTraceeTimeout,
+        (void*)&timeout_args
+      );
       waitpid(this_->traced_pid, &status, 0);
+      timeout_args.should_monitor_tracee = false;
 
       int crash_sig = WSTOPSIG(status);
       int exit_status = WEXITSTATUS(status);
 
+      if (crash_sig == SIGWINCH) {
+        ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGWINCH);
+        continue;
+      }
+
+      bool timedout;
+      pthread_join(this_->monitor_timeout_thread, (void**)&timedout);
+
       this_->last_crash.crashed = false;
 
       ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
-      if (WIFSTOPPED(status)) {
+
+      // ignore resize signals
+      if (WIFSTOPPED(status) && crash_sig != SIGKILL) {
         this_->last_crash.signal = crash_sig;
         // SIGILL -- illegal instruction
         // SIGSEGV - reading/writing outside of valid memory
@@ -71,28 +133,26 @@ namespace fuzz {
           this_->last_crash.crashed = true;
           this_->CalcHashes();
         //}
-      } else if (asan_info != NULL) {
-        this_->last_crash.crashed = true;
-        this_->last_crash.major_stack.clear();
-        this_->last_crash.minor_stack.clear();
-        memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
-        memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
+      } else if (WIFEXITED(status)) {
+        if (asan_info != NULL) {
+          this_->last_crash.crashed = true;
+          this_->last_crash.major_stack.clear();
+          this_->last_crash.minor_stack.clear();
+          memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
+          memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
+        }/* else if (!timedout && exit_status == 0) {
+          std::cout << "EXITED NORMALLY????" << std::endl;
+          break;
+        }
+        */
       }
 
-      // exited normally - which should only occur if the FuzzLoop itself exited
-      // normally. For example, when --max-iters is set and the maximum number
-      // of iterations has been achieved
-      if (WIFEXITED(status) && exit_status == 0) {
-        break;
-      }
-
-      // ignore resize signals
-      if (crash_sig == SIGWINCH) {
-        ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGWINCH);
-        continue;
-      }
-
-      if (this_->last_crash.crashed) {
+      if (timedout) {
+        bool should_continue = this_->timeout_cb(this_->traced_pid, this_, &this_->tracee);
+        if (!should_continue) {
+          break;
+        }
+      } else if (this_->last_crash.crashed) {
         bool should_continue = this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee);
         this_->last_crash.crashed = false;
         if (!should_continue) {

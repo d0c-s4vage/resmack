@@ -16,7 +16,7 @@ namespace fuzz {
 namespace states {
 
   MmapState::MmapState(const char* state_path) : state_path(state_path) {
-    this->state_max_size = 0x400 * 0x400 * 100; // 100 MB
+    this->state_max_size = 0x400 * 0x400 * 200; // 100 MB
     struct stat info;
     bool is_new = false;
 

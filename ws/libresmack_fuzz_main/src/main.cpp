@@ -417,7 +417,7 @@ void FuzzLoop(
   resmack::fuzz::TargetStats stats(OPTS.stats_interval);
   resmack::BuildContext ctx(&output, &build_rand, OPTS.max_depth);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() & 0xff));
+  std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() & 0xfff));
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
@@ -443,7 +443,8 @@ void FuzzLoop(
     }
     stats.Tick();
 
-    size_t last_corpus_idx = 0;
+    size_t last_corpus_idx1 = 0;
+    size_t last_corpus_idx2 = 0;
     bool used_corpus = false;
     if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand.Maybe())) {
       ctx.SetReplay(NULL);
@@ -453,7 +454,7 @@ void FuzzLoop(
       used_corpus = true;
       resmack::Vector<resmack::RandSnapshot>* replay;
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-        replay = corpus->GetItem(&meta_rand);
+        replay = corpus->GetItem(&meta_rand, &last_corpus_idx1, &last_corpus_idx2);
       });
       RECORD_STAT(&stats, resmack::fuzz::SampleTypes::MUTATE, {
         resmack::fuzz::MutateRandSnapshot(
@@ -479,13 +480,15 @@ void FuzzLoop(
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats
     if (tracee != NULL) {
-      tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx, OPTS.max_depth);
+      tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx1, last_corpus_idx2, OPTS.max_depth);
       tracee->SaveLastReplay(&mutated_replay);
+      tracee->IterStart();
     }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
     });
+
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
     });
@@ -494,10 +497,36 @@ void FuzzLoop(
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
         past_create_threshhold = false;
-        std::cout << "New coverage with: " << output << ", " << ", iters: " << counts << std::endl;
       }
     });
   }
+}
+
+bool HandleTimeout(
+  resmack::Rules* rules,
+  resmack::fuzz::State* state,
+  size_t rule_idx,
+  pid_t, // pid
+  resmack::fuzz::Tracer* tracer,
+  resmack::fuzz::Tracee* tracee
+) {
+  if (SHUTTING_DOWN) {
+    return false;
+  }
+
+  // nothing to do here
+  if (!tracee->GetLastUsedCorpus()) {
+    return true;
+  }
+
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  corpus->Sync();
+  corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
+  corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
+
+  // TODO - save the timeout data?
+
+  return true;
 }
 
 bool HandleException(
@@ -675,6 +704,13 @@ int main(int argc, char** argv) {
         resmack::fuzz::Tracee* tracee
       ) -> bool {
         return HandleException(&rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
+      },
+      [&rules, rule_idx, &mmap_state](
+        pid_t pid,
+        resmack::fuzz::Tracer* tracer,
+        resmack::fuzz::Tracee* tracee
+      ) -> bool {
+        return HandleTimeout(&rules, &mmap_state, rule_idx, pid, tracer, tracee);
       },
       child_num
     );

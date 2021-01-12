@@ -87,7 +87,7 @@ namespace corpora {
       bool descendant_of_last
     );
     virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
-    Vector<RandSnapshot>* GetItem(Rand* rand);
+    Vector<RandSnapshot>* GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2);
     void Sync();
     void SyncCounters();
     void SyncCountersInner();
@@ -98,6 +98,7 @@ namespace corpora {
       return *this->curr_iter_count - this->last_discovered_iteration;
     }
     void IncLastItemCrashes();
+    void IncUnwanted(size_t one_based_idx);
 
    private:
     void AddRandSnapshotInner(
