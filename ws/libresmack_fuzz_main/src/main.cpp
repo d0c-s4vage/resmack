@@ -561,7 +561,7 @@ bool HandleException(
   out_path += "/";
   out_path += info->minor_hash;
 
-  state->IncNumCrashesIfTrue([out_path, output, tracee]() -> bool {
+  state->IncNumCrashesIfTrue([out_path, output, tracee, info]() -> bool {
     if (SHUTTING_DOWN) {
       return false;
     }
@@ -578,6 +578,19 @@ bool HandleException(
         file.write(asan_info->report, strlen(asan_info->report));
         file.close();
       }
+
+      std::string stack_path = out_path + ".stack.txt";
+
+      std::string stack_data;
+      stack_data += strsignal(info->signal);
+      stack_data += "\n";
+      stack_data += info->minor_stack;
+      stack_data += "\n";
+
+      file.open(stack_path, std::ofstream::out | std::ofstream::binary);
+      file.write(stack_data.data(), stack_data.size());
+      file.close();
+
       return true;
     } else {
       return false;

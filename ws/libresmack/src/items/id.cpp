@@ -3,10 +3,10 @@
 #include "resmack/items/id.hpp"
 #include "resmack/items/raw.hpp"
 #include "resmack/items/str.hpp"
+#include "resmack/utils.hpp"
 
 #include "calc/reach.hpp"
 #include "calc/ref_depth.hpp"
-#include "utils.hpp"
 
 namespace resmack {
 namespace items {

@@ -109,11 +109,18 @@ namespace resmack {
     auto it = this->post_items.begin();
     auto end = this->post_items.end();
     for (; it != end; it++) {
+      if (*it == NULL) {
+        std::cout << this->post_items.size() << std::endl;
+      }
       (*it)->Build(this);
     }
 
     // clear the post items
     this->post_items.clear();
+  }
+
+  void BuildContext::AddPostItem(Item* item) {
+    this->post_items.push_back(item);
   }
 
 }

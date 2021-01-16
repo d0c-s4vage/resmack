@@ -1,6 +1,5 @@
 #include "resmack/items/str.hpp"
-
-#include "../utils.hpp"
+#include "resmack/utils.hpp"
 
 namespace resmack {
 namespace items {

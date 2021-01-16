@@ -14,6 +14,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "resmack/rand.hpp"
+#include "resmack/utils.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/utils.hpp"
 
@@ -111,6 +113,11 @@ namespace fuzz {
       int crash_sig = WSTOPSIG(status);
       int exit_status = WEXITSTATUS(status);
 
+      // these need to be done before the pthread_join() for some reason. UB?
+      bool exited = WIFEXITED(status);
+      bool signaled = WIFSIGNALED(status);
+      bool stopped = WIFSTOPPED(status);
+
       if (crash_sig == SIGWINCH) {
         ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGWINCH);
         continue;
@@ -120,11 +127,9 @@ namespace fuzz {
       pthread_join(this_->monitor_timeout_thread, (void**)&timedout);
 
       this_->last_crash.crashed = false;
-
       ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
 
-      // ignore resize signals
-      if (WIFSTOPPED(status) && crash_sig != SIGKILL) {
+      if (stopped && crash_sig != SIGKILL) {
         this_->last_crash.signal = crash_sig;
         // SIGILL -- illegal instruction
         // SIGSEGV - reading/writing outside of valid memory
@@ -133,18 +138,25 @@ namespace fuzz {
           this_->last_crash.crashed = true;
           this_->CalcHashes();
         //}
-      } else if (WIFEXITED(status)) {
+      } else if (exited) {
         if (asan_info != NULL) {
           this_->last_crash.crashed = true;
           this_->last_crash.major_stack.clear();
           this_->last_crash.minor_stack.clear();
           memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
           memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
-        }/* else if (!timedout && exit_status == 0) {
-          std::cout << "EXITED NORMALLY????" << std::endl;
-          break;
+        } else if (!timedout) {
+          // normal, expected exit?
+          // if (exit_status == 0) { break; }
+
+          Rand rand;
+          std::string charset = "abcdefghijklmnopqrstuvwxyz";
+
+          this_->last_crash.crashed = true;
+          this_->last_crash.major_stack = "unknown_exit";
+          this_->last_crash.minor_stack.clear();
+          resmack::utils::RandBytes(&rand, charset.c_str(), charset.size(), 10, &this_->last_crash.minor_stack);
         }
-        */
       }
 
       if (timedout) {
@@ -158,6 +170,10 @@ namespace fuzz {
         if (!should_continue) {
           break;
         }
+      }
+
+      if (!timedout) {
+        std::cout << "EXITED!!!" << std::endl;
       }
 
       // default action is to kill the current process, and then restart it

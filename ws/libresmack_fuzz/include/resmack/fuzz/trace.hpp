@@ -50,6 +50,7 @@ namespace fuzz {
     char major_hash[41];
     // all frames
     char minor_hash[41];
+    Vector<std::string> stack_trace;
   };
 
   class Tracer {
