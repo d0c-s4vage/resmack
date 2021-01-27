@@ -464,9 +464,16 @@ namespace corpora {
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
+    printf("  Incrementing unwanted, idx: %lu\n", one_based_idx);
     WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
-      this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
-      this->GetItemHeader(one_based_idx - 1)->mutations_since_offspring += 5000;
+      printf("  Acquired lock for idx: %lu\n", one_based_idx);
+      ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
+      printf("  Item header: %p\n", header);
+      printf("  offset: %x\n", (char*)header - (char*)this->corpus_map);
+      printf("  header->mutations_since_offspring: %lu\n", header->mutations_since_offspring);
+      //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
+      header->mutations_since_offspring += 5000;
+      printf("  header->mutations_since_offspring + 5000: %lu\n", header->mutations_since_offspring);
     });
   }
 

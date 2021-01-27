@@ -20,6 +20,8 @@ namespace fuzz {
     float timeout;
     Tracee* tracee;
     bool should_monitor_tracee;
+    bool* should_run;
+    bool timedout;
   };
 
   class Tracer;

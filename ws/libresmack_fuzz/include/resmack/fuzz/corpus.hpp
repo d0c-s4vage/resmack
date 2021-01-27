@@ -64,6 +64,7 @@ class Corpus {
   virtual size_t ItersSinceNewItem() = 0;
   virtual void IncLastItemCrashes() = 0;
   virtual void IncUnwanted(size_t one_based_idx) = 0;
+  virtual float GetUsedCapacity() = 0;
 };
 
 }

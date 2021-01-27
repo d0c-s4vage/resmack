@@ -109,10 +109,8 @@ static FuzzOptions OPTS {
   .corpus_decay = 1000000, // 100,000 default decay
 };
 
-int MAIN_PID;
-
 void sigint_handler(int signum) {
-  if (::getpid() != MAIN_PID) { return; }
+  if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
 
   SHUTTING_DOWN = true;
   printf(
@@ -305,11 +303,14 @@ void PrintStatus(
   std::chrono::high_resolution_clock::time_point start,
   uint64_t start_iters
 ) {
+  std::cout << std::flush;
+
   std::chrono::high_resolution_clock::time_point end;
   resmack::fuzz::states::MmapState* state = args->state;
   bool show_stats = args->show_stats;
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
+  corpus->Sync();
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   end = std::chrono::high_resolution_clock::now();
@@ -317,12 +318,13 @@ void PrintStatus(
   uint64_t session_iters = num_iters - start_iters;
   std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
   printf(
-    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu (D:%05.2f) | Feedback: %s | %0.2f s\n",
+    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu (D:%05.2f,C:%05.2f) | Feedback: %s | %0.2f s\n",
     num_iters,
     (float)session_iters / span.count(),
     state->GetNumCrashes(),
     corpus->NumItemsRaw(),
     corpus->GetDecayPercent(),
+    corpus->GetUsedCapacity() * 100,
     args->feedback->GetSummary().c_str(),
     span.count()
   );
@@ -495,7 +497,7 @@ void FuzzLoop(
     resmack::fuzz::FeedbackStats feedback_stats = feedback->GetStats();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-      if (feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
+      if (stats.valid && feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
         past_create_threshhold = false;
       }
     });
@@ -506,23 +508,35 @@ bool HandleTimeout(
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
-  pid_t, // pid
+  pid_t pid, // pid
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
+  printf("%d: Handling timeout1\n", pid);
   if (SHUTTING_DOWN) {
+    printf("%d: Handling timeout1.1\n", pid);
     return false;
   }
+  printf("%d: Handling timeout2\n", pid);
 
   // nothing to do here
   if (!tracee->GetLastUsedCorpus()) {
+    printf("%d: Handling timeout2.1\n", pid);
     return true;
   }
 
+  printf("%d: Handling timeout3\n", pid);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  corpus->Sync();
+  printf("%d: Handling timeout4\n", pid);
+  state->IncNumIterations(1);
+  printf("%d: Handling timeout5 NEW\n", pid);
+  printf("%d: Handling timeout5: tracee: %p\n", pid, tracee);
+  printf("%d: Handling timeout5: tracee->GetLastCorpusIndex1(): %lu\n", pid, tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
+  printf("%d: Handling timeout6\n", pid);
+  printf("%d: Handling timeout5: tracee->GetLastCorpusIndex2(): %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
+  printf("%d: Handling timeout7\n", pid);
 
   // TODO - save the timeout data?
 
@@ -645,7 +659,7 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
 
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
-  MAIN_PID = getpid();
+  resmack::fuzz::utils::MAIN_PID = getpid();
 
   ParseOptions(argc, argv);
   if (OPTS.help) {

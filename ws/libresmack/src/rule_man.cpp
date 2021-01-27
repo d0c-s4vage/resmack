@@ -166,7 +166,9 @@ namespace resmack {
 
     Vector<RuleManager*> options;
     RuleManager* curr = this;
+    int count = -1;
     while (curr != NULL) {
+      count++;
       if (curr->ValidRule(rule_idx)) {
         options.push_back(curr);
       }

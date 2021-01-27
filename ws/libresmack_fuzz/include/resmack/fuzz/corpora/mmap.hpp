@@ -93,6 +93,10 @@ namespace corpora {
     void SyncCountersInner();
     bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
     size_t NumItems() { return this->snapshots.size(); }
+    float GetUsedCapacity() {
+      size_t used = (char*)this->next_item - (char*)this->corpus_map;
+      return (float)used / (float)this->max_corpus_size;
+    };
     size_t NumItemsRaw() { return this->meta->num_entries; }
     size_t ItersSinceNewItem() {
       return *this->curr_iter_count - this->last_discovered_iteration;
