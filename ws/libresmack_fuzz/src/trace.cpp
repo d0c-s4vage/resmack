@@ -64,13 +64,13 @@ namespace fuzz {
 
     timespec end;
     float start_f, end_f, span;
+    pid_t killed_pid = -1;
 
     while (*args->should_run) {
       pid_t pid = args->pid;
-      // there is a race condition here - worst that could happen is that
-      // the SIGKILL signal could be sent to an already dead/stopped process,
-      // which shouldn't have any side effects ==> doing without a mutex
-      if (pid > 0 && args->should_monitor_tracee) {
+      if (pid == killed_pid) {
+        ; // noop
+      } else if (pid > 0 && args->should_monitor_tracee) {
         start_f = args->tracee->GetIterStart();
         clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -80,14 +80,13 @@ namespace fuzz {
         // we may have already signaled that it has been timedout
         if (!args->timedout && span > args->timeout) {
           args->timedout = true;
-          printf("%d: Being killed by timeout monitor\n", pid);
-          kill(pid, SIGKILL);
+          kill(pid, SIGINT);
+          killed_pid = pid;
         }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
-    printf("Timeout monitor is exiting\n");
     return NULL;
   }
 
@@ -101,6 +100,7 @@ namespace fuzz {
       .tracee = &this_->tracee,
       .should_run = &this_->should_run,
       .timedout = false,
+      .pid = -1,
     };
     this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
@@ -115,10 +115,12 @@ namespace fuzz {
       this_->tracee.Reset();
 
       timeout_args.pid = this_->traced_pid;
-      timeout_args.should_monitor_tracee = true;
       timeout_args.timedout = false;
-
-      waitpid(this_->traced_pid, &status, 0);
+      timeout_args.should_monitor_tracee = true;
+      {
+        waitpid(this_->traced_pid, &status, 0);
+      }
+      timeout_args.should_monitor_tracee = false;
       bool timedout = timeout_args.timedout;
 
       // these need to be done before the pthread_join() for some reason. UB?
@@ -140,9 +142,12 @@ namespace fuzz {
 
       bool should_continue;
       if (timedout) {
-        printf("%d: timedout, calling callback\n", this_->traced_pid);
+        // need to wait one more time since the first signal sent to the process
+        // SIGINT is used to help the child proc cleanup before being completely
+        // killed
+        ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGINT);
+        waitpid(this_->traced_pid, &status, 0);
         should_continue = this_->timeout_cb(this_->traced_pid, this_, &this_->tracee);
-        printf("%d: timedout, should_continue: %d\n", this_->traced_pid, should_continue);
       } else {
         printf("%d: Dealing with non-timedout, exited program\n", this_->traced_pid);
         printf("%d: status: %d\n", this_->traced_pid, status);
@@ -151,17 +156,7 @@ namespace fuzz {
         printf("%d: WIFSIGNALED: %d, WTERMSIG: %d - %s\n", this_->traced_pid, signaled, term_sig, strsignal(term_sig));
 
         this_->last_crash.signal = crash_sig;
-        if (stopped) {
-          printf("%d It stopped\n", this_->traced_pid);
-          // SIGILL -- illegal instruction
-          // SIGSEGV - reading/writing outside of valid memory
-          // SIGBUS - invalid pointer dereferenced
-          //if (crash_sig == SIGILL || crash_sig == SIGSEGV || crash_sig == SIGBUS) {
-            this_->last_crash.crashed = true;
-            this_->CalcHashes();
-            printf("  hashes - major: %s, minor: %s\n", this_->last_crash.major_hash, this_->last_crash.minor_hash);
-          //}
-        } else if (asan_info != NULL) {
+        if (asan_info != NULL) {
           this_->last_crash.crashed = true;
           printf("ASAN CRASH!!!\n");
           this_->last_crash.major_stack.clear();
@@ -170,18 +165,30 @@ namespace fuzz {
           memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
           printf("  hashes - major: %s, minor: %s\n", this_->last_crash.major_hash, this_->last_crash.minor_hash);
         } else {
-          printf("Unknown crash\n");
-          Rand rand;
-          std::string charset = "abcdefghijklmnopqrstuvwxyz";
+          this_->last_crash.major_hash[0] = 0;
+          this_->last_crash.minor_hash[0] = 0;
 
-          this_->last_crash.crashed = true;
-          snprintf(this_->last_crash.major_hash, sizeof(this_->last_crash.major_hash), "%s", "unknown_exit");
-          this_->last_crash.major_stack = "unknown_exit";
-          this_->last_crash.minor_stack = "unknown_exit";
-          std::string out;
-          resmack::utils::RandBytes(&rand, charset.c_str(), charset.size(), 10, &out);
-          snprintf(this_->last_crash.minor_hash, sizeof(this_->last_crash.minor_hash), "%s", out.c_str());
-          printf("  hashes - major: %s, minor: %s\n", this_->last_crash.major_hash, this_->last_crash.minor_hash);
+          if (stopped) {
+            printf("%d It stopped\n", this_->traced_pid);
+            this_->last_crash.crashed = true;
+            this_->CalcHashes();
+            printf("  hashes - major: %s, minor: %s\n", this_->last_crash.major_hash, this_->last_crash.minor_hash);
+          }
+
+          if (this_->last_crash.major_hash[0] == 0) {
+            printf("Unknown crash\n");
+            Rand rand;
+            std::string charset = "abcdefghijklmnopqrstuvwxyz";
+
+            this_->last_crash.crashed = true;
+            snprintf(this_->last_crash.major_hash, sizeof(this_->last_crash.major_hash), "%s", "unknown_exit");
+            this_->last_crash.major_stack = "unknown_exit";
+            this_->last_crash.minor_stack = "unknown_exit";
+            std::string out;
+            resmack::utils::RandBytes(&rand, charset.c_str(), charset.size(), 10, &out);
+            snprintf(this_->last_crash.minor_hash, sizeof(this_->last_crash.minor_hash), "%s", out.c_str());
+            printf("  hashes - major: %s, minor: %s\n", this_->last_crash.major_hash, this_->last_crash.minor_hash);
+          }
         }
 
         should_continue = this_->exception_cb(this_->traced_pid, status, this_, &this_->tracee);
@@ -204,7 +211,7 @@ namespace fuzz {
       if (timedout) { printf("%d: Launching new target\n", orig_pid); }
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
-      if (timedout) { printf("%d: DONE Launching new target: %d\n", orig_pid, this_->traced_pid); }
+      if (timedout) { printf("%d: DONE Launching new target: %d (mypid: %d)\n", orig_pid, this_->traced_pid, getpid()); }
     }
 
     printf("Exited MonitorTracee loop!\n");
@@ -219,27 +226,16 @@ namespace fuzz {
   void Tracer::CalcHashes() {
     printf("%d Calculating hashes 1\n", this->traced_pid);
     this->last_crash.major_stack.clear();
-    printf("%d Calculating hashes 2\n", this->traced_pid);
     this->last_crash.minor_stack.clear();
-    printf("%d Calculating hashes 3\n", this->traced_pid);
 
-    printf("%d Calculating hashes 4\n", this->traced_pid);
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-    printf("%d Calculating hashes 5\n", this->traced_pid);
 
-    printf("%d Calculating hashes 6\n", this->traced_pid);
     void *context = _UPT_create(this->traced_pid);
-    printf("%d Calculating hashes 7\n", this->traced_pid);
     unw_cursor_t cursor;
-    printf("%d Calculating hashes 8\n", this->traced_pid);
     if (unw_init_remote(&cursor, as, context) != 0) {
-    printf("%d Calculating hashes 9\n", this->traced_pid);
       _UPT_destroy(context);
-    printf("%d Calculating hashes 10\n", this->traced_pid);
       free(as);
-    printf("%d Calculating hashes 11\n", this->traced_pid);
       printf("Could not init remote [libunwind]\n");
-    printf("%d Calculating hashes 12\n", this->traced_pid);
       return;
     }
 

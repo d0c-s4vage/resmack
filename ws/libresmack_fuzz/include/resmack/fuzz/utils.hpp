@@ -11,6 +11,7 @@ namespace fuzz {
 namespace utils {
 
   static pid_t MAIN_PID;
+  static bool KEEP_RUNNING;
 
   // Caller is responsible for freeing the returned (malloc'd) hex digest
   inline char* sha1_hex(const char* data, size_t data_size, char* out_buffer) {

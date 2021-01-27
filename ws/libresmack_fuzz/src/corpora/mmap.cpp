@@ -162,7 +162,7 @@ namespace corpora {
       );
     }
 
-    this->last_updated_seq = this->last_updated_seq = ++this->meta->updated_seq;
+    this->last_updated_seq = ++this->meta->updated_seq;
     this->next_item_index = ++this->meta->num_entries;
     // gets incremented to point at the "next" empty spot after the for loop
     this->next_item = (ser::CorpusItemHeader*)((char*)curr_state);
@@ -464,16 +464,11 @@ namespace corpora {
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
-    printf("  Incrementing unwanted, idx: %lu\n", one_based_idx);
     WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
-      printf("  Acquired lock for idx: %lu\n", one_based_idx);
       ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
-      printf("  Item header: %p\n", header);
-      printf("  offset: %x\n", (char*)header - (char*)this->corpus_map);
-      printf("  header->mutations_since_offspring: %lu\n", header->mutations_since_offspring);
-      //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
+      this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
       header->mutations_since_offspring += 5000;
-      printf("  header->mutations_since_offspring + 5000: %lu\n", header->mutations_since_offspring);
+      this->last_updated_seq = ++this->meta->updated_seq;
     });
   }
 

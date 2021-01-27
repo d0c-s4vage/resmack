@@ -403,6 +403,7 @@ void FuzzLoop(
   resmack::fuzz::Tracee* tracee
 ) {
   resmack::fuzz::ExternalFunctions EF;
+  resmack::fuzz::utils::KEEP_RUNNING = true;
 
   if (EF.ResmackInit != NULL) {
     EF.ResmackInit();
@@ -428,6 +429,7 @@ void FuzzLoop(
   size_t counts = 0;
   bool past_create_threshhold = true;
   while (
+      resmack::fuzz::utils::KEEP_RUNNING &&
       (OPTS.max_iters == 0 || state->GetNumIterations() < OPTS.max_iters) &&
       (OPTS.max_crashes == 0 || state->GetNumCrashes() < OPTS.max_crashes)
   ) {
@@ -512,33 +514,20 @@ bool HandleTimeout(
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
-  printf("%d: Handling timeout1\n", pid);
   if (SHUTTING_DOWN) {
-    printf("%d: Handling timeout1.1\n", pid);
     return false;
   }
-  printf("%d: Handling timeout2\n", pid);
 
   // nothing to do here
   if (!tracee->GetLastUsedCorpus()) {
-    printf("%d: Handling timeout2.1\n", pid);
     return true;
   }
 
-  printf("%d: Handling timeout3\n", pid);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  printf("%d: Handling timeout4\n", pid);
   state->IncNumIterations(1);
-  printf("%d: Handling timeout5 NEW\n", pid);
-  printf("%d: Handling timeout5: tracee: %p\n", pid, tracee);
-  printf("%d: Handling timeout5: tracee->GetLastCorpusIndex1(): %lu\n", pid, tracee->GetLastCorpusIndex1());
+  corpus->Sync();
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
-  printf("%d: Handling timeout6\n", pid);
-  printf("%d: Handling timeout5: tracee->GetLastCorpusIndex2(): %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
-  printf("%d: Handling timeout7\n", pid);
-
-  // TODO - save the timeout data?
 
   return true;
 }
