@@ -133,8 +133,10 @@ namespace resmack {
   }
 
   void Rand::ReinitSeed() {
+    bool record_prev = this->should_record_;
     std::random_device rd;
     this->Init(rd());
+    this->should_record_ = record_prev;
   }
 
   void Rand::InitState(uint32_t seed) {

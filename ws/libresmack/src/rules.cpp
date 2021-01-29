@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <cstring>
 #include <signal.h>
+#include <unistd.h>
 
 #include "resmack/types.hpp"
 #include "resmack/items/or.hpp"
@@ -97,14 +98,12 @@ namespace resmack {
     uint32_t tmp_rand_state[4] = { 0, 0, 0, 0 };
     uint32_t tmp_max_depth = ctx->max_depth;
     bool tmp_did_replay = false;
-    ctx->MaybeDoRandReplay(tmp_rand_state, &tmp_max_depth, &tmp_did_replay);
-    {
-      if (ctx->rand->ShouldRecord()) {
-        ctx->rand->SnapshotState(ctx->ref_depth, ctx->max_depth, rule_idx);
-      }
 
-      rule->Build(ctx);
+    ctx->MaybeDoRandReplay(tmp_rand_state, &tmp_max_depth, &tmp_did_replay);
+    if (ctx->rand->ShouldRecord()) {
+      ctx->rand->SnapshotState(ctx->ref_depth, ctx->max_depth, rule_idx);
     }
+    rule->Build(ctx);
     ctx->MaybeUndoRandReplay(tmp_rand_state, tmp_max_depth, tmp_did_replay);
 
     // flush all pre/post output

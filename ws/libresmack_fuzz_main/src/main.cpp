@@ -42,6 +42,7 @@
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
+#include "resmack/fuzz/ipc_util.hpp"
 
 static bool SHUTTING_DOWN = false;
 
@@ -523,11 +524,18 @@ bool HandleTimeout(
     return true;
   }
 
-  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  DEBUG_PRINT("%d: [[Handling timeout, incrementing iterations\n", pid);
   state->IncNumIterations(1);
+
+  DEBUG_PRINT("%d: [[Handling timeout, getting corpus\n", pid);
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  DEBUG_PRINT("%d: [[Handling timeout, syncing corpus\n", pid);
   corpus->Sync();
+  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
+  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
+  DEBUG_PRINT("%d: [[Handling timeout, done\n", pid);
 
   return true;
 }
@@ -631,7 +639,7 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
     rules->Build(rule_idx, &ctx);
 
     char* output_sha = resmack::fuzz::utils::sha1_hex(output.data(), output.size(), NULL);
-    std::string out_path = std::string(OPTS.dump_corpus_path) + "/" + output_sha;
+    std::string out_path = std::string(OPTS.dump_corpus_path) + "/" + std::to_string(i) + "_" + output_sha;
     free(output_sha);
 
     if (std::filesystem::exists(out_path)) { continue; }

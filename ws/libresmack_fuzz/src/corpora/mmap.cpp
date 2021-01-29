@@ -464,10 +464,15 @@ namespace corpora {
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
+    DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
     WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
+      DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
       ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
+      DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
       this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
+      DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
       header->mutations_since_offspring += 5000;
+      DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
       this->last_updated_seq = ++this->meta->updated_seq;
     });
   }

@@ -18,6 +18,7 @@
 #include "resmack/utils.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/utils.hpp"
+#include "resmack/fuzz/ipc_util.hpp"
 
 #include "asan_util.hpp"
 
@@ -50,7 +51,10 @@ namespace fuzz {
       return;
     }
     ptrace(PTRACE_DETACH, this->traced_pid, NULL, NULL);
+    kill(this->traced_pid, SIGINT);
+    waitpid(this->traced_pid, NULL, 0);
     kill(this->traced_pid, SIGKILL);
+    waitpid(this->traced_pid, NULL, 0);
     this->traced_pid = -1;
   }
 
@@ -142,12 +146,16 @@ namespace fuzz {
 
       bool should_continue;
       if (timedout) {
+        DEBUG_PRINT("%d: [[Timedout: signal: %s, forwarding signal\n", this_->traced_pid, strsignal(crash_sig));
         // need to wait one more time since the first signal sent to the process
         // SIGINT is used to help the child proc cleanup before being completely
         // killed
         ptrace(PTRACE_CONT, this_->traced_pid, NULL, SIGINT);
+        DEBUG_PRINT("%d: [[Waiting to completely exit\n", this_->traced_pid);
         waitpid(this_->traced_pid, &status, 0);
+        DEBUG_PRINT("%d: [[Exited completely\n", this_->traced_pid);
         should_continue = this_->timeout_cb(this_->traced_pid, this_, &this_->tracee);
+        DEBUG_PRINT("%d: [[Should continue: %d\n", this_->traced_pid, should_continue);
       } else {
         printf("%d: Dealing with non-timedout, exited program\n", this_->traced_pid);
         printf("%d: status: %d\n", this_->traced_pid, status);
@@ -201,17 +209,12 @@ namespace fuzz {
 
       // default action is to kill the current process, and then restart it
       pid_t orig_pid = this_->traced_pid;
-      if (timedout) { printf("%d: Killing traced pid (again)\n", orig_pid); }
       kill(this_->traced_pid, SIGKILL);
 
-      if (timedout) { printf("%d: Detaching from traced pid\n", orig_pid); }
       ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
       this_->traced_pid = -1;
 
-      if (timedout) { printf("%d: Launching new target\n", orig_pid); }
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
-
-      if (timedout) { printf("%d: DONE Launching new target: %d (mypid: %d)\n", orig_pid, this_->traced_pid, getpid()); }
     }
 
     printf("Exited MonitorTracee loop!\n");
