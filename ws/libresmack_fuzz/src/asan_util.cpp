@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <sanitizer/asan_interface.h>
+#include <iostream>
 
 #include "asan_util.hpp"
 
@@ -13,7 +14,6 @@ const char *__asan_default_options() {
 }
 
 void HandleAsan(const char* report) {
-  printf("HANDLING ASAN\n");
   ASAN_CB(report);
 }
 

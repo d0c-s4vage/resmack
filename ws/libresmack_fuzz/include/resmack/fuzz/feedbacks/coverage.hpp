@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <semaphore.h>
 
 #include "resmack/fuzz/feedback.hpp"
 
@@ -15,6 +16,8 @@ namespace fuzz {
    private:
     size_t hash;
     void* shared;
+    // only updated when something new is found
+    sem_t* cov_lock;
 
    public:
     Coverage();
@@ -22,6 +25,7 @@ namespace fuzz {
     std::string GetSummary();
     void Start();
     void Stop();
+    void Sync();
     FeedbackStats GetStats();
   };
 

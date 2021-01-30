@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <libunwind.h>
+#include <unistd.h>
 
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/serialized.hpp"
@@ -154,8 +155,6 @@ namespace fuzz {
         std::cout << "ERROR: Can't get ip" << std::endl;
         std::exit(1);
       }
-
-      printf("0x%lx: ", pc);
 
       if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
         int status;

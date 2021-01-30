@@ -45,6 +45,7 @@ namespace fuzz {
 
   struct CrashInfo {
     bool crashed;
+    int exit_status;
     int signal;
     std::string major_stack;
     std::string minor_stack;

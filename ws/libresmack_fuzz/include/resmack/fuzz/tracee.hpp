@@ -6,6 +6,7 @@
 #include <mutex>
 #include <inttypes.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/serialized.hpp"

@@ -18,6 +18,12 @@ namespace resmack {
 #define _DEBUG_PRINT(...) printf(__VA_ARGS__); std::cout << std::flush;
 #define IPC_DEBUG_ALWAYS(...) DEBUG_PRINT(__VA_ARGS__)
 
+#define MAKE_SIGNAL_SAFE(MSG) \
+  if (resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED && \
+      sem_wait(&resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {\
+    perror(#MSG" (sem_wait)"); \
+    std::exit(1); \
+  }
 
 #define _WITH_LOCK_DEBUG(LOCK, MSG, STATEMENTS) { \
   int sem_val;\

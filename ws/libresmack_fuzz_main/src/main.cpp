@@ -99,7 +99,7 @@ static FuzzOptions OPTS {
   .show_stats = false,
   .mute_stdio = true,
   .print_interval = 0.0f,
-  .stats_interval = 0x1000,
+  .stats_interval = 100,
   .crash_output = (char*)"crashes",
   .create_threshhold = 100000,
   .dump_corpus_path = NULL,
@@ -114,10 +114,6 @@ void sigint_handler(int signum) {
   if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
 
   SHUTTING_DOWN = true;
-  printf(
-    "\nCaught signal %d on main process, terminating fuzzing procs\n",
-    signum
-  );
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Stop();
@@ -312,6 +308,7 @@ void PrintStatus(
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
   corpus->Sync();
+  args->feedback->Sync();
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   end = std::chrono::high_resolution_clock::now();
@@ -368,10 +365,7 @@ void* LoopPrintStatus(void* args_ptr) {
     size_t increment = 50;
     size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
     size_t prev_crash_count = state->GetNumCrashes();
-    while(total_slept < sleep_amt) {
-      if (!args->should_run) {
-        break;
-      }
+    while(total_slept < sleep_amt && args->should_run) {
       if (OPTS.print_interval == 0.0f && (
         state->GetCorpus()->NumItemsRaw() != prev_corpus_count
         || state->GetNumCrashes() != prev_crash_count
@@ -391,6 +385,7 @@ void* LoopPrintStatus(void* args_ptr) {
   }
   // one final status print
   PrintStatus(args, start, start_iters);
+  printf("Exiting status loop\n");
 
   return NULL;
 }
@@ -426,6 +421,7 @@ void FuzzLoop(
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
 
   corpus->Sync();
+  feedback->Sync();
 
   size_t counts = 0;
   bool past_create_threshhold = true;
@@ -438,6 +434,7 @@ void FuzzLoop(
     if ((counts % OPTS.stats_interval) == 0) {
       state->IncNumIterations(OPTS.stats_interval);
       state->SyncStats(&stats);
+      feedback->Sync();
       stats.Clear();
       bool tmp = (corpus->ItersSinceNewItem() > OPTS.create_threshhold);
       if (tmp && !past_create_threshhold) {
@@ -505,6 +502,7 @@ void FuzzLoop(
       }
     });
   }
+  std::cout << std::flush;
 }
 
 bool HandleTimeout(
@@ -552,6 +550,17 @@ bool HandleException(
   if (SHUTTING_DOWN) {
     return false;
   }
+
+  state->IncNumIterations(1);
+  DEBUG_PRINT("%d: [[Handling timeout, getting corpus\n", pid);
+  resmack::fuzz::Corpus* corpus = state->GetCorpus();
+  DEBUG_PRINT("%d: [[Handling timeout, syncing corpus\n", pid);
+  corpus->Sync();
+  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
+  corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
+  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
+  corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
+
   std::string output;
   // doesn't have to be the same one as before since we're doing a full,
   // unmodified replay
@@ -747,6 +756,9 @@ int main(int argc, char** argv) {
   STATUS_ARGS.should_run = true;
   STATUS_ARGS.feedback = &cov;
 
+  sem_init(&resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK, 0, 1);
+  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED = true;
+
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
   signal(SIGINT, sigint_handler);
 
@@ -756,6 +768,7 @@ int main(int argc, char** argv) {
 
   SHUTTING_DOWN = true;
 
+  MAKE_SIGNAL_SAFE(Final shutdown);
   STATUS_ARGS.should_run = false;
-  pthread_join(STATUS_THREAD, NULL);
+  pthread_kill(STATUS_THREAD, SIGKILL);
 }
