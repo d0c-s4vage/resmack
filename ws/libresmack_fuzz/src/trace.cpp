@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <libunwind-ptrace.h>
+#include <mutex>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
@@ -19,6 +20,7 @@
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/utils.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/process_utils.hpp"
 
 #include "asan_util.hpp"
 
@@ -31,6 +33,7 @@ namespace fuzz {
     TraceTimeoutCb timeout_cb,
     uint32_t idx
   ) :
+    idx(idx),
     tracee(idx),
     target(target),
     traced_pid(-1),
@@ -53,8 +56,13 @@ namespace fuzz {
     }
 
     ptrace(PTRACE_DETACH, pid, NULL, NULL);
+
+    this->timeout_lock.lock();
+    pthread_join(this->monitor_timeout_thread, NULL);
+
     kill(pid, SIGINT);
     waitpid(pid, NULL, 0);
+
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
   }
@@ -68,10 +76,10 @@ namespace fuzz {
     args->timedout = false;
 
     timespec end;
-    float start_f, end_f, span;
+    float end_f, iter_span;
     pid_t killed_pid = -1;
 
-    pid_t last_pid = args->pid;
+    pid_t last_pid = -1;
     timespec tmp;
     clock_gettime(CLOCK_MONOTONIC, &tmp);
     float pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
@@ -80,36 +88,41 @@ namespace fuzz {
     float sleep_int_ms = 10.0f;
 
     while (*args->should_run) {
-      pid_t pid = args->pid;
-      float sleep_ms = args->timeout * 1000.0f;
+      args->timeout_lock->lock();
+        pid_t pid = args->pid;
+        //float sleep_ms = args->timeout * 1000.0f;
+        float sleep_ms = 10.0f;
+        float curr_iter_start = args->tracee->GetIterStart();
+        bool should_monitor = args->should_monitor_tracee;
+        bool timedout = args->timedout;
+        float timeout = args->timeout;
+        int idx = args->idx;
+      args->timeout_lock->unlock();
+
 
       if (pid == killed_pid) {
         ; // noop
-      } else if (pid > 0 && args->should_monitor_tracee) {
+      } else if (pid > 0 && should_monitor && curr_iter_start != -1.0f) {
         if (last_pid != pid) {
           last_pid = pid;
           clock_gettime(CLOCK_MONOTONIC, &tmp);
           pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
         }
 
-        start_f = args->tracee->GetIterStart();
-
         clock_gettime(CLOCK_MONOTONIC, &end);
         end_f = end.tv_sec + 1e-9 * end.tv_nsec;
 
-        span = end_f - start_f;
+        iter_span = end_f - curr_iter_start;
         float alive_span = end_f - pid_alive_start;
 
         // we may have already signaled that it has been timedout
-        if (!args->timedout && (span > args->timeout || alive_span > alive_max)) {
+        if (!timedout && (iter_span > timeout || alive_span > alive_max)) {
           args->timedout = true;
           kill(pid, SIGINT);
           killed_pid = pid;
-        } else {
-          float timeout_left = args->timeout - span;
-          sleep_ms = timeout_left < sleep_int_ms ? timeout_left : sleep_int_ms;
         }
       }
+
       std::this_thread::sleep_for(std::chrono::milliseconds((int)sleep_ms));
     }
 
@@ -120,6 +133,7 @@ namespace fuzz {
     Tracer* this_ = (Tracer*)this_arg;
 
     int status;
+    process_utils::SignalInfo sig_info;
 
     MonitorTimeoutArgs timeout_args {
       .timeout = this_->timeout,
@@ -127,7 +141,11 @@ namespace fuzz {
       .should_run = &this_->should_run,
       .timedout = false,
       .pid = -1,
+      .idx = this_->idx,
+      .timeout_lock = &this_->timeout_lock,
     };
+
+    this_->tracee.Reset();
     this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
     pthread_create(
@@ -138,29 +156,25 @@ namespace fuzz {
     );
 
     while (this_->should_run) {
-      this_->tracee.Reset();
+      this_->timeout_lock.lock();
+        pid_t curr_pid = this_->traced_pid;
+        timeout_args.pid = this_->traced_pid;
+        timeout_args.timedout = false;
+        timeout_args.should_monitor_tracee = true;
+      this_->timeout_lock.unlock();
 
-      pid_t curr_pid = this_->traced_pid;
+      if (waitpid(curr_pid, &status, 0) == -1) {
+        perror("Error waiting for child");
+      }
 
-      timeout_args.pid = this_->traced_pid;
-      timeout_args.timedout = false;
-      timeout_args.should_monitor_tracee = true;
+      this_->timeout_lock.lock();
+        timeout_args.should_monitor_tracee = false;
+        bool timedout = timeout_args.timedout;
+      this_->timeout_lock.unlock();
 
-      waitpid(curr_pid, &status, 0);
+      process_utils::LoadSignalInfo(status, &sig_info);
 
-      timeout_args.should_monitor_tracee = false;
-      bool timedout = timeout_args.timedout;
-
-      // these need to be done before the pthread_join() for some reason. UB?
-      bool exited = WIFEXITED(status);
-      bool stopped = WIFSTOPPED(status);
-      bool signaled = WIFSIGNALED(status);
-
-      int exit_status = WEXITSTATUS(status);
-      int crash_sig = WSTOPSIG(status);
-      int term_sig = WTERMSIG(status);
-
-      if (crash_sig == SIGWINCH) {
+      if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
         continue;
       }
@@ -172,32 +186,26 @@ namespace fuzz {
       if (timedout) {
         // need to wait one more time since the first signal sent to the process
         // SIGINT is used to help the child proc cleanup before being completely
-        // killed
+        // killed. Specifically used to make sure no semaphores are still held
+        // before exiting
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGINT);
-        waitpid(curr_pid, &status, 0);
+        if (waitpid(curr_pid, &status, 0) == -1) {
+          perror("Error waiting for child");
+        }
         should_continue = this_->timeout_cb(curr_pid, this_, &this_->tracee);
       } else {
         this_->last_crash.crashed = true;
-        if (exited) {
-          this_->last_crash.exit_status = exit_status;
+        if (sig_info.exited) {
+          this_->last_crash.exit_status = sig_info.exit_status;
           this_->last_crash.signal = 0;
-        } else if (stopped) {
+        } else if (sig_info.stopped) {
           this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = crash_sig;
-        } else if (signaled) {
+          this_->last_crash.signal = sig_info.stop_signal;
+        } else if (sig_info.signaled) {
           this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = term_sig;
+          this_->last_crash.signal = sig_info.term_signal;
         }
 
-        /*
-        printf("%d: Dealing with non-timedout, exited program\n", curr_pid);
-        printf("%d: status: %d\n", curr_pid, status);
-        printf("%d: WIFEXITED: %d, WEXITSTATUS: %d\n", curr_pid, exited, exit_status);
-        printf("%d: WIFSTOPPED: %d, WSTOPSIG: %d - %s\n", curr_pid, stopped, crash_sig, strsignal(crash_sig));
-        printf("%d: WIFSIGNALED: %d, WTERMSIG: %d - %s\n", curr_pid, signaled, term_sig, strsignal(term_sig));
-        */
-
-        this_->last_crash.signal = crash_sig;
         if (asan_info != NULL) {
           this_->last_crash.major_stack.clear();
           this_->last_crash.minor_stack.clear();
@@ -207,7 +215,7 @@ namespace fuzz {
           this_->last_crash.major_hash[0] = 0;
           this_->last_crash.minor_hash[0] = 0;
 
-          if (stopped) {
+          if (sig_info.stopped) {
             this_->CalcHashes();
           }
 
@@ -233,16 +241,17 @@ namespace fuzz {
 
       // default action is to kill the current process, and then restart it
       if (curr_pid > 0) {
-        kill(curr_pid, SIGKILL);
         ptrace(PTRACE_DETACH, curr_pid, NULL, NULL);
+        kill(curr_pid, SIGKILL);
+        waitpid(curr_pid, &status, 0);
       }
       this_->traced_pid = -1;
+      this_->tracee.Reset();
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
+      //printf("[[[%d:Traced(%d) NEW CHILD\n", this_->idx, this_->traced_pid);
     }
 
     this_->Stop();
-    //pthread_kill(this_->monitor_timeout_thread, SIGKILL);
-    pthread_join(this_->monitor_timeout_thread, NULL);
 
     return NULL;
   }

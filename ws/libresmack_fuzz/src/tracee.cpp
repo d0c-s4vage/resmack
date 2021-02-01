@@ -66,7 +66,7 @@ namespace fuzz {
     this->asan_info->exists = false;
 
     // set the iter_start to something to start with
-    this->IterStart();
+    *this->iter_start = -1.0f;
   }
 
   Tracee::~Tracee() {
@@ -194,7 +194,7 @@ namespace fuzz {
 
   void Tracee::Reset() {
     this->asan_info->exists = false;
-    this->IterStart();
+    *this->iter_start = -1.0f;
   }
 
 }

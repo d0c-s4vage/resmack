@@ -22,6 +22,8 @@ namespace fuzz {
     bool should_monitor_tracee;
     bool* should_run;
     bool timedout;
+    uint32_t idx;
+    std::mutex* timeout_lock;
   };
 
   class Tracer;
@@ -67,6 +69,7 @@ namespace fuzz {
     TraceExceptionCb exception_cb;
     TraceTimeoutCb timeout_cb;
     CrashInfo last_crash;
+    std::mutex timeout_lock;
 
     pthread_t monitor_thread;
     pthread_t monitor_timeout_thread;

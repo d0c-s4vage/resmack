@@ -25,6 +25,7 @@ namespace resmack {
     uint32_t ref_depth;
     uint32_t max_depth;
     Vector<Item*> post_items;
+    Vector<std::string> captures;
 
     const Vector<RandSnapshot>* replay;
     size_t replay_idx;

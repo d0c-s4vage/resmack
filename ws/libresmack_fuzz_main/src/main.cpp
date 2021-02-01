@@ -528,7 +528,7 @@ bool HandleTimeout(
   DEBUG_PRINT("%d: [[Handling timeout, getting corpus\n", pid);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
   DEBUG_PRINT("%d: [[Handling timeout, syncing corpus\n", pid);
-  corpus->Sync();
+  //corpus->Sync();
   DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
   DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
@@ -542,7 +542,7 @@ bool HandleException(
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
-  pid_t, // pid
+  pid_t pid, // pid
   int, // status
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
@@ -666,6 +666,7 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
   resmack::fuzz::utils::MAIN_PID = getpid();
+  DEBUG_PRINT("MAIN PID: %d\n", getpid());
 
   ParseOptions(argc, argv);
   if (OPTS.help) {
@@ -756,7 +757,14 @@ int main(int argc, char** argv) {
   STATUS_ARGS.should_run = true;
   STATUS_ARGS.feedback = &cov;
 
-  sem_init(&resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK, 0, 1);
+  sem_t* res;
+  char sem_name[0x100];
+  snprintf(sem_name, sizeof(sem_name), "resmack-sig_handler-%d", getpid());
+  if ((res = sem_open(sem_name, O_CREAT, 0660, 1)) == SEM_FAILED) {
+    perror("Could not create semaphore");
+    std::exit(1);
+  }
+  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK = res;
   resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED = true;
 
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
@@ -771,4 +779,6 @@ int main(int argc, char** argv) {
   MAKE_SIGNAL_SAFE(Final shutdown);
   STATUS_ARGS.should_run = false;
   pthread_kill(STATUS_THREAD, SIGKILL);
+
+  sem_close(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK);
 }

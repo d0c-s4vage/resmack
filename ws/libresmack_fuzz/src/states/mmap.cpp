@@ -97,7 +97,7 @@ namespace states {
     this->corpus.SyncCounters();
 
     if (resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED &&
-        sem_wait(&resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {
+        sem_wait(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {
       perror(" Error locking SIGNAL_HANDLER_LOCK");
       std::exit(1); 
     }
@@ -116,7 +116,7 @@ namespace states {
       std::exit(1);
     }
     if (resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED &&
-        sem_post(&resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {
+        sem_post(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {
       perror(" Error unlocking SIGNAL_HANDLER_LOCK");
       std::exit(1);
     }
