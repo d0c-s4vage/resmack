@@ -5,8 +5,10 @@
 #include <signal.h>
 #include <sys/ptrace.h>
 #include <unistd.h>
+#include <thread>
 
 #include "resmack/fuzz/tracee.hpp"
+#include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
@@ -20,26 +22,17 @@ namespace trace_targets {
   // install signal handler here to catch SIGINT --> set SHUTTING_DOWN = true
 
   void sigint_handler(int signum) {
-    DEBUG_PRINT("%d: >>Handling signal handler\n", getpid());
-    int sem_val;
-    if (sem_getvalue(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK, &sem_val) == -1) {
-      perror("Error getting value for SIGNAL_HANDLER_LOCK");
-      std::cerr << std::flush;
-      DEBUG_PRINT("%d: >>Error geting semaphore value!\n", getpid());
-    }
+    DEBUG_PRINT("%d:%d: >>Handling signal handler\n", getpid(), std::this_thread::get_id());
+
+    int sem_val = resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.GetValue();
     DEBUG_PRINT(
-      "%d: >>Waiting to acquire sig lock, curr val: %d, inited: %d\n",
+      "%d:%d: >>Waiting to acquire sig lock, curr val: %d\n",
       getpid(),
-      sem_val,
-      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED
+      std::this_thread::get_id(),
+      sem_val
     );
-    if (sem_wait(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK) == -1) {
-      perror("Error locking SIGNAL_HANDLER_LOCK, exiting up anyways");
-      std::cerr << std::flush;
-      DEBUG_PRINT("%d: >>Error waiting for semaphore!\n", getpid());
-      _exit(0); // no cleanup!
-    }
-    DEBUG_PRINT("%d: >>Acquired lock, exiting without cleanup\n", getpid());
+    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
+    DEBUG_PRINT("%d:%d: >>Acquired lock, exiting without cleanup\n", getpid(), std::this_thread::get_id());
     _exit(0); // no cleanup!
   }
 
@@ -49,17 +42,6 @@ namespace trace_targets {
   pid_t Fork::Spawn(Tracee* tracee) {
     pid_t res;
     if ((res = fork()) == 0) {
-      char sem_name[0x100];
-      snprintf(sem_name, sizeof(sem_name), "resmack-sig_handler-%d", getpid());
-      sem_t* res;
-      if ((res = sem_open(sem_name, O_CREAT, 0660, 1)) == SEM_FAILED) {
-        perror("Could not create semaphore");
-        std::exit(1);
-      }
-      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK = res;
-      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED = true;
-      DEBUG_PRINT("%d: INITED SIGLOCK: %d\n", getpid(), resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED);
-
       if (this->mute_io) {
         int fd = open("/dev/null", O_WRONLY);
         dup2(fd, 1);
@@ -69,7 +51,7 @@ namespace trace_targets {
 
       //signal(SIGINT, sigint_handler);
       if (signal(SIGINT, sigint_handler) == SIG_ERR) {
-        perror("  >Forkee: Could not install signal handler in forked process\n");
+        perror("  >Forkee: Could not install sig handler in forked process\n");
         std::cout << std::flush;
         std::cerr << std::flush;
       }
@@ -96,8 +78,6 @@ namespace trace_targets {
       pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
       pthread_join(thread, NULL);
 
-      sem_close(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK);
-
       _exit(0);
     }
 
@@ -106,7 +86,6 @@ namespace trace_targets {
   }
 
   void* Fork::SpawnThreadTarget(void* spawn_thread_args) {
-    DEBUG_PRINT("%d: SpawnThreadTarget: INITED SIGLOCK: %d\n", getpid(), resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED);
     //signal(SIGINT, SIG_IGN);
     // ignore SIGINT on this thread!
     sigset_t signal_mask;

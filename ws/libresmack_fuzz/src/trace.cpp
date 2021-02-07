@@ -39,7 +39,8 @@ namespace fuzz {
     traced_pid(-1),
     timeout(5.0),
     exception_cb(cb),
-    timeout_cb(timeout_cb)
+    timeout_cb(timeout_cb),
+    timeout_lock("TraceTimeoutLock", true)
   {}
   Tracer::~Tracer() {}
 
@@ -57,7 +58,7 @@ namespace fuzz {
 
     ptrace(PTRACE_DETACH, pid, NULL, NULL);
 
-    this->timeout_lock.lock();
+    this->timeout_lock.Acquire();
     pthread_join(this->monitor_timeout_thread, NULL);
 
     kill(pid, SIGINT);
@@ -88,7 +89,7 @@ namespace fuzz {
     float sleep_int_ms = 10.0f;
 
     while (*args->should_run) {
-      args->timeout_lock->lock();
+      args->timeout_lock->Acquire();
         pid_t pid = args->pid;
         //float sleep_ms = args->timeout * 1000.0f;
         float sleep_ms = 10.0f;
@@ -97,7 +98,7 @@ namespace fuzz {
         bool timedout = args->timedout;
         float timeout = args->timeout;
         int idx = args->idx;
-      args->timeout_lock->unlock();
+      args->timeout_lock->Release();
 
 
       if (pid == killed_pid) {
@@ -117,13 +118,16 @@ namespace fuzz {
 
         // we may have already signaled that it has been timedout
         if (!timedout && (iter_span > timeout || alive_span > alive_max)) {
+          args->timeout_lock->Acquire();
           args->timedout = true;
+          args->timeout_lock->Release();
           kill(pid, SIGINT);
           killed_pid = pid;
         }
       }
 
-      std::this_thread::sleep_for(std::chrono::milliseconds((int)sleep_ms));
+      auto ms = std::chrono::milliseconds((int)sleep_ms);
+      std::this_thread::sleep_for(ms);
     }
 
     return NULL;
@@ -145,9 +149,6 @@ namespace fuzz {
       .timeout_lock = &this_->timeout_lock,
     };
 
-    this_->tracee.Reset();
-    this_->traced_pid = this_->target->Spawn(&this_->tracee);
-
     pthread_create(
       &this_->monitor_timeout_thread,
       NULL,
@@ -156,21 +157,25 @@ namespace fuzz {
     );
 
     while (this_->should_run) {
-      this_->timeout_lock.lock();
+      this_->traced_pid = -1;
+      this_->tracee.Reset();
+      this_->traced_pid = this_->target->Spawn(&this_->tracee);
+
+      this_->timeout_lock.Acquire();
         pid_t curr_pid = this_->traced_pid;
         timeout_args.pid = this_->traced_pid;
         timeout_args.timedout = false;
         timeout_args.should_monitor_tracee = true;
-      this_->timeout_lock.unlock();
+      this_->timeout_lock.Release();
 
       if (waitpid(curr_pid, &status, 0) == -1) {
         perror("Error waiting for child");
       }
 
-      this_->timeout_lock.lock();
+      this_->timeout_lock.Acquire();
         timeout_args.should_monitor_tracee = false;
         bool timedout = timeout_args.timedout;
-      this_->timeout_lock.unlock();
+      this_->timeout_lock.Release();
 
       process_utils::LoadSignalInfo(status, &sig_info);
 
@@ -245,9 +250,6 @@ namespace fuzz {
         kill(curr_pid, SIGKILL);
         waitpid(curr_pid, &status, 0);
       }
-      this_->traced_pid = -1;
-      this_->tracee.Reset();
-      this_->traced_pid = this_->target->Spawn(&this_->tracee);
       //printf("[[[%d:Traced(%d) NEW CHILD\n", this_->idx, this_->traced_pid);
     }
 

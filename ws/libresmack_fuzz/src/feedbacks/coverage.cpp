@@ -50,10 +50,10 @@ namespace fuzz {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() {
+  Coverage::Coverage() : cov_lock("coverage-lock") {
     this->shared = mmap(
       NULL,
-      sizeof(sem_t) + NUM_COV_FLAGS * sizeof(uint32_t),
+      NUM_COV_FLAGS * sizeof(uint32_t),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
@@ -65,14 +65,9 @@ namespace fuzz {
       std::exit(1);
     }
 
-    this->cov_lock = (sem_t*)this->shared;
-    if (sem_init(this->cov_lock, 0, 1)) {
-      perror("Could not init semaphore for coverage sharing");
-      std::exit(1);
-    }
-
-    SHARED_COV_FLAGS = (uint32_t*)((char*)this->shared + sizeof(sem_t));
+    SHARED_COV_FLAGS = (uint32_t*)this->shared;
     COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
+    memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
     memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
   }
 
@@ -111,12 +106,12 @@ namespace fuzz {
   }
 
   void Coverage::Sync() {
-    WITH_LOCK(this->cov_lock, Syncing coverage flags, {
-      for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
-        SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
-      }
-      memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
-    });
+    this->cov_lock.Acquire();
+    for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
+      SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
+    }
+    memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
+    this->cov_lock.Release();
   }
 
   FeedbackStats Coverage::GetStats() {

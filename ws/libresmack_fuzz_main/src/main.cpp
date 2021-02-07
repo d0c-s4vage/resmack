@@ -307,14 +307,28 @@ void PrintStatus(
   bool show_stats = args->show_stats;
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
-  corpus->Sync();
+  printf("%d:%d: Syncing feedback\n", getpid(), std::this_thread::get_id());
   args->feedback->Sync();
+  printf("%d:%d: Done syncing feedback\n", getpid(), std::this_thread::get_id());
+  /*
+  corpus->Sync();
+  */
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   end = std::chrono::high_resolution_clock::now();
   uint64_t num_iters = state->GetNumIterations();
   uint64_t session_iters = num_iters - start_iters;
   std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+  printf(
+    "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | Feedback: %s | %0.2f s\n",
+    num_iters,
+    (float)session_iters / span.count(),
+    state->GetNumCrashes(),
+    corpus->NumItemsRaw(),
+    args->feedback->GetSummary().c_str(),
+    span.count()
+  );
+  /*
   printf(
     "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu (D:%05.2f,C:%05.2f) | Feedback: %s | %0.2f s\n",
     num_iters,
@@ -326,6 +340,7 @@ void PrintStatus(
     args->feedback->GetSummary().c_str(),
     span.count()
   );
+  */
 
   if (!show_stats) {
     return;
@@ -757,16 +772,6 @@ int main(int argc, char** argv) {
   STATUS_ARGS.should_run = true;
   STATUS_ARGS.feedback = &cov;
 
-  sem_t* res;
-  char sem_name[0x100];
-  snprintf(sem_name, sizeof(sem_name), "resmack-sig_handler-%d", getpid());
-  if ((res = sem_open(sem_name, O_CREAT, 0660, 1)) == SEM_FAILED) {
-    perror("Could not create semaphore");
-    std::exit(1);
-  }
-  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK = res;
-  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK_INITED = true;
-
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
   signal(SIGINT, sigint_handler);
 
@@ -776,9 +781,7 @@ int main(int argc, char** argv) {
 
   SHUTTING_DOWN = true;
 
-  MAKE_SIGNAL_SAFE(Final shutdown);
+  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
   STATUS_ARGS.should_run = false;
   pthread_kill(STATUS_THREAD, SIGKILL);
-
-  sem_close(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK);
 }

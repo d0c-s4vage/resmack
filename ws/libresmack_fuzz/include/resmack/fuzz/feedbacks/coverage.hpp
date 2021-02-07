@@ -6,6 +6,7 @@
 #include <semaphore.h>
 
 #include "resmack/fuzz/feedback.hpp"
+#include "resmack/fuzz/lock.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -17,7 +18,7 @@ namespace fuzz {
     size_t hash;
     void* shared;
     // only updated when something new is found
-    sem_t* cov_lock;
+    Lock cov_lock;
 
    public:
     Coverage();
