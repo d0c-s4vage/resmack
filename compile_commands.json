@@ -226,6 +226,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/ipc/locked_shared_mem.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/locked_shared_mem.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/locked_shared_mem.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/lock.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/lock.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/lock.cpp"
 },
@@ -298,6 +303,11 @@
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
   "command": "/usr/bin/clang++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address   -std=gnu++2a -o CMakeFiles/test_libresmack_fuzz.dir/test_lock.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_lock.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_lock.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
+  "command": "/usr/bin/clang++   -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address   -std=gnu++2a -o CMakeFiles/test_libresmack_fuzz.dir/test_locked_shared_mem.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_locked_shared_mem.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/test/test_locked_shared_mem.cpp"
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",

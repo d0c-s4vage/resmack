@@ -28,7 +28,8 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/corpora/*.cpp
     ${PROJECT_SOURCE_DIR}/src/corpora/*.hpp
     ${PROJECT_SOURCE_DIR}/src/trace_targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
+    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/ipc/*.cpp)
 
 add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
 
