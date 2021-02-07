@@ -8,6 +8,7 @@
 #include "resmack/items/opt.hpp"
 #include "resmack/items/ref.hpp"
 #include "resmack/items/scope.hpp"
+#include "resmack/items/flush.hpp"
 #include "resmack/items/pre.hpp"
 #include "resmack/items/post.hpp"
 #include "resmack/items/capture.hpp"

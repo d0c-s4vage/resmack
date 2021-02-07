@@ -87,17 +87,22 @@ namespace corpora {
       bool descendant_of_last
     );
     virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
-    Vector<RandSnapshot>* GetItem(Rand* rand);
+    Vector<RandSnapshot>* GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2);
     void Sync();
     void SyncCounters();
     void SyncCountersInner();
     bool SeenFeedback(size_t feedback_key) { return this->seen_keys.contains(feedback_key); }
     size_t NumItems() { return this->snapshots.size(); }
+    float GetUsedCapacity() {
+      size_t used = (char*)this->next_item - (char*)this->corpus_map;
+      return (float)used / (float)this->max_corpus_size;
+    };
     size_t NumItemsRaw() { return this->meta->num_entries; }
     size_t ItersSinceNewItem() {
       return *this->curr_iter_count - this->last_discovered_iteration;
     }
     void IncLastItemCrashes();
+    void IncUnwanted(size_t one_based_idx);
 
    private:
     void AddRandSnapshotInner(

@@ -52,7 +52,7 @@ class Corpus {
     bool descendant_of_last
   ) = 0;
   virtual const Vector<CorpusEntry>* GetItems() = 0;
-  virtual Vector<RandSnapshot>* GetItem(Rand* rand) = 0;
+  virtual Vector<RandSnapshot>* GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2) = 0;
   /**
    * Intended to be called on intervals to do "processing" (whatever that means
    * to the specific corpus implementation
@@ -63,6 +63,8 @@ class Corpus {
   virtual bool SeenFeedback(size_t key) = 0;
   virtual size_t ItersSinceNewItem() = 0;
   virtual void IncLastItemCrashes() = 0;
+  virtual void IncUnwanted(size_t one_based_idx) = 0;
+  virtual float GetUsedCapacity() = 0;
 };
 
 }

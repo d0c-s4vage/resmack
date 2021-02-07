@@ -19,7 +19,7 @@ namespace items {
   //     CAPTURED
   //   )
   //
-  Vector<std::string> CAPTURES;
+  // The build context has a Vector<std::string> captures field
 
   // --------------------------------------------------------------------------
   // CAPTURE ------------------------------------------------------------------
@@ -43,10 +43,10 @@ namespace items {
     this->item_->Build(ctx);
     size_t len = ctx->output->size() - start_pos;
 
-    while (CAPTURES.size() <= ctx->ref_depth) {
-      CAPTURES.emplace_back();
+    while (ctx->captures.size() <= ctx->ref_depth) {
+      ctx->captures.emplace_back();
     }
-    CAPTURES[ctx->ref_depth].assign(ctx->output->data() + start_pos, len);
+    ctx->captures[ctx->ref_depth].assign(ctx->output->data() + start_pos, len);
   }
 
   // --------------------------------------------------------------------------
@@ -58,7 +58,7 @@ namespace items {
   }
 
   void Captured::Build(BuildContext* ctx) {
-    *(ctx->output) += CAPTURES[ctx->ref_depth];
+    *(ctx->output) += ctx->captures[ctx->ref_depth];
   }
 }
 }

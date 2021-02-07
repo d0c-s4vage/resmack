@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <sanitizer/asan_interface.h>
+#include <iostream>
 
 #include "asan_util.hpp"
 

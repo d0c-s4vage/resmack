@@ -1,5 +1,5 @@
-#ifndef RESMACK_UTILS_HPP
-#define RESMACK_UTILS_HPP
+#ifndef RESMACK_UTILS_H
+#define RESMACK_UTILS_H
 
 #include <stdint.h>
 #include <string>

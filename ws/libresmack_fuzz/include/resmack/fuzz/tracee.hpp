@@ -1,7 +1,12 @@
 #ifndef RESMACK_FUZZ_TRACEE_H
 #define RESMACK_FUZZ_TRACEE_H
 
+#include <atomic>
+#include <chrono>
+#include <mutex>
 #include <inttypes.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/serialized.hpp"
@@ -19,9 +24,12 @@ class Tracee {
   // mmap'd shared space for IPC communication
   void* shared;
 
+  std::mutex iter_mutex;
+
   // we don't need semaphores to guard these since they are ony ever written to
   // when the tracee is running, and only read when the tracee is paused
-  size_t* shared_last_corpus_index;
+  size_t* shared_last_corpus_index1;
+  size_t* shared_last_corpus_index2;
   size_t* shared_last_max_depth;
   // boolean, uint32_t to help remember to align on 4-byte boundaries
   uint32_t* shared_last_used_corpus; 
@@ -31,6 +39,7 @@ class Tracee {
   size_t asan_shared_max_size;
   void* asan_shared;
   ser::AsanInfo* asan_info;
+  float* iter_start;
 
  public:
   Tracee(uint32_t idx);
@@ -45,10 +54,13 @@ class Tracee {
     return this->asan_info;
   }
 
-  void SaveLastCorpusInfo(bool used_corpus, size_t last_corpus_idx, size_t max_depth);
-  size_t GetLastCorpusIndex() { return *this->shared_last_corpus_index; }
+  void SaveLastCorpusInfo(bool used_corpus, size_t last_corpus_idx1, size_t last_corpus_idx2, size_t max_depth);
+  size_t GetLastCorpusIndex1() { return *this->shared_last_corpus_index1; }
+  size_t GetLastCorpusIndex2() { return *this->shared_last_corpus_index2; }
   size_t GetLastMaxDepth() { return *this->shared_last_max_depth; }
   bool GetLastUsedCorpus() { return (bool)*this->shared_last_used_corpus; }
+  void IterStart();
+  float GetIterStart();
 
   void SaveLastReplay(Vector<RandSnapshot>* replay);
   void LoadLastReplay(Vector<RandSnapshot>* dest);

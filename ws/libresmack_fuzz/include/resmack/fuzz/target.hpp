@@ -30,6 +30,7 @@ namespace fuzz {
     // timeout
     bool timedout;
     bool crashed;
+    bool valid;
 
 #define STAT(NAME) \
   std::chrono::high_resolution_clock::time_point start_##NAME; \

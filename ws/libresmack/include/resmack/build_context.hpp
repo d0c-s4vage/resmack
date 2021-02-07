@@ -21,10 +21,11 @@ namespace resmack {
     Rules* rules;
     std::string* pre_output;
     std::string* output;
-    Vector<Item*> post_items;
     Rand* rand;
     uint32_t ref_depth;
     uint32_t max_depth;
+    Vector<Item*> post_items;
+    Vector<std::string> captures;
 
     const Vector<RandSnapshot>* replay;
     size_t replay_idx;
@@ -43,6 +44,7 @@ namespace resmack {
     void PrintDebugIo();
     void Message(std::string msg);
     void FlushPrePost();
+    void AddPostItem(Item* item);
   };
 
 }

@@ -38,6 +38,8 @@ namespace fuzz {
 
     size_t num_to_mutate, idx_to_mutate;
 
+    if (orig_ss->size() <= 1) { return; }
+
     // skip the first index, and only mutate *ONE* at a time. This is also the
     // same calculation for choosing the number of indices to mutate
     idx_to_mutate = num_to_mutate = (rand->Next() % (orig_ss->size() - 1)) + 1;

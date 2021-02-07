@@ -36,6 +36,8 @@ namespace corpora {
     this->next_item_index = 0;
     this->first_item = NULL;
     this->next_item = NULL;
+    this->last_item1_one_based_idx = 0;
+    this->last_item2_one_based_idx = 0;
 
     this->meta = (ser::CorpusMetadata*)this->corpus_map;
 
@@ -75,13 +77,17 @@ namespace corpora {
     }
 
     WITH_LOCK(this->corpus_lock, Maybe adding snapshot, {
+      DEBUG_PRINT("%d: SyncInner()\n", getpid());
       this->SyncInner();
+      DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
 
       if (this->SeenFeedback(stats.key)) {
+        DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
         res = false;
         break;
       }
 
+      DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
     });
 
@@ -160,7 +166,7 @@ namespace corpora {
       );
     }
 
-    this->last_updated_seq = this->last_updated_seq = ++this->meta->updated_seq;
+    this->last_updated_seq = ++this->meta->updated_seq;
     this->next_item_index = ++this->meta->num_entries;
     // gets incremented to point at the "next" empty spot after the for loop
     this->next_item = (ser::CorpusItemHeader*)((char*)curr_state);
@@ -269,7 +275,7 @@ namespace corpora {
 
     ser::CorpusItemHeader* curr = this->first_item;
     size_t snapshot_idx = 0;
-    for (; snapshot_idx < this->meta->num_entries; snapshot_idx++) {
+    for (; snapshot_idx < this->snapshots.size(); snapshot_idx++) {
       CorpusEntry& entry = this->snapshots[snapshot_idx];
       if (~((uint64_t)0) - curr->mutations_since_offspring < entry.mutations_since_offspring_new) {
         curr->mutations_since_offspring = ~((uint64_t)0);
@@ -379,7 +385,7 @@ namespace corpora {
     return this_->most_descendants_desc[this_->most_descendants_desc.size() - rand_top_ten - 1];
   }
 
-  Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand) {
+  Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2) {
     if (this->strat_handlers.size() == 0) {
       this->SetStrats(STRAT_RAND | STRAT_MOST_RECENT | STRAT_LEAST_DIRECT_DESCENDANTS);
     }
@@ -396,8 +402,8 @@ namespace corpora {
       this, rand, rand_top_ten
     );
 
-    this->last_item1_one_based_idx = rand_idx + 1;
-    this->last_item2_one_based_idx = 0;
+    *last_idx1 = this->last_item1_one_based_idx = rand_idx + 1;
+    *last_idx2 = this->last_item2_one_based_idx = 0;
 
     CorpusEntry* entry = &this->snapshots[rand_idx];
     entry->mutations_since_offspring_new++;
@@ -426,6 +432,10 @@ namespace corpora {
       parent_idx -= 1;
 
       CorpusEntry* parent = &this->snapshots[parent_idx];
+      if (parent == entry) {
+        DEBUG_PRINT("%d: PARENT WAS ENTRY! idx: %d\n", getpid(), parent_idx);
+        break;
+      }
       ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
       if (level == 0) {
         // a new offspring was found! reset back to 0
@@ -456,6 +466,25 @@ namespace corpora {
         this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
         this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
       }
+    });
+  }
+
+  void MmapCorpus::IncUnwanted(size_t one_based_idx) {
+    if (one_based_idx == 0) { return; }
+
+    DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
+    WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
+      DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
+      ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
+
+      //DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
+      //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
+
+      DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
+      header->mutations_since_offspring += 5000;
+
+      DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
+      this->last_updated_seq = ++this->meta->updated_seq;
     });
   }
 

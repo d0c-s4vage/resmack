@@ -59,7 +59,8 @@ namespace fuzz {
     corpus.Sync();
     EXPECT_EQ(corpus.NumItems(), 1u);
 
-    Vector<RandSnapshot>* fetchedSnapshots = corpus.GetItem(&rand);
+    size_t idx1, idx2;
+    Vector<RandSnapshot>* fetchedSnapshots = corpus.GetItem(&rand, &idx1, &idx2);
     EXPECT_EQ(fetchedSnapshots->size(), 2u);
     EXPECT_EQ(fetchedSnapshots->size(), snapshots.size());
 

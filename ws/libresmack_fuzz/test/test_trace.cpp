@@ -14,24 +14,24 @@ namespace fuzz {
 
   TEST(Trace, CatchesCrashes) {
     trace_targets::Fork fork_target(true, [](Tracee* tracee) {
-      tracee->SaveLastCorpusInfo(true, 1337, 1338);
+      tracee->SaveLastCorpusInfo(true, 1337, 1338, 1339);
       raise(SIGSEGV);
     });
 
     Tracer t(
       &fork_target,
-      [](pid_t pid, int status, Tracer* tracer, Tracee* tracee) -> bool {
-        UNUSED(pid); UNUSED(status); UNUSED(tracer); UNUSED(tracee);
-
+      [](pid_t, int, Tracer*, Tracee*) -> bool {
         return false;
       },
+      [](pid_t, Tracer*, Tracee*) -> bool { return false; },
       0
     );
 
     t.Trace();
     t.Join();
 
-    EXPECT_EQ(t.GetCrashInfo()->signal, SIGSEGV);
+    EXPECT_EQ(t.GetCrashInfo()->crashed, true);
+    EXPECT_EQ(t.GetCrashInfo()->exit_status, 1);
   }
 
 }

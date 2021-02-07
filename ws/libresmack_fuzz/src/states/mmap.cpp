@@ -16,7 +16,7 @@ namespace fuzz {
 namespace states {
 
   MmapState::MmapState(const char* state_path) : state_path(state_path) {
-    this->state_max_size = 0x400 * 0x400 * 100; // 100 MB
+    this->state_max_size = 0x400 * 0x400 * 200; // 100 MB
     struct stat info;
     bool is_new = false;
 
@@ -96,6 +96,7 @@ namespace states {
   void MmapState::SyncStats(TargetStats* stats) {
     this->corpus.SyncCounters();
 
+    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
     if (sem_wait(this->state_lock) == -1) {
       perror("SyncStats (sem_wait)");
       std::exit(1);
@@ -110,6 +111,7 @@ namespace states {
       perror("SyncStats (sem_post)");
       std::exit(1);
     }
+    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();
   }
 
   size_t MmapState::GetNumIterations() {

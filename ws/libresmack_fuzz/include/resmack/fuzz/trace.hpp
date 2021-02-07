@@ -8,12 +8,24 @@
 
 #include "resmack/rand.hpp"
 #include "resmack/types.hpp"
+#include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/serialized.hpp"
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_target.hpp"
 
 namespace resmack {
 namespace fuzz {
+
+  struct MonitorTimeoutArgs {
+    pid_t pid;
+    float timeout;
+    Tracee* tracee;
+    bool should_monitor_tracee;
+    bool* should_run;
+    bool timedout;
+    uint32_t idx;
+    Lock* timeout_lock;
+  };
 
   class Tracer;
 
@@ -31,9 +43,12 @@ namespace fuzz {
   //
   using TraceExceptionCb =
     std::function<bool(pid_t pid, int status, Tracer*, Tracee*)>;
+  using TraceTimeoutCb =
+    std::function<bool(pid_t pid, Tracer*, Tracee*)>;
 
   struct CrashInfo {
     bool crashed;
+    int exit_status;
     int signal;
     std::string major_stack;
     std::string minor_stack;
@@ -41,6 +56,7 @@ namespace fuzz {
     char major_hash[41];
     // all frames
     char minor_hash[41];
+    Vector<std::string> stack_trace;
   };
 
   class Tracer {
@@ -50,13 +66,22 @@ namespace fuzz {
     TraceTarget* target;
     pid_t traced_pid;
     bool should_run;
+    float timeout;
     TraceExceptionCb exception_cb;
+    TraceTimeoutCb timeout_cb;
     CrashInfo last_crash;
+    Lock timeout_lock;
 
     pthread_t monitor_thread;
+    pthread_t monitor_timeout_thread;
 
    public:
-    Tracer(TraceTarget* target, TraceExceptionCb cb, uint32_t idx);
+    Tracer(
+      TraceTarget* target,
+      TraceExceptionCb cb,
+      TraceTimeoutCb timeout_cb,
+      uint32_t idx
+    );
     ~Tracer();
 
     uint32_t GetIdx() { return this->idx; }
@@ -66,6 +91,7 @@ namespace fuzz {
     CrashInfo* GetCrashInfo() { return &this->last_crash; }
    
     static void* MonitorTracee(void* this_arg);
+    static void* MonitorTraceeTimeout(void* this_arg);
    
    private:
     void CalcHashes();

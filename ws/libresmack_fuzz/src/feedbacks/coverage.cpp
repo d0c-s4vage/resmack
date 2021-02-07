@@ -2,15 +2,18 @@
 #include <fcntl.h>
 #include <iostream>
 #include <stdio.h>
+#include <semaphore.h>
 #include <sys/mman.h>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
+#include "resmack/fuzz/ipc_util.hpp"
 
 namespace resmack {
 namespace fuzz {
 
   static size_t GUARD_COUNTER = 0;
   static uint32_t* COV_FLAGS = NULL;
+  static uint32_t* SHARED_COV_FLAGS = NULL;
   static size_t NUM_COV_FLAGS;
   static bool IS_NEW = false;
 
@@ -34,8 +37,8 @@ namespace fuzz {
     size_t bit = (1 << bit_no);
 
     if (COV_FLAGS[uint_no] & bit) { return; }
-
     COV_FLAGS[uint_no] |= bit;
+
     IS_NEW = true;
   }
 
@@ -47,7 +50,7 @@ namespace fuzz {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() {
+  Coverage::Coverage() : cov_lock("coverage-lock") {
     this->shared = mmap(
       NULL,
       NUM_COV_FLAGS * sizeof(uint32_t),
@@ -62,11 +65,15 @@ namespace fuzz {
       std::exit(1);
     }
 
-    COV_FLAGS = (uint32_t*)this->shared;
+    SHARED_COV_FLAGS = (uint32_t*)this->shared;
+    COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
+    memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
   }
 
   Coverage::~Coverage() {
     munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
+    free(COV_FLAGS);
   }
 
   std::string Coverage::GetSummary() {
@@ -98,10 +105,23 @@ namespace fuzz {
     }
   }
 
+  void Coverage::Sync() {
+    this->cov_lock.Acquire();
+    for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
+      SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
+    }
+    memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
+    this->cov_lock.Release();
+  }
+
   FeedbackStats Coverage::GetStats() {
     size_t num_bits = 0;
     for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
       num_bits += _NumBits(COV_FLAGS[idx]);
+    }
+
+    if (IS_NEW) {
+      this->Sync();
     }
 
     return {

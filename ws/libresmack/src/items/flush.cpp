@@ -22,7 +22,7 @@ namespace items {
   }
 
   void Flushed::Build(BuildContext* ctx) {
-    size_t curr_post_item_idx = ctx->post_items.size();
+    size_t next_item_idx = ctx->post_items.size();
 
     std::string tmp_output;
     std::string tmp_pre_output;
@@ -41,13 +41,10 @@ namespace items {
     *ctx->output += tmp_pre_output;
     *ctx->output += tmp_output;
 
-    for (; curr_post_item_idx < ctx->post_items.size(); curr_post_item_idx++) {
-      ctx->post_items[curr_post_item_idx]->Build(ctx);
+    for (size_t idx = next_item_idx; idx < ctx->post_items.size(); idx++) {
+      ctx->post_items[idx]->Build(ctx);
     }
-    ctx->post_items.erase(
-      ctx->post_items.begin() + curr_post_item_idx - 1,
-      ctx->post_items.end()
-    );
+    ctx->post_items.resize(next_item_idx);
   }
 
   size_t Flushed::CalcRefDepth(calc::RefDepth* calc) {

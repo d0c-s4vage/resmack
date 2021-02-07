@@ -1,8 +1,7 @@
 #include "fmt/compile.h"
 
 #include "resmack/items/int.hpp"
-
-#include "../utils.hpp"
+#include "resmack/utils.hpp"
 
 namespace resmack {
 namespace items {
