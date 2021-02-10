@@ -3,44 +3,64 @@
 
 #include <functional>
 
+#include "resmack/fuzz/ipc/locked_shared_mem.hpp"
 #include "resmack/types.hpp"
 
 namespace resmack {
 namespace fuzz {
 
-  using TargetHookCb = std::function<void()>;
+  using TargetHookGenericCb = std::function<void()>;
+  using TargetHookSizedCb = std::function<size_t()>;
+  using TargetHookPidCb = std::function<void(pid_t)>;
+  using TargetHookIpcMemCb = std::function<void(ipc::LockedSharedMem*)>;
+  using TargetHookIpcMemPidCb =
+    std::function<void(ipc::LockedSharedMem *, pid_t)>;
 
   class TargetHooks {
    private:
-    Vector<TargetHookCb> pre_start;
-    Vector<TargetHookCb> post_start;
+    Vector<TargetHookSizedCb> ipc_size;
+    Vector<TargetHookIpcMemCb> ipc_init;
 
-    Vector<TargetHookCb> pre_test;
-    Vector<TargetHookCb> post_test;
+    Vector<TargetHookIpcMemCb> pre_start;
+    Vector<TargetHookIpcMemCb> pre_start_in_target;
+    Vector<TargetHookIpcMemPidCb> post_start;
 
-    Vector<TargetHookCb> pre_stop;
-    Vector<TargetHookCb> post_stop;
+    Vector<TargetHookIpcMemCb> pre_test;
+    Vector<TargetHookIpcMemCb> post_test;
+
+    Vector<TargetHookIpcMemPidCb> pre_stop;
+    Vector<TargetHookIpcMemPidCb> post_stop;
 
    public:
     TargetHooks();
 
-    TargetHooks* AddPreStart(TargetHookCb call_back);
-    TargetHooks* AddPostStart(TargetHookCb call_back);
+    TargetHooks* AddIpcSize(TargetHookSizedCb call_back);
+    TargetHooks* AddIpcInit(TargetHookIpcMemCb call_back);
 
-    TargetHooks* AddPreTest(TargetHookCb call_back);
-    TargetHooks* AddPostTest(TargetHookCb call_back);
+    TargetHooks* AddPreStart(TargetHookIpcMemCb call_back);
+    TargetHooks* AddPreStartInTarget(TargetHookIpcMemCb call_back);
+    TargetHooks *AddPostStart(TargetHookIpcMemPidCb call_back);
 
-    TargetHooks* AddPreStop(TargetHookCb call_back);
-    TargetHooks* AddPostStop(TargetHookCb call_back);
+    TargetHooks* AddPreTest(TargetHookIpcMemCb call_back);
+    TargetHooks* AddPostTest(TargetHookIpcMemCb call_back);
 
-    void ExecPreStart();
-    void ExecPostStart();
+    TargetHooks* AddPreStop(TargetHookIpcMemPidCb call_back);
+    TargetHooks* AddPostStop(TargetHookIpcMemPidCb call_back);
 
-    void ExecPreTest();
-    void ExecPostTest();
+    size_t ExecAndSumIpcSize();
+    void ExecIpcInit(ipc::LockedSharedMem* ipc_mem);
 
-    void ExecPreStop();
-    void ExecPostStop();
+    void ExecPreStart(ipc::LockedSharedMem* ipc_mem);
+    void ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem);
+    void ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid);
+
+    // don't need the pid for both of these since they run *IN* the
+    // target process - can simply do getpid() if it's needed
+    void ExecPreTest(ipc::LockedSharedMem* ipc_mem);
+    void ExecPostTest(ipc::LockedSharedMem* ipc_mem);
+
+    void ExecPreStop(ipc::LockedSharedMem* ipc_mem, pid_t pid);
+    void ExecPostStop(ipc::LockedSharedMem* ipc_mem, pid_t pid);
   };
 
 }

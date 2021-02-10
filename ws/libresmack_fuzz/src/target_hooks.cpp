@@ -1,67 +1,100 @@
 #include "resmack/fuzz/target_hooks.hpp"
+#include "resmack/fuzz/ipc/locked_shared_mem.hpp"
 
 namespace resmack {
 namespace fuzz {
 
   TargetHooks::TargetHooks() {}
 
-  TargetHooks* TargetHooks::AddPreStart(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddIpcSize(TargetHookSizedCb callback) {
+    this->ipc_size.push_back(callback);
+    return this;
+  }
+  TargetHooks* TargetHooks::AddIpcInit(TargetHookIpcMemCb callback) {
+    this->ipc_init.push_back(callback);
+    return this;
+  }
+
+  TargetHooks* TargetHooks::AddPreStart(TargetHookIpcMemCb callback) {
     this->pre_start.push_back(callback);
     return this;
   }
-  TargetHooks* TargetHooks::AddPostStart(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddPreStartInTarget(TargetHookIpcMemCb callback) {
+    this->pre_start_in_target.push_back(callback);
+    return this;
+  }
+  TargetHooks* TargetHooks::AddPostStart(TargetHookIpcMemPidCb callback) {
     this->post_start.push_back(callback);
     return this;
   }
 
-  TargetHooks* TargetHooks::AddPreTest(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddPreTest(TargetHookIpcMemCb callback) {
     this->pre_test.push_back(callback);
     return this;
   }
-  TargetHooks* TargetHooks::AddPostTest(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddPostTest(TargetHookIpcMemCb callback) {
     this->post_test.push_back(callback);
     return this;
   }
 
-  TargetHooks* TargetHooks::AddPreStop(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddPreStop(TargetHookIpcMemPidCb callback) {
     this->pre_stop.push_back(callback);
     return this;
   }
-  TargetHooks* TargetHooks::AddPostStop(TargetHookCb callback) {
+  TargetHooks* TargetHooks::AddPostStop(TargetHookIpcMemPidCb callback) {
     this->post_stop.push_back(callback);
     return this;
   }
 
-  void TargetHooks::ExecPreStart() {
+  size_t TargetHooks::ExecAndSumIpcSize() {
+    size_t res = 0;
+    for (auto cb : this->ipc_size) {
+      res += cb();
+    }
+    return res;
+  }
+
+  void TargetHooks::ExecIpcInit(ipc::LockedSharedMem* ipc_mem) {
+    for (auto cb : this->ipc_init) {
+      cb(ipc_mem);
+    }
+  }
+
+  void TargetHooks::ExecPreStart(ipc::LockedSharedMem* ipc_mem) {
     for (auto cb : this->pre_start) {
-      cb();
+      cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPostStart() {
+  void TargetHooks::ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem) {
+    for (auto cb : this->pre_start) {
+      cb(ipc_mem);
+    }
+  }
+  void TargetHooks::ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
     for (auto cb : this->post_start) {
-      cb();
+      cb(ipc_mem, pid);
     }
   }
 
-  void TargetHooks::ExecPreTest() {
+  void TargetHooks::ExecPreTest(ipc::LockedSharedMem* ipc_mem) {
     for (auto cb : this->pre_test) {
-      cb();
+      cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPostTest() {
+  void TargetHooks::ExecPostTest(ipc::LockedSharedMem* ipc_mem) {
     for (auto cb : this->post_test) {
-      cb();
+      cb(ipc_mem);
     }
   }
 
-  void TargetHooks::ExecPreStop() {
+  void TargetHooks::ExecPreStop(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
     for (auto cb : this->pre_stop) {
-      cb();
+      cb(ipc_mem, pid);
     }
   }
-  void TargetHooks::ExecPostStop() {
+  void TargetHooks::ExecPostStop(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
     for (auto cb : this->post_stop) {
-      cb();
+      cb(ipc_mem, pid);
     }
   }
 

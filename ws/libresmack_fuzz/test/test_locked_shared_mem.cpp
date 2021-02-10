@@ -14,18 +14,20 @@ namespace ipc {
 
   TEST(LockedSharedMem, WorksAcrossForks) {
     LockedSharedMem shared_mem(0x100);
-    uint32_t* counter1 = shared_mem.GetPtr<uint32_t>();
-    uint32_t* counter2 = shared_mem.GetNextPtrAfter<uint32_t>(sizeof(uint32_t));
-    shared_mem.Acquire();
+    EXPECT_EQ(shared_mem.DataSize(), 0x100u);
+
+    uint32_t* counter1 = shared_mem.GetNextPtrFor<uint32_t>();
+    uint32_t* counter2 = shared_mem.GetNextPtrFor<uint32_t>();
+    shared_mem.Lock();
 
     pid_t fork_res = fork();
     EXPECT_NE(fork_res, -1);
 
     if (fork_res == 0) {
-      shared_mem.Acquire();
+      shared_mem.Lock();
       *counter1 += 1;
       *counter2 += 1;
-      shared_mem.Release();
+      shared_mem.Unlock();
       std::exit(0);
     }
 
@@ -34,7 +36,7 @@ namespace ipc {
     // the increments shouldn't be happening until after the release
     *counter1 = 10;
     *counter2 = 110;
-    shared_mem.Release();
+    shared_mem.Unlock();
 
     waitpid(fork_res, NULL, 0);
     EXPECT_EQ(*counter1, 11);
