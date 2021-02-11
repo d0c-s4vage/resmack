@@ -10,27 +10,30 @@ namespace resmack {
 namespace fuzz {
 namespace targets {
 
+  struct IpcInfo {
+    bool pre_started;
+    uint32_t test_count;
+  };
+
   TEST(NewDirectTarget, StartsAndStops) {
     TargetHooks hooks;
 
-    bool* pre_started;
-    uint32_t* test_count;
+    IpcInfo* info;
 
     (&hooks)
-      ->AddIpcSize([]() -> size_t { return sizeof(bool) + sizeof(test_count); })
-      ->AddIpcInit([&pre_started, &test_count](ipc::LockedSharedMem* mem) {
-        pre_started = mem->GetNextPtrFor<bool>();
-        test_count = mem->GetNextPtrFor<uint32_t>();
-        *test_count = 0;
+      ->AddIpcSize([]() -> size_t { return sizeof(bool) + sizeof(IpcInfo); })
+      ->AddIpcInit([&info](ipc::LockedSharedMem* mem) {
+        info = mem->GetNextPtrFor<IpcInfo>();
+        info->test_count = 0;
       })
-      ->AddPreStartInTarget([&pre_started](ipc::LockedSharedMem* mem) {
-          *pre_started = true;
+      ->AddPreStartInTarget([&info](ipc::LockedSharedMem* mem) {
+          info->pre_started = true;
       })
       ;
 
-    auto cb = [&test_count](const char* data, size_t) -> int {
-      *test_count += 1;
-      return *test_count;
+    auto cb = [&info](const char* data, size_t) -> int {
+      info->test_count += 1;
+      return info->test_count;
     };
 
     std::string input = "input_data";
@@ -52,6 +55,7 @@ namespace targets {
     //printf("%0.03f iters/s\n", (double)iters / span.count());
 
     EXPECT_EQ(res, iters);
+    EXPECT_EQ(info->test_count, iters);
     target.Stop();
   }
 

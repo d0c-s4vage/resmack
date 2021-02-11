@@ -14,20 +14,6 @@ namespace resmack {
 namespace fuzz {
 namespace corpora {
 
-  enum CorpusStrat : uint32_t {
-    STRAT_RAND                     = 0b1,
-    STRAT_MOST_FEEDBACK            = 0b10,
-    STRAT_LEAST_FEEDBACK           = 0b100,
-    STRAT_MOST_RECENT              = 0b1000,
-    STRAT_LEAST_RECENT             = 0b10000,
-    STRAT_MOST_ANCESTORS           = 0b100000,
-    STRAT_LEAST_ANCESTORS          = 0b1000000,
-    STRAT_MOST_DIRECT_DESCENDANTS  = 0b10000000,
-    STRAT_LEAST_DIRECT_DESCENDANTS = 0b100000000,
-    STRAT_MOST_DESCENDANTS         = 0b1000000000,
-    STRAT_LEAST_DESCENDANTS        = 0b10000000000,
-  };
-
   class MmapCorpus : public Corpus {
    private:
     void* corpus_map;

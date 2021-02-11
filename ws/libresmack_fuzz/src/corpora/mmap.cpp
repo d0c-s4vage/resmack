@@ -315,37 +315,37 @@ namespace corpora {
   void MmapCorpus::SetStrats(uint32_t strats) {
     this->strats = strats;
 
-    if (STRAT_RAND & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kRand) & strats) {
       this->strat_handlers.push_back(this->HandleRandStrat);
     }
-    if (STRAT_MOST_FEEDBACK & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kMostFeedback) & strats) {
       this->strat_handlers.push_back(this->HandleMostFeedbackStrat);
     }
-    if (STRAT_LEAST_FEEDBACK & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kLeastFeedback) & strats) {
       this->strat_handlers.push_back(this->HandleLeastFeedbackStrat);
     }
-    if (STRAT_MOST_RECENT & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kMostRecent) & strats) {
       this->strat_handlers.push_back(this->HandleMostRecentStrat);
     }
-    if (STRAT_LEAST_RECENT & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kLeastRecent) & strats) {
       this->strat_handlers.push_back(this->HandleLeastRecentStrat);
     }
-    if (STRAT_MOST_ANCESTORS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kMostAncestors) & strats) {
       this->strat_handlers.push_back(this->HandleMostAncestorsStrat);
     }
-    if (STRAT_LEAST_ANCESTORS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kLeastAncestors) & strats) {
       this->strat_handlers.push_back(this->HandleLeastAncestorsStrat);
     }
-    if (STRAT_MOST_DIRECT_DESCENDANTS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kMostDirectDescendants) & strats) {
       this->strat_handlers.push_back(this->HandleMostDirectDescendantsStrat);
     }
-    if (STRAT_LEAST_DIRECT_DESCENDANTS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kLeastDirectDescendants) & strats) {
       this->strat_handlers.push_back(this->HandleLeastDirectDescendantsStrat);
     }
-    if (STRAT_MOST_DESCENDANTS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kMostDescendants) & strats) {
       this->strat_handlers.push_back(this->HandleMostDescendantsStrat);
     }
-    if (STRAT_LEAST_DESCENDANTS & strats) {
+    if (static_cast<uint32_t>(CorpusStrat::kLeastDescendants) & strats) {
       this->strat_handlers.push_back(this->HandleLeastDescendantsStrat);
     }
   }
@@ -387,7 +387,11 @@ namespace corpora {
 
   Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2) {
     if (this->strat_handlers.size() == 0) {
-      this->SetStrats(STRAT_RAND | STRAT_MOST_RECENT | STRAT_LEAST_DIRECT_DESCENDANTS);
+      this->SetStrats(
+        static_cast<uint32_t>(CorpusStrat::kRand)
+        | static_cast<uint32_t>(CorpusStrat::kMostRecent)
+        | static_cast<uint32_t>(CorpusStrat::kLeastDirectDescendants)
+      );
     }
 
     this->Sync();

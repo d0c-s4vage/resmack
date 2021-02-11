@@ -254,27 +254,27 @@ bool ParseOptions(int argc, char**argv) {
           break;
         case 'C':
           if (strcmp(optarg, "MOST_FEEDBACK") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_FEEDBACK;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kMostFeedback);
           } else if (strcmp(optarg, "LEAST_FEEDBACK") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_FEEDBACK;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kLeastFeedback);
           } else if (strcmp(optarg, "MOST_RECENT") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_RECENT;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kMostRecent);
           } else if (strcmp(optarg, "LEAST_RECENT") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_RECENT;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kLeastRecent);
           } else if (strcmp(optarg, "MOST_ANCESTORS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_ANCESTORS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kMostAncestors);
           } else if (strcmp(optarg, "LEAST_ANCESTORS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_ANCESTORS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kLeastAncestors);
           } else if (strcmp(optarg, "MOST_DIRECT_DESCENDANTS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_DIRECT_DESCENDANTS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kMostDirectDescendants);
           } else if (strcmp(optarg, "LEAST_DIRECT_DESCENDANTS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_DIRECT_DESCENDANTS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kLeastDirectDescendants);
           } else if (strcmp(optarg, "MOST_DESCENDANTS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_MOST_DESCENDANTS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kMostDescendants);
           } else if (strcmp(optarg, "LEAST_DESCENDANTS") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_LEAST_DESCENDANTS;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kLeastDescendants);
           } else if (strcmp(optarg, "RAND") == 0) {
-            OPTS.corpus_strats |= resmack::fuzz::corpora::STRAT_RAND;
+            OPTS.corpus_strats |= static_cast<uint32_t>(resmack::fuzz::CorpusStrat::kRand);
           } else {
             std::cout << "Invalid corpus strategy: " << optarg << std::endl;
             std::exit(1);
