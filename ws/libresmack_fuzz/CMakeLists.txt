@@ -46,8 +46,8 @@ target_link_libraries(
     pthread
     crypto
     unwind
-    unwind-ptrace
     unwind-generic
+    unwind-ptrace
 )
 set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
 

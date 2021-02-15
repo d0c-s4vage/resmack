@@ -12,7 +12,7 @@ namespace targets {
     switch (type) {
       case TargetType::kDirect:
         return static_cast<Target*>(new DirectTarget(
-          [EF](const char* data, size_t size) -> int{
+          [EF](const char* data, size_t size) -> int {
             return EF.LLVMFuzzerTestOneInput(reinterpret_cast<const uint8_t*>(data), size);
           },
           hooks,

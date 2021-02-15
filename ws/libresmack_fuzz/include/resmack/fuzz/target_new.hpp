@@ -13,6 +13,7 @@ namespace targets {
   class Target {
    private:
    public:
+    virtual ~Target() {}
     virtual pid_t Start() = 0;
     virtual int Test(const std::string* input) = 0;
     virtual void Stop() = 0;

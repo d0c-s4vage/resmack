@@ -93,32 +93,23 @@ namespace fuzz {
         break;
       }
 
-      printf("PROCESS CRASHED\n");
-      printf("asan info len: %lu\n", strlen(this_->last_crash.asan_info));
-
       process_utils::LoadSignalInfo(status, &sig_info);
 
-      if (sig_info.stopped) {
-        if (sig_info.stop_signal == SIGWINCH) {
-          ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
-          continue;
-        } else if (sig_info.stop_signal == SIGKILL) {
-          break;
-        }
+      if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
+        ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
+        continue;
+      } else if (sig_info.signaled && sig_info.term_signal == SIGKILL) {
+        break;
       }
 
       process_utils::PrintSignalInfo(&sig_info);
 
       this_->last_crash.crashed = true;
-      if (strlen(this_->last_crash.asan_info) != 0) {
-        printf("Was asan crash\n");
-      } else {
+      if (sig_info.signaled) {
         this_->CalcHashes();
-        printf("Calculated hashes!\n");
       }
     } while(false);
 
-    printf("EXITED LOOP\n");
     this_->target->ForceFinishTest();
 
     return NULL;

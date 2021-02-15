@@ -1,3 +1,4 @@
+#include <chrono>
 #include <signal.h>
 #include <stdio.h>
 
@@ -20,6 +21,7 @@ namespace cmds {
   }
 
   void Fuzz(FuzzConfig* config) {
+    kRun = true;
     //signal(SIGINT, SignalHandler);
     printf("Main fuzz proc, pid: %d\n", getpid());
 
@@ -39,11 +41,20 @@ namespace cmds {
       0x1000
     );
 
+    int count = 0;
     target->Start();
-    //while (kRun) {
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    while (kRun) {
       std::string input = "hello";
-      target->Test(&input);
-    //}
+      int res = target->Test(&input);
+      count++;
+      if (count == 0x30000) {
+        break;
+      }
+    }
+    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    printf("%0.03f iters/s\n", (double)count / span.count());
     target->Stop();
 
     if (tracer.DidCrash()) {
