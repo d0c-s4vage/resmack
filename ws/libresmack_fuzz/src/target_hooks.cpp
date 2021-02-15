@@ -66,7 +66,7 @@ namespace fuzz {
     }
   }
   void TargetHooks::ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem) {
-    for (auto cb : this->pre_start) {
+    for (auto cb : this->pre_start_in_target) {
       cb(ipc_mem);
     }
   }

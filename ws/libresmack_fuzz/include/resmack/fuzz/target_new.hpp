@@ -4,6 +4,8 @@
 #include <string>
 #include <unistd.h>
 
+#include "resmack/fuzz/target_hooks.hpp"
+
 namespace resmack {
 namespace fuzz {
 namespace targets {
@@ -14,7 +16,14 @@ namespace targets {
     virtual pid_t Start() = 0;
     virtual int Test(const std::string* input) = 0;
     virtual void Stop() = 0;
+    virtual void ForceFinishTest() = 0;
   };
+
+  enum class TargetType {
+    kDirect
+  };
+
+  Target* CreateTarget(TargetType type, TargetHooks* hooks, size_t max_input_size);
 
 }
 }

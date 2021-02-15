@@ -64,12 +64,12 @@ namespace corpora {
     void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
     void AddRandSnapshot(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     bool AddRandSnapshotIfNotSeen(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
@@ -93,7 +93,7 @@ namespace corpora {
    private:
     void AddRandSnapshotInner(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     void SyncInner();

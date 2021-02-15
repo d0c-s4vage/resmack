@@ -68,7 +68,7 @@ namespace corpora {
 
   bool MmapCorpus::AddRandSnapshotIfNotSeen(
     const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
+    feedbacks::FeedbackStats stats,
     bool descendant_of_last
   ) {
     bool res = true;
@@ -96,7 +96,7 @@ namespace corpora {
 
   void MmapCorpus::AddRandSnapshot(
     const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
+    feedbacks::FeedbackStats stats,
     bool descendant_of_last
   ) {
     WITH_LOCK(this->corpus_lock, Adding snapshot, {
@@ -107,7 +107,7 @@ namespace corpora {
 
   void MmapCorpus::AddRandSnapshotInner(
     const resmack::Vector<RandSnapshot>* snapshot,
-    FeedbackStats stats,
+    feedbacks::FeedbackStats stats,
     bool descendant_of_last
   ) {
     this->last_discovered_iteration = *this->curr_iter_count;

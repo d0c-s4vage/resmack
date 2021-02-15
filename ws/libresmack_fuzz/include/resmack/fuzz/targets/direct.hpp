@@ -1,5 +1,6 @@
 #ifndef RESMACK_FUZZ_TARGET_DIRECT
 #define RESMACK_FUZZ_TARGET_DIRECT
+/*
 
 #include "resmack/fuzz/target.hpp"
 
@@ -22,5 +23,6 @@ namespace fuzz {
 
 }
 }
+*/
 
 #endif

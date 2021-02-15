@@ -5,16 +5,16 @@
 
 namespace resmack {
 namespace fuzz {
+namespace feedbacks {
 
-  void NoopCoverage::Start() {
-  }
-
-  void NoopCoverage::Stop() {
+  std::string NoopCoverage::GetSummary() {
+    return "NOOP";
   }
 
   FeedbackStats NoopCoverage::GetStats() {
     return { 0, 0, 0 };
   }
 
+}
 }
 }

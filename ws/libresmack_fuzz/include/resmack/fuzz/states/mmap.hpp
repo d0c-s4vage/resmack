@@ -53,7 +53,7 @@ class MmapState : public State {
 
   StateStats* GetStats() { return &this->metadata->stats; };
   void InitNewStats();
-  void SyncStats(TargetStats* stats);
+  //void SyncStats(targets::TargetStats* stats);
 
   uint64_t GetNumIterations();
   void IncNumIterations();

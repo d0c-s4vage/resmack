@@ -8,14 +8,16 @@
 
 namespace resmack {
 namespace fuzz {
+namespace feedbacks {
 
   class NoopCoverage : public Feedback {
    public:
-    void Start();
-    void Stop();
+    std::string GetSummary();
     FeedbackStats GetStats();
+    void InsertHooks(TargetHooks* hooks) {}
   };
 
+}
 }
 }
 

@@ -57,12 +57,12 @@ namespace fuzz {
    public:
     virtual void AddRandSnapshot(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     ) = 0;
     virtual bool AddRandSnapshotIfNotSeen(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     ) = 0;
     virtual const Vector<CorpusEntry>* GetItems() = 0;

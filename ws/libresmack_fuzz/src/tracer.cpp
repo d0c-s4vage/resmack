@@ -15,11 +15,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "resmack/rand.hpp"
-#include "resmack/utils.hpp"
-#include "resmack/fuzz/trace.hpp"
-#include "resmack/fuzz/utils.hpp"
-#include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/ipc/locked_shared_mem.hpp"
+#include "resmack/fuzz/tracer.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/process_utils.hpp"
 
 #include "asan_util.hpp"
@@ -27,112 +25,76 @@
 namespace resmack {
 namespace fuzz {
 
-  Tracer::Tracer(
-    TraceTarget* target,
-    TraceExceptionCb cb,
-    TraceTimeoutCb timeout_cb,
-    uint32_t idx
-  ) :
-    idx(idx),
-    tracee(idx),
-    target(target),
-    traced_pid(-1),
-    timeout(5.0),
-    exception_cb(cb),
-    timeout_cb(timeout_cb),
-    timeout_lock("TraceTimeoutLock", true)
-  {}
+  Tracer::Tracer() : should_run(false), traced_pid(-1) {}
   Tracer::~Tracer() {}
 
-  void Tracer::Trace() {
-    this->should_run = true;
-    pthread_create(&this->monitor_thread, NULL, &MonitorTracee, (void*)this);
+  void Tracer::InsertHooks(TargetHooks* hooks) {
+    size_t max_asan_size = 0x10000;
+    hooks
+      ->AddIpcSize([max_asan_size]() -> size_t { return max_asan_size; })
+      ->AddIpcInit([this, max_asan_size](ipc::LockedSharedMem* mem) {
+        char* ptr = mem->GetNextPtrFor<char>(max_asan_size);
+        this->last_crash.asan_info = ptr;
+        this->last_crash.asan_info[0] = '\0';
+      })
+      ->AddPreStartInTarget([this, max_asan_size](ipc::LockedSharedMem*) {
+        printf("IN PRE START IN TARGET\n");
+        printf("IN PRE START IN TARGET\n");
+        printf("IN PRE START IN TARGET\n");
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        printf("Setting asan callback...\n");
+        asan::SetAsanCallback([this, max_asan_size](const char* report) {
+          size_t report_len = strlen(report);
+          if (report_len > max_asan_size - 1) {
+            report_len = max_asan_size - 1;
+          }
+          memcpy(this->last_crash.asan_info, report, report_len);
+          this->last_crash.asan_info[report_len] = '\0';
+        });
+      })
+      ->AddPostStart([this](ipc::LockedSharedMem*, pid_t new_pid) {
+        this->traced_pid = new_pid;
+        pthread_create(&this->monitor_thread, NULL, MonitorTracedPid, (void*)this);
+      })
+      ->AddPostStop([this](ipc::LockedSharedMem*, pid_t) {
+        // force everything to wait until we've finished handling the
+        // crash
+        pthread_join(this->monitor_thread, NULL);
+      });
   }
 
-  void Tracer::Stop() {
-    this->should_run = false;
-    pid_t pid = this->traced_pid;
-    if (pid <= 0) {
-      return;
-    }
+  void* Tracer::MonitorTracedPid(void* this_arg) {
+    Tracer* this_ = reinterpret_cast<Tracer*>(this_arg);
 
-    ptrace(PTRACE_DETACH, pid, NULL, NULL);
+    process_utils::SignalInfo sig_info;
 
-    this->timeout_lock.Acquire();
-    pthread_join(this->monitor_timeout_thread, NULL);
+    do {
+      pid_t curr_pid = this_->traced_pid;
 
-    kill(pid, SIGINT);
-    waitpid(pid, NULL, 0);
-
-    kill(pid, SIGKILL);
-    waitpid(pid, NULL, 0);
-  }
-
-  void Tracer::Join() {
-    pthread_join(this->monitor_thread, NULL);
-  }
-
-  void* Tracer::MonitorTraceeTimeout(void* args_arg) {
-    MonitorTimeoutArgs* args = (MonitorTimeoutArgs*)args_arg;
-    args->timedout = false;
-
-    timespec end;
-    float end_f, iter_span;
-    pid_t killed_pid = -1;
-
-    pid_t last_pid = -1;
-    timespec tmp;
-    clock_gettime(CLOCK_MONOTONIC, &tmp);
-    float pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
-
-    float alive_max = 600.0f;
-    float sleep_int_ms = 10.0f;
-
-    while (*args->should_run) {
-      args->timeout_lock->Acquire();
-        pid_t pid = args->pid;
-        //float sleep_ms = args->timeout * 1000.0f;
-        float sleep_ms = 10.0f;
-        float curr_iter_start = args->tracee->GetIterStart();
-        bool should_monitor = args->should_monitor_tracee;
-        bool timedout = args->timedout;
-        float timeout = args->timeout;
-        int idx = args->idx;
-      args->timeout_lock->Release();
-
-
-      if (pid == killed_pid) {
-        ; // noop
-      } else if (pid > 0 && should_monitor && curr_iter_start != -1.0f) {
-        if (last_pid != pid) {
-          last_pid = pid;
-          clock_gettime(CLOCK_MONOTONIC, &tmp);
-          pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
-        }
-
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        end_f = end.tv_sec + 1e-9 * end.tv_nsec;
-
-        iter_span = end_f - curr_iter_start;
-        float alive_span = end_f - pid_alive_start;
-
-        // we may have already signaled that it has been timedout
-        if (!timedout && (iter_span > timeout || alive_span > alive_max)) {
-          args->timeout_lock->Acquire();
-          args->timedout = true;
-          args->timeout_lock->Release();
-          kill(pid, SIGINT);
-          killed_pid = pid;
-        }
+      int status;
+      if (waitpid(curr_pid, &status, 0) == -1) {
+        // EINTR == signal interrupted, ECHILD == pid does not exist
+        if (errno == EINTR || errno == ECHILD) { break; }
+        break;
       }
 
-      auto ms = std::chrono::milliseconds((int)sleep_ms);
-      std::this_thread::sleep_for(ms);
-    }
+      printf("PROCESS CRASHED\n");
+      printf("asan info len: %lu\n", strlen(this_->last_crash.asan_info));
+
+      process_utils::LoadSignalInfo(status, &sig_info);
+      // was intentionally killed, ignore it
+      if (sig_info.stopped && sig_info.stop_signal == SIGKILL) {
+        break;
+      }
+
+      // calc hash
+      this_->CalcHashes();
+    } while(false);
 
     return NULL;
   }
 
+  /*
   void* Tracer::MonitorTracee(void* this_arg) {
     Tracer* this_ = (Tracer*)this_arg;
 
@@ -257,6 +219,7 @@ namespace fuzz {
 
     return NULL;
   }
+  */
 
   // https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
   void Tracer::CalcHashes() {

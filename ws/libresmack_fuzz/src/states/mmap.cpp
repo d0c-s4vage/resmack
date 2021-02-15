@@ -93,7 +93,8 @@ namespace states {
 #undef STAT
   }
 
-  void MmapState::SyncStats(TargetStats* stats) {
+  /*
+  void MmapState::SyncStats(targets::TargetStats* stats) {
     this->corpus.SyncCounters();
 
     resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
@@ -113,6 +114,7 @@ namespace states {
     }
     resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();
   }
+  */
 
   size_t MmapState::GetNumIterations() {
     return this->metadata->iterations;

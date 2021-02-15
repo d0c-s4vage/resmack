@@ -161,6 +161,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/feedback.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/feedback.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/feedback.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/feedbacks/coverage.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/feedbacks/coverage.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/feedbacks/coverage.cpp"
 },
@@ -221,6 +226,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/target_new.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/target_new.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/target_new.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/targets/direct.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/targets/direct.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/targets/direct.cpp"
 },
@@ -231,11 +241,6 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
-  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/trace.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/trace.cpp",
-  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/trace.cpp"
-},
-{
-  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/trace_targets/fork.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/trace_targets/fork.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/trace_targets/fork.cpp"
 },
@@ -243,6 +248,11 @@
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/tracee.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/tracee.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/tracee.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/tracer.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/tracer.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/tracer.cpp"
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz_main",

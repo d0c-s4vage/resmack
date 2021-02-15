@@ -5,8 +5,11 @@
 #include <stdint.h>
 #include <string>
 
+#include "resmack/fuzz/target_hooks.hpp"
+
 namespace resmack {
 namespace fuzz {
+namespace feedbacks {
 
   struct FeedbackStats {
     bool new_coverage;
@@ -17,13 +20,20 @@ namespace fuzz {
 
   class Feedback {
    public:
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual void Sync() = 0;
+    virtual void SyncTargetToShared() {}
+    virtual void SyncSharedToTarget() {}
     virtual std::string GetSummary() = 0;
     virtual FeedbackStats GetStats() = 0;
+    virtual void InsertHooks(TargetHooks* hooks) = 0;
   };
 
+  enum class FeedbackType {
+    kCoverage,
+  };
+
+  Feedback* CreateFeedback(FeedbackType type);
+
+}
 }
 }
 
