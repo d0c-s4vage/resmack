@@ -105,10 +105,13 @@ namespace fuzz {
       process_utils::PrintSignalInfo(&sig_info);
 
       this_->last_crash.crashed = true;
-      if (sig_info.signaled) {
+      if (sig_info.stopped) {
         this_->CalcHashes();
       }
     } while(false);
+
+    ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
+    ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
 
     this_->target->ForceFinishTest();
 

@@ -12,7 +12,7 @@ namespace resmack {
 namespace fuzz {
 namespace cmds {
 
-  void Fuzz(FuzzConfig* config);
+  void Fuzz(Config* config);
 
 }
 }

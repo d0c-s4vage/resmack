@@ -15,18 +15,23 @@ namespace fuzz {
 namespace cmds {
 
   static bool kRun;
+  std::mutex lock;
+  size_t iters = 0x30000;
 
-  void SignalHandler(int signal) {
-    kRun = false;
+  std::vector<targets::Target*> targets;
+
+  void SignalHandler(int signum) {
+    for (targets::Target* target : targets) {
+      target->Stop();
+    }
+    _exit(0);
   }
 
-  void Fuzz(FuzzConfig* config) {
+  void* FuzzN(void* config_arg) {
+    FuzzConfig* config = reinterpret_cast<FuzzConfig*>(config_arg);
     kRun = true;
-    //signal(SIGINT, SignalHandler);
-    printf("Main fuzz proc, pid: %d\n", getpid());
 
     TargetHooks hooks;
-
     Tracer tracer;
     tracer.InsertHooks(&hooks);
 
@@ -41,20 +46,23 @@ namespace cmds {
       0x1000
     );
 
+    lock.lock();
+      targets.push_back(target);
+    lock.unlock();
+
     int count = 0;
     target->Start();
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    std::string input = "hello";
     while (kRun) {
-      std::string input = "hello";
-      int res = target->Test(&input);
-      count++;
-      if (count == 0x30000) {
+      target->Test(&input);
+      if (++count == iters) {
         break;
       }
     }
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    printf("%0.03f iters/s\n", (double)count / span.count());
+    printf("Done, %lu iters in %.03fs = %.03f iters/s\n", iters, span.count(), (double)iters / span.count());
     target->Stop();
 
     if (tracer.DidCrash()) {
@@ -63,6 +71,39 @@ namespace cmds {
     }
 
     delete target;
+
+    return NULL;
+  }
+
+  void Fuzz(Config* config) {
+    signal(SIGINT, SignalHandler);
+
+    std::vector<pthread_t> threads;
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < config->fuzz_config.nprocs; i++) {
+      threads.emplace_back();
+      pthread_t* curr_thread = &threads[threads.size()-1];
+      pthread_create(
+        curr_thread,
+        NULL,
+        &FuzzN,
+        (void*)config
+      );
+    }
+
+    for (pthread_t& thread : threads) {
+      pthread_join(thread, NULL);
+    }
+    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+    size_t total_iters = iters * config->fuzz_config.nprocs;
+    printf(
+      "Total iters: %lu in %.03fs = %.03fs iters/s\n",
+      total_iters,
+      span.count(),
+      (double)total_iters / span.count()
+    );
   }
 
 }

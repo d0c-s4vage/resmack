@@ -1,6 +1,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "resmack/fuzz/external.hpp"
 #include "resmack/fuzz/targets_new/direct.hpp"
@@ -61,9 +62,13 @@ namespace targets {
   }
 
   void DirectTarget::Stop() {
+    if (this->running_target == -1) { return; }
+
     this->hooks->ExecPreStop(&this->ipc_memory, this->running_target);
     kill(this->running_target, SIGKILL);
+    waitpid(this->running_target, NULL, 0);
     this->hooks->ExecPostStop(&this->ipc_memory, this->running_target);
+    this->running_target = -1;
   }
 
   int DirectTarget::Test(const std::string* input) {

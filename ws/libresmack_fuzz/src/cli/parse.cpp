@@ -26,7 +26,7 @@ namespace cli {
       { "max-depth", required_argument, 0, 'd' },
       { "max-iters", required_argument, 0, 'm' },
       { "max-crashes", required_argument, 0, 'M' },
-      { "show-stats", no_argument, &config->displayConfig.show_stats, 's' },
+      { "show-stats", no_argument, &config->display_config.show_stats, 's' },
       { "state-path", required_argument, 0, 'S' },
       { "corpus-strat", required_argument, 0, 'C' },
       { "debug-state", no_argument, 0, OPT_DEBUG_STATE },
@@ -42,7 +42,7 @@ namespace cli {
 
     static char state_path[4096];
     snprintf(state_path, sizeof(state_path), "%s.resmack-state", argv[0]);
-    config->fuzzConfig.state_path = state_path;
+    config->fuzz_config.state_path = state_path;
 
     while (true) {
       int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:S:p:M:C:", long_options, &opt_index);
@@ -57,82 +57,82 @@ namespace cli {
           config->action = ActionType::kHelp;
           break;
         case 's':
-          config->displayConfig.show_stats = true;
+          config->display_config.show_stats = true;
           break;
         case 'd':
-          config->grammarConfig.max_depth = strtoull(optarg, NULL, 10);
+          config->grammar_config.max_depth = strtoull(optarg, NULL, 10);
           break;
         case 'm':
-          config->fuzzConfig.max_iters = strtoull(optarg, NULL, 10);
+          config->fuzz_config.max_iters = strtoull(optarg, NULL, 10);
           break;
         case 'M':
-          config->fuzzConfig.max_crashes = strtoull(optarg, NULL, 10);
+          config->fuzz_config.max_crashes = strtoull(optarg, NULL, 10);
           break;
         case 'n':
-          config->fuzzConfig.nprocs = strtoull(optarg, NULL, 10);
+          config->fuzz_config.nprocs = strtoull(optarg, NULL, 10);
           break;
         case 'i':
-          config->fuzzConfig.stats_interval = strtoull(optarg, NULL, 10);
+          config->fuzz_config.stats_interval = strtoull(optarg, NULL, 10);
           break;
         case 'c':
-          config->fuzzConfig.crash_output = optarg;
+          config->fuzz_config.crash_output = optarg;
           break;
         case 't':
-          config->fuzzConfig.create_threshhold = strtoull(optarg, NULL, 10);
+          config->fuzz_config.create_threshhold = strtoull(optarg, NULL, 10);
           break;
         case 'D':
           config->action = ActionType::kDumpCorpus;
-          config->dumpCorpusConfig.dump_corpus_path = optarg;
+          config->dump_corpus_config.dump_corpus_path = optarg;
           break;
         case OPT_DEBUG_STATE:
           config->action = ActionType::kDebugState;
         case OPT_NO_MUTE:
-          config->targetConfig.mute_stdio = false;
+          config->target_config.mute_stdio = false;
           break;
         case OPT_RUN_DIRECT:
-          config->fuzzConfig.run_direct = true;
+          config->fuzz_config.run_direct = true;
           break;
         case 'S':
-          config->fuzzConfig.state_path = optarg;
-          config->debugStateConfig.state_path = optarg;
-          config->dumpCorpusConfig.state_path = optarg;
+          config->fuzz_config.state_path = optarg;
+          config->debug_state_config.state_path = optarg;
+          config->dump_corpus_config.state_path = optarg;
           break;
         case 'C':
           if (strcmp(optarg, "MOST_FEEDBACK") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostFeedback);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostFeedback);
           } else if (strcmp(optarg, "LEAST_FEEDBACK") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastFeedback);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastFeedback);
           } else if (strcmp(optarg, "MOST_RECENT") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostRecent);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostRecent);
           } else if (strcmp(optarg, "LEAST_RECENT") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastRecent);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastRecent);
           } else if (strcmp(optarg, "MOST_ANCESTORS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostAncestors);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostAncestors);
           } else if (strcmp(optarg, "LEAST_ANCESTORS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastAncestors);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastAncestors);
           } else if (strcmp(optarg, "MOST_DIRECT_DESCENDANTS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostDirectDescendants);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostDirectDescendants);
           } else if (strcmp(optarg, "LEAST_DIRECT_DESCENDANTS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastDirectDescendants);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastDirectDescendants);
           } else if (strcmp(optarg, "MOST_DESCENDANTS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostDescendants);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kMostDescendants);
           } else if (strcmp(optarg, "LEAST_DESCENDANTS") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastDescendants);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kLeastDescendants);
           } else if (strcmp(optarg, "RAND") == 0) {
-            config->corpusConfig.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kRand);
+            config->corpus_config.corpus_strats |= static_cast<uint32_t>(CorpusStrat::kRand);
           } else {
             std::cout << "Invalid corpus strategy: " << optarg << "\n";
             std::exit(1);
           }
           break;
         case 'p':
-          config->displayConfig.print_interval = std::stof(optarg);
+          config->display_config.print_interval = std::stof(optarg);
           break;
         case OPT_NO_PIN_CPU:
-          config->fuzzConfig.pin_cpus = false;
+          config->fuzz_config.pin_cpus = false;
           break;
         case OPT_CORPUS_DECAY:
-          config->corpusConfig.corpus_decay = strtoull(optarg, NULL, 10);
+          config->corpus_config.corpus_decay = strtoull(optarg, NULL, 10);
           break;
       }
     }

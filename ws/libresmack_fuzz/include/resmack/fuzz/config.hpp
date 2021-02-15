@@ -56,14 +56,14 @@ namespace fuzz {
   struct Config {
     ActionType action;
 
-    FuzzConfig fuzzConfig;
-    DumpCorpusConfig dumpCorpusConfig;
-    DebugStateConfig debugStateConfig;
+    FuzzConfig fuzz_config;
+    DumpCorpusConfig dump_corpus_config;
+    DebugStateConfig debug_state_config;
 
-    TargetConfig targetConfig;
-    CorpusConfig corpusConfig;
-    DisplayConfig displayConfig;
-    GrammarConfig grammarConfig;
+    TargetConfig target_config;;
+    CorpusConfig corpus_config;
+    DisplayConfig display_config;
+    GrammarConfig grammar_config;
   };
 
 }

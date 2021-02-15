@@ -10,7 +10,7 @@ namespace cli {
   int Main(int argc, char** argv) {
     Config config {
       .action = ActionType::kFuzz,
-      .fuzzConfig = {
+      .fuzz_config = {
         .nprocs = 1,
         .max_iters = 0,
         .max_crashes = 0,
@@ -20,17 +20,17 @@ namespace cli {
         .run_direct = 0,
         .pin_cpus = true,
       },
-      .targetConfig = {
+      .target_config = {
         .mute_stdio = 0,
       },
-      .corpusConfig = {
+      .corpus_config = {
         .corpus_decay = 10000,
       },
-      .displayConfig = {
+      .display_config = {
         .print_interval = 0.0f,
         .show_stats = 0,
       },
-      .grammarConfig = {
+      .grammar_config = {
         .max_depth = 10,
       },
     };
@@ -38,10 +38,10 @@ namespace cli {
 
     switch (config.action) {
       case ActionType::kFuzz:
-        cmds::Fuzz(&config.fuzzConfig);
+        cmds::Fuzz(&config);
         break;
       case ActionType::kDebugState:
-        cmds::DebugState(&config.debugStateConfig);
+        cmds::DebugState(&config.debug_state_config);
         break;
       /*
       case cli::ActionType::kDumpCorpus:

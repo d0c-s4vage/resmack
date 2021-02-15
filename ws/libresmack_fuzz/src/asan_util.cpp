@@ -20,10 +20,7 @@ void HandleAsan(const char* report) {
 void SetAsanCallback(AsanCb cb) {
   ASAN_CB = cb;
   if (__asan_set_error_report_callback != NULL) {
-    printf("Setting asan error report callback!\n");
     __asan_set_error_report_callback(HandleAsan);
-  } else {
-    printf("Couldn't set the callback, it was null!\n");
   }
 }
 
