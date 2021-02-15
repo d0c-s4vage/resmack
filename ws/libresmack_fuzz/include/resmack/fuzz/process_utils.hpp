@@ -15,6 +15,7 @@ namespace process_utils {
   };
 
   void LoadSignalInfo(int status, SignalInfo* out);
+  void PrintSignalInfo(SignalInfo* info);
 
 }
 }

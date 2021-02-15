@@ -6,8 +6,12 @@
 #include "resmack/fuzz/cli/main.hpp"
 #include "resmack/fuzz/interface.hpp"
 
-void NonAsanCrash() {
+void OtherFunction() {
   ((void(*)())(0))();
+}
+
+void NonAsanCrash() {
+  OtherFunction();
 }
 
 void AsanCrash() {
@@ -19,7 +23,9 @@ void AsanCrash() {
 extern "C"
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   printf("FUZZING IT! pid: %d\n", getpid());
-  AsanCrash();
+  printf("Data: %s\n", data);
+  //AsanCrash();
+  NonAsanCrash();
 }
 
 int main(int argc, char** argv) {

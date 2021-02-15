@@ -23,7 +23,7 @@ namespace fuzz {
     this->pre_start_in_target.push_back(callback);
     return this;
   }
-  TargetHooks* TargetHooks::AddPostStart(TargetHookIpcMemPidCb callback) {
+  TargetHooks* TargetHooks::AddPostStart(TargetHookIpcMemPidTargetCb callback) {
     this->post_start.push_back(callback);
     return this;
   }
@@ -70,9 +70,9 @@ namespace fuzz {
       cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
+  void TargetHooks::ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid, targets::Target* target) {
     for (auto cb : this->post_start) {
-      cb(ipc_mem, pid);
+      cb(ipc_mem, pid, target);
     }
   }
 

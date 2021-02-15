@@ -45,6 +45,13 @@ namespace cmds {
       target->Test(&input);
     //}
     target->Stop();
+
+    if (tracer.DidCrash()) {
+      CrashInfo* info = tracer.GetCrashInfo();
+      printf("Crashed!\nStack:\n%s\n", info->minor_stack.c_str());
+    }
+
+    delete target;
   }
 
 }

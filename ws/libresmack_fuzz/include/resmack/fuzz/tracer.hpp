@@ -10,6 +10,7 @@
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/serialized.hpp"
 #include "resmack/fuzz/target_hooks.hpp"
+#include "resmack/fuzz/target_new.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -35,6 +36,7 @@ namespace fuzz {
     pthread_t monitor_thread;
     bool should_run;
     pid_t traced_pid;
+    targets::Target* target;
 
     void CalcHashes();
 
@@ -42,9 +44,10 @@ namespace fuzz {
     Tracer();
     ~Tracer();
 
-    void Stop();
     static void* MonitorTracedPid(void* this_arg);
     void InsertHooks(TargetHooks* hooks);
+    bool DidCrash() { return this->last_crash.crashed; }
+    CrashInfo* GetCrashInfo() { return &this->last_crash; }
   };
 
 }

@@ -31,35 +31,49 @@ namespace fuzz {
   void Tracer::InsertHooks(TargetHooks* hooks) {
     size_t max_asan_size = 0x10000;
     hooks
-      ->AddIpcSize([max_asan_size]() -> size_t { return max_asan_size; })
-      ->AddIpcInit([this, max_asan_size](ipc::LockedSharedMem* mem) {
-        char* ptr = mem->GetNextPtrFor<char>(max_asan_size);
-        this->last_crash.asan_info = ptr;
-        this->last_crash.asan_info[0] = '\0';
+      ->AddIpcSize(
+        [max_asan_size]
+        () -> size_t {
+          return max_asan_size;
       })
-      ->AddPreStartInTarget([this, max_asan_size](ipc::LockedSharedMem*) {
-        printf("IN PRE START IN TARGET\n");
-        printf("IN PRE START IN TARGET\n");
-        printf("IN PRE START IN TARGET\n");
-        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-        printf("Setting asan callback...\n");
-        asan::SetAsanCallback([this, max_asan_size](const char* report) {
-          size_t report_len = strlen(report);
-          if (report_len > max_asan_size - 1) {
-            report_len = max_asan_size - 1;
-          }
-          memcpy(this->last_crash.asan_info, report, report_len);
-          this->last_crash.asan_info[report_len] = '\0';
-        });
+      ->AddIpcInit(
+        [this, max_asan_size]
+        (ipc::LockedSharedMem* mem) {
+          char* ptr = mem->GetNextPtrFor<char>(max_asan_size);
+          this->last_crash.asan_info = ptr;
+          this->last_crash.asan_info[0] = '\0';
       })
-      ->AddPostStart([this](ipc::LockedSharedMem*, pid_t new_pid) {
-        this->traced_pid = new_pid;
-        pthread_create(&this->monitor_thread, NULL, MonitorTracedPid, (void*)this);
+      ->AddPreStartInTarget(
+        [this, max_asan_size]
+        (ipc::LockedSharedMem*) {
+          ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+
+          asan::SetAsanCallback([this, max_asan_size](const char* report) {
+            size_t report_len = strlen(report);
+            if (report_len > max_asan_size - 1) {
+              report_len = max_asan_size - 1;
+            }
+            memcpy(this->last_crash.asan_info, report, report_len);
+            this->last_crash.asan_info[report_len] = '\0';
+          });
       })
-      ->AddPostStop([this](ipc::LockedSharedMem*, pid_t) {
-        // force everything to wait until we've finished handling the
-        // crash
-        pthread_join(this->monitor_thread, NULL);
+      ->AddPostStart(
+        [this]
+        (ipc::LockedSharedMem*, pid_t new_pid, auto* target) {
+          this->traced_pid = new_pid;
+          this->target = target;
+          pthread_create(
+            &this->monitor_thread,
+            NULL,
+            MonitorTracedPid,
+            (void*)this);
+      })
+      ->AddPostStop(
+        [this]
+        (ipc::LockedSharedMem*, pid_t) {
+          // force everything to wait until we've finished handling the
+          // crash
+          pthread_join(this->monitor_thread, NULL);
       });
   }
 
@@ -70,6 +84,7 @@ namespace fuzz {
 
     do {
       pid_t curr_pid = this_->traced_pid;
+      this_->last_crash.crashed = false;
 
       int status;
       if (waitpid(curr_pid, &status, 0) == -1) {
@@ -82,14 +97,29 @@ namespace fuzz {
       printf("asan info len: %lu\n", strlen(this_->last_crash.asan_info));
 
       process_utils::LoadSignalInfo(status, &sig_info);
-      // was intentionally killed, ignore it
-      if (sig_info.stopped && sig_info.stop_signal == SIGKILL) {
-        break;
+
+      if (sig_info.stopped) {
+        if (sig_info.stop_signal == SIGWINCH) {
+          ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
+          continue;
+        } else if (sig_info.stop_signal == SIGKILL) {
+          break;
+        }
       }
 
-      // calc hash
-      this_->CalcHashes();
+      process_utils::PrintSignalInfo(&sig_info);
+
+      this_->last_crash.crashed = true;
+      if (strlen(this_->last_crash.asan_info) != 0) {
+        printf("Was asan crash\n");
+      } else {
+        this_->CalcHashes();
+        printf("Calculated hashes!\n");
+      }
     } while(false);
+
+    printf("EXITED LOOP\n");
+    this_->target->ForceFinishTest();
 
     return NULL;
   }
@@ -227,10 +257,19 @@ namespace fuzz {
     this->last_crash.minor_stack.clear();
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
+    printf("Calculating hashes on %d\n", this->traced_pid);
 
     void *context = _UPT_create(this->traced_pid);
     unw_cursor_t cursor;
-    if (unw_init_remote(&cursor, as, context) != 0) {
+    int err;
+    if ((err = unw_init_remote(&cursor, as, context)) != 0) {
+      if (err == -UNW_EINVAL) {
+        printf("UNW_EINVAL\n");
+      } else if (err == -UNW_EUNSPEC) {
+        printf("UNW_EUNSPEC\n");
+      } else if (err == -UNW_EBADREG) {
+        printf("UNW_EBADREG\n");
+      }
       _UPT_destroy(context);
       free(as);
       return;

@@ -23,7 +23,6 @@ namespace targets {
   {
     size_t ipc_max_size = hooks->ExecAndSumIpcSize();
     ipc_max_size += sizeof(DirectTargetIpcInfo) + max_input_size - 1;
-    printf("ipc_max_size: %lu\n", ipc_max_size);
     this->ipc_memory.Init(ipc_max_size);
 
     this->ipc = this->ipc_memory.GetNextPtrFor<DirectTargetIpcInfo>(
@@ -51,14 +50,12 @@ namespace targets {
     }
 
     if (this->running_target == 0) {
-      printf("Calling PreStartInTarget!\n");
-      printf("Calling PreStartInTarget!\n");
       this->hooks->ExecPreStartInTarget(&this->ipc_memory);
       this->TestLoop();
       _exit(0);
     }
 
-    this->hooks->ExecPostStart(&this->ipc_memory, this->running_target);
+    this->hooks->ExecPostStart(&this->ipc_memory, this->running_target, this);
 
     return this->running_target;
   }

@@ -9,12 +9,19 @@
 namespace resmack {
 namespace fuzz {
 
+  namespace targets {
+    class Target;
+  }
+
   using TargetHookGenericCb = std::function<void()>;
   using TargetHookSizedCb = std::function<size_t()>;
+  using TargetHookPidCb = std::function<void(pid_t)>;
   using TargetHookPidCb = std::function<void(pid_t)>;
   using TargetHookIpcMemCb = std::function<void(ipc::LockedSharedMem*)>;
   using TargetHookIpcMemPidCb =
     std::function<void(ipc::LockedSharedMem *, pid_t)>;
+  using TargetHookIpcMemPidTargetCb =
+    std::function<void(ipc::LockedSharedMem *, pid_t, targets::Target*)>;
 
   class TargetHooks {
    private:
@@ -23,7 +30,7 @@ namespace fuzz {
 
     Vector<TargetHookIpcMemCb> pre_start;
     Vector<TargetHookIpcMemCb> pre_start_in_target;
-    Vector<TargetHookIpcMemPidCb> post_start;
+    Vector<TargetHookIpcMemPidTargetCb> post_start;
 
     Vector<TargetHookIpcMemCb> pre_test;
     Vector<TargetHookIpcMemCb> post_test;
@@ -39,7 +46,7 @@ namespace fuzz {
 
     TargetHooks* AddPreStart(TargetHookIpcMemCb call_back);
     TargetHooks* AddPreStartInTarget(TargetHookIpcMemCb call_back);
-    TargetHooks *AddPostStart(TargetHookIpcMemPidCb call_back);
+    TargetHooks *AddPostStart(TargetHookIpcMemPidTargetCb call_back);
 
     TargetHooks* AddPreTest(TargetHookIpcMemCb call_back);
     TargetHooks* AddPostTest(TargetHookIpcMemCb call_back);
@@ -52,7 +59,7 @@ namespace fuzz {
 
     void ExecPreStart(ipc::LockedSharedMem* ipc_mem);
     void ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem);
-    void ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid);
+    void ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid, targets::Target* target);
 
     // don't need the pid for both of these since they run *IN* the
     // target process - can simply do getpid() if it's needed
