@@ -8,14 +8,16 @@ namespace resmack {
 namespace fuzz {
 namespace ipc {
 
-  SharedMemCondition::SharedMemCondition() : val_(false) {
-    Init();
+  SharedMemCondition::SharedMemCondition(bool shared) : val_(false) {
+    Init(shared);
   }
 
-  void SharedMemCondition::Init() {
+  void SharedMemCondition::Init(bool shared) {
     pthread_condattr_t attrs;
     pthread_condattr_init(&attrs);
-    pthread_condattr_setpshared(&attrs, PTHREAD_PROCESS_SHARED);
+    if (shared) {
+      pthread_condattr_setpshared(&attrs, PTHREAD_PROCESS_SHARED);
+    }
 
     pthread_cond_init(&this->condition_, &attrs);
     pthread_condattr_destroy(&attrs);

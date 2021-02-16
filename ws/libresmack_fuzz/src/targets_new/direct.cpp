@@ -30,8 +30,8 @@ namespace targets {
       sizeof(DirectTargetIpcInfo) + max_input_size - 1
     );
 
-    this->ipc->input_ready.Init();
-    this->ipc->input_processed.Init();
+    this->ipc->input_ready.Init(true);
+    this->ipc->input_processed.Init(true);
 
     hooks->ExecIpcInit(&this->ipc_memory);
   }

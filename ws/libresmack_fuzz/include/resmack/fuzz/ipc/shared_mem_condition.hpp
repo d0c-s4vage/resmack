@@ -16,8 +16,8 @@ namespace ipc {
     bool val_;
 
    public:
-    SharedMemCondition();
-    void Init();
+    SharedMemCondition(bool shared);
+    void Init(bool shared);
 
     void Wait();
     void WaitAndHold();

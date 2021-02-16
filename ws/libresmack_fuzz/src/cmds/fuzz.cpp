@@ -4,10 +4,11 @@
 
 #include "resmack/types.hpp"
 #include "resmack/fuzz/cmds/fuzz.hpp"
-#include "resmack/fuzz/target_new.hpp"
-#include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
+#include "resmack/fuzz/generator.hpp"
+#include "resmack/fuzz/target_new.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/tracer.hpp"
 
 namespace resmack {
@@ -28,18 +29,19 @@ namespace cmds {
   }
 
   void* FuzzN(void* config_arg) {
-    FuzzConfig* config = reinterpret_cast<FuzzConfig*>(config_arg);
+    Config* config = reinterpret_cast<Config*>(config_arg);
+    FuzzConfig* fuzz_config = &config->fuzz_config;
     kRun = true;
 
     TargetHooks hooks;
     Tracer tracer;
     tracer.InsertHooks(&hooks);
 
-    //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(config->feedbackType);
+    //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(fuzz_config->feedbackType);
     feedbacks::Coverage cov;
     cov.InsertHooks(&hooks);
 
-    //targets::Target* target = targets::CreateTarget(config->targetType, &hooks);
+    //targets::Target* target = targets::CreateTarget(fuzz_config->targetType, &hooks);
     targets::Target* target = targets::CreateTarget(
       targets::TargetType::kDirect,
       &hooks,
@@ -50,12 +52,22 @@ namespace cmds {
       targets.push_back(target);
     lock.unlock();
 
-    int count = 0;
+    Generator gen(&config->grammar_config, [](Vector<RandSnapshot>*) -> bool {
+      // no replays for now!
+      // TODO hook up to the corpus
+      return false;
+    });
+    gen.Run();
+
+    size_t count = 0;
     target->Start();
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-    std::string input = "hello";
     while (kRun) {
-      target->Test(&input);
+      gen.NextInputWait();
+      const std::string* next_input = gen.NextInputGet();
+        target->Test(next_input);
+      gen.NextInputUsed();
+
       if (++count == iters) {
         break;
       }
@@ -69,6 +81,8 @@ namespace cmds {
       CrashInfo* info = tracer.GetCrashInfo();
       printf("Crashed!\nStack:\n%s\n", info->minor_stack.c_str());
     }
+
+    gen.Stop();
 
     delete target;
 

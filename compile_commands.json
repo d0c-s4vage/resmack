@@ -176,6 +176,11 @@
 },
 {
   "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/generator.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/generator.cpp",
+  "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/generator.cpp"
+},
+{
+  "directory": "/home/guts/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++  -Dlibresmack_fuzz_EXPORTS -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/guts/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include  -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC   -std=gnu++2a -o CMakeFiles/libresmack_fuzz.dir/src/ipc/locked_shared_mem.cpp.o -c /home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/locked_shared_mem.cpp",
   "file": "/home/guts/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/locked_shared_mem.cpp"
 },
