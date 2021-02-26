@@ -1,3 +1,4 @@
+#include <chrono>
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -8,7 +9,10 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <thread>
+#include <unistd.h>
 
+#include "ws/libresmack_fuzz/include/resmack/fuzz/debug.hpp"
 #include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
 
 void splitStr(std::string* input, std::string split, std::vector<std::string>* output) {
@@ -95,21 +99,26 @@ bool parseSentence(const uint8_t* data, size_t size) {
 
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    ((void(*)())(0))();
+    _DEBUG_PRINT("%d: CRASH NORMAL!\n", getpid());
+    //((void(*)())(0))();
     //raise(SIGSEGV);
   }
   curr_idx = start_idx;
   if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
-    char* test = (char*)malloc(0x10);
-    char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
-    memcpy(test, to_copy, sizeof(to_copy));
+    _DEBUG_PRINT("%d: CRASH ASAN!\n", getpid());
+    //char* test = (char*)malloc(0x10);
+    //char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
+    //memcpy(test, to_copy, sizeof(to_copy));
   }
 
   return false;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  parseSentence(data, size);
+  _DEBUG_PRINT("%d Parsing sentence\n", getpid());
+  //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  //parseSentence(data, size);
+  _DEBUG_PRINT("%d Done parsing sentence\n", getpid());
   return true;
 }
 

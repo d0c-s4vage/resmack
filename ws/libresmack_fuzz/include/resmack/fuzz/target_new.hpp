@@ -24,7 +24,7 @@ namespace targets {
     kDirect
   };
 
-  Target* CreateTarget(TargetType type, TargetHooks* hooks, size_t max_input_size);
+  Target* CreateTarget(size_t id, TargetType type, TargetHooks* hooks, size_t max_input_size);
 
 }
 }

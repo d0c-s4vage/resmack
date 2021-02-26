@@ -13,6 +13,7 @@ namespace ipc {
   }
 
   void SharedMemCondition::Init(bool shared) {
+    this->val_ = false;
     pthread_condattr_t attrs;
     pthread_condattr_init(&attrs);
     if (shared) {

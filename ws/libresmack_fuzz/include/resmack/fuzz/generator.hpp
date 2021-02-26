@@ -35,17 +35,16 @@ using TargetHookGenericCb = std::function<void()>;
     bool to_consume_from;
     GeneratedInfo last_generated[2];
     Vector<RandSnapshot> base_replay;
-
     bool should_run;
     size_t max_depth;
     pthread_t generate_thread;
-
     ReplayInitCb replay_init_cb;
+    size_t id;
 
     static void* GenerateLoop(void* this_ptr);
 
    public:
-    Generator(const GrammarConfig* config, ReplayInitCb cb);
+    Generator(size_t id, const GrammarConfig* config, ReplayInitCb cb);
     ~Generator();
 
     void Run();

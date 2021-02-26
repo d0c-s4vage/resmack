@@ -103,19 +103,23 @@ namespace feedbacks {
   }
 
   void Coverage::SyncSharedToTarget() {
+    printf("%d Syncing shared to target, waiting for lock\n", getpid());
     SHARED_COV_FLAGS_LOCK.lock();
       uint32_t* cov_map = this->GetCovMap();
       memcpy(cov_map, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_UINT32);
     SHARED_COV_FLAGS_LOCK.unlock();
+    printf("%d Done syncing shared to target, waiting for lock\n", getpid());
   }
 
   void Coverage::SyncTargetToShared() {
+    printf("%d Syncing target to shared, waiting for lock\n", getpid());
     SHARED_COV_FLAGS_LOCK.lock();
       uint32_t* cov_map = this->GetCovMap();
       for (size_t i = 0; i < NUM_COV_UINT32; i++) {
         SHARED_COV_FLAGS[i] |= cov_map[i];
       }
     SHARED_COV_FLAGS_LOCK.unlock();
+    printf("%d Done syncing target to shared, waiting for lock\n", getpid());
   }
 
   FeedbackStats Coverage::GetStats() {

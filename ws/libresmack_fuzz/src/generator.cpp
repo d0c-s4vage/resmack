@@ -1,23 +1,34 @@
 #include "resmack/build_context.hpp"
+#include "resmack/fuzz/debug.hpp"
 #include "resmack/fuzz/external.hpp"
 #include "resmack/fuzz/generator.hpp"
 
 namespace resmack {
 namespace fuzz {
 
-  GeneratedInfo::GeneratedInfo() : ready_cond(false), used_cond(false) {
+  GeneratedInfo::GeneratedInfo() : ready_cond(true), used_cond(true) {
   }
 
   // --------------------------------------------------------------------------
 
-  Generator::Generator(const GrammarConfig* config, ReplayInitCb replay_init_cb) :
+  Generator::Generator(
+    size_t id,
+    const GrammarConfig* config,
+    ReplayInitCb replay_init_cb
+  ) :
     to_generate_into(false), // 0
     to_consume_from(false), // 0
     max_depth(config->max_depth),
-    replay_init_cb(replay_init_cb)
+    replay_init_cb(replay_init_cb),
+    id(id)
   {
     this->last_generated[0].used_cond.Signal();
+    this->last_generated[0].ready_cond.Signal();
+    this->last_generated[0].ready_cond.Wait();
+
     this->last_generated[1].used_cond.Signal();
+    this->last_generated[1].ready_cond.Signal();
+    this->last_generated[1].ready_cond.Wait();
   }
 
   Generator::~Generator() {}
@@ -46,7 +57,9 @@ namespace fuzz {
 
     while (this_->should_run) {
       GeneratedInfo* info = &this_->last_generated[this_->to_generate_into];
+      _DEBUG_PRINT("%lu: Generator: Waiting for used_cond\n", this_->id);
       info->used_cond.Wait();
+      _DEBUG_PRINT("%lu: Generator: Got the used_cond\n", this_->id);
 
       if (!this_->replay_init_cb(&this_->base_replay)) {
         ctx.SetReplay(NULL);
@@ -62,6 +75,7 @@ namespace fuzz {
       this_->rules.Build(this_->start_rule_idx, &ctx);
       this_->to_generate_into = !this_->to_generate_into;
 
+      _DEBUG_PRINT("%lu: Generator: Signalling ready cond\n", this_->id);
       info->ready_cond.Signal();
     }
 
@@ -69,7 +83,9 @@ namespace fuzz {
   }
 
   void Generator::NextInputWait() {
+    _DEBUG_PRINT("%lu: >>Generator: Waiting for ready cond\n", this->id);
     this->last_generated[this->to_consume_from].ready_cond.Wait();
+    _DEBUG_PRINT("%lu: >>Generator: Waiting for ready cond - ready!\n", this->id);
   }
 
   const std::string* Generator::NextInputGet() {
@@ -77,8 +93,11 @@ namespace fuzz {
   }
 
   void Generator::NextInputUsed() {
-    this->last_generated[this->to_consume_from].used_cond.Signal();
+    _DEBUG_PRINT("%lu: >>Generator: Signalling used cond\n", this->id);
+    bool to_signal = this->to_consume_from;
     this->to_consume_from = !this->to_consume_from;
+    this->last_generated[to_signal].used_cond.Signal();
+    _DEBUG_PRINT("%lu: >>Generator: Signalling used cond - signalled!\n", this->id);
   }
 }
 }

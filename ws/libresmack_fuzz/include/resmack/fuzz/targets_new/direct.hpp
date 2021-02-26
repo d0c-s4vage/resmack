@@ -25,6 +25,8 @@ namespace targets {
 
   class DirectTarget : public Target {
    private:
+    size_t id;
+    size_t max_input_size;
     pid_t running_target;
     TargetCb callback;
     ipc::LockedSharedMem ipc_memory;
@@ -35,7 +37,7 @@ namespace targets {
     void TestLoop();
 
    public:
-    DirectTarget(TargetCb callback, TargetHooks* hooks, size_t max_input_size);
+    DirectTarget(size_t id, TargetCb callback, TargetHooks* hooks, size_t max_input_size);
     ~DirectTarget();
 
     pid_t Start();

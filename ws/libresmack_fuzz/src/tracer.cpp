@@ -15,6 +15,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "resmack/fuzz/debug.hpp"
 #include "resmack/fuzz/ipc/locked_shared_mem.hpp"
 #include "resmack/fuzz/tracer.hpp"
 #include "resmack/fuzz/target_hooks.hpp"
@@ -49,6 +50,7 @@ namespace fuzz {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
           asan::SetAsanCallback([this, max_asan_size](const char* report) {
+            _DEBUG_PRINT("ASAN ON %d\n", getpid());
             size_t report_len = strlen(report);
             if (report_len > max_asan_size - 1) {
               report_len = max_asan_size - 1;
@@ -89,15 +91,26 @@ namespace fuzz {
       int status;
       if (waitpid(curr_pid, &status, 0) == -1) {
         // EINTR == signal interrupted, ECHILD == pid does not exist
-        if (errno == EINTR || errno == ECHILD) { break; }
+        if (errno == EINTR || errno == ECHILD) {
+          _DEBUG_PRINT("ERROR WAITING FOR CHILD %d: %d - %s\n", this_->traced_pid, errno, strerror(errno));
+          break;
+        }
         break;
       }
 
       process_utils::LoadSignalInfo(status, &sig_info);
+      _DEBUG_PRINT("Done waiting for process %d\n", this_->traced_pid);
+      process_utils::PrintSignalInfo(&sig_info);
 
-      if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
-        ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
-        continue;
+      if (sig_info.stopped) {
+        if (sig_info.stop_signal == SIGWINCH) {
+          ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
+          continue;
+        }
+        // CTRL-C
+        else if (sig_info.stop_signal == SIGINT) {
+          break;
+        }
       } else if (sig_info.signaled && sig_info.term_signal == SIGKILL) {
         break;
       }
@@ -109,6 +122,8 @@ namespace fuzz {
         this_->CalcHashes();
       }
     } while(false);
+
+    _DEBUG_PRINT("Done with tracing loop for %d\n", this_->traced_pid);
 
     ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
     ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
@@ -251,18 +266,18 @@ namespace fuzz {
     this->last_crash.minor_stack.clear();
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-    printf("Calculating hashes on %d\n", this->traced_pid);
+    _DEBUG_PRINT("Calculating hashes on %d\n", this->traced_pid);
 
     void *context = _UPT_create(this->traced_pid);
     unw_cursor_t cursor;
     int err;
     if ((err = unw_init_remote(&cursor, as, context)) != 0) {
       if (err == -UNW_EINVAL) {
-        printf("UNW_EINVAL\n");
+        _DEBUG_PRINT("UNW_EINVAL\n");
       } else if (err == -UNW_EUNSPEC) {
-        printf("UNW_EUNSPEC\n");
+        _DEBUG_PRINT("UNW_EUNSPEC\n");
       } else if (err == -UNW_EBADREG) {
-        printf("UNW_EBADREG\n");
+        _DEBUG_PRINT("UNW_EBADREG\n");
       }
       _UPT_destroy(context);
       free(as);
