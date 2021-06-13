@@ -10,7 +10,7 @@
 
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/serialized.hpp"
-#include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/utils.hpp"
 
 namespace resmack {
