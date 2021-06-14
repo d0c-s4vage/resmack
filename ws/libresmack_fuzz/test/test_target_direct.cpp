@@ -36,6 +36,8 @@ namespace resmack {
 namespace fuzz {
 
   TEST(TargetDirect, RunsCorrectly) {
+    EXPECT_TRUE(false);
+    /*
     DirectTarget target;
     Coverage feedback;
     TargetSettings settings;
@@ -50,6 +52,7 @@ namespace fuzz {
     EXPECT_NE(stats.duration_TARGET, 0.0);
     EXPECT_EQ(stats.duration_TARGET_RESET, 0.0);
     EXPECT_EQ(stats.crashed, false);
+    */
   }
 
 }

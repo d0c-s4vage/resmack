@@ -9,6 +9,8 @@ namespace resmack {
 namespace fuzz {
 
   TEST(Fuzz, CoverageHitTwice) {
+    EXPECT_TRUE(false);
+    /*
     uint32_t vars[3] = {0, 0, 0};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
@@ -29,6 +31,7 @@ namespace fuzz {
     cov.Stop();
 
     EXPECT_EQ(cov.GetStats().key, 0u);
+    */
   }
 
 }

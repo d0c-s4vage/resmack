@@ -27,7 +27,7 @@ namespace fuzz {
       ->AddPreStart([&pre_start](ipc::LockedSharedMem*) {
           *pre_start  = 1;
       })
-      ->AddPostStart([&post_start](ipc::LockedSharedMem*, pid_t) {
+      ->AddPostStart([&post_start](ipc::LockedSharedMem*, pid_t, targets::Target*) {
         *post_start = 2;
       })
       ->AddPreTest([&pre_test](ipc::LockedSharedMem*) {
@@ -51,7 +51,7 @@ namespace fuzz {
     EXPECT_EQ(*pre_stop,   0);
     EXPECT_EQ(*post_stop,  0);
 
-    hooks.ExecPostStart(&shared_mem, -1);
+    hooks.ExecPostStart(&shared_mem, -1, NULL);
     EXPECT_EQ(*pre_start,  1);
     EXPECT_EQ(*post_start, 2);
     EXPECT_EQ(*pre_test,   0);
