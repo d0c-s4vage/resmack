@@ -61,7 +61,7 @@ namespace feedbacks {
 
   Coverage::Coverage() : cov_lock("coverage-lock") {
     SHARED_COV_FLAGS_LOCK.lock();
-      if (SHARED_COV_FLAGS = NULL) {
+      if (SHARED_COV_FLAGS == NULL) {
         SHARED_COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_UINT32);
         memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
       }

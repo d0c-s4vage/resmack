@@ -7,7 +7,8 @@ option(DEBUG_IPC "Debug IPC waits/releases" OFF)
 
 include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
-set(RESMACK_FUZZ_LIB libresmack_fuzz)
+set(RESMACK_FUZZ_LIB libresmack_fuzz
+    CACHE INTERNAL "${PROJECT_NAME}: Name" FORCE)
 
 include(GNUInstallDirs)
 
@@ -49,7 +50,9 @@ target_link_libraries(
     unwind-generic
     unwind-ptrace
 )
-set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
+set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES
+    OUTPUT_NAME "resmack_fuzz"
+    POSITION_INDEPENDENT_CODE ON)
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS ${RESMACK_FUZZ_LIB} EXPORT
