@@ -271,6 +271,11 @@
 },
 {
   "directory": "/home/saitama/ws/dev/resmack/build/test/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++ -Dlibresmack_fuzz_EXPORTS -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC -std=gnu++20 -o CMakeFiles/libresmack_fuzz.dir/src/ipc/message_queue.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/message_queue.cpp",
+  "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/message_queue.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack/build/test/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++ -Dlibresmack_fuzz_EXPORTS -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC -std=gnu++20 -o CMakeFiles/libresmack_fuzz.dir/src/ipc/shared_mem_condition.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/shared_mem_condition.cpp",
   "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/ipc/shared_mem_condition.cpp"
 },
@@ -368,6 +373,11 @@
   "directory": "/home/saitama/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
   "command": "/usr/bin/clang++  -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -std=gnu++20 -o CMakeFiles/test_libresmack_fuzz.dir/test_locked_shared_mem.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test/test_locked_shared_mem.cpp",
   "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test/test_locked_shared_mem.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",
+  "command": "/usr/bin/clang++  -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googletest/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../../libs-test/googletest/googlemock/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -std=gnu++20 -o CMakeFiles/test_libresmack_fuzz.dir/test_message_queue.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test/test_message_queue.cpp",
+  "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/test/test_message_queue.cpp"
 },
 {
   "directory": "/home/saitama/ws/dev/resmack/build/test/ws/libresmack_fuzz/test",

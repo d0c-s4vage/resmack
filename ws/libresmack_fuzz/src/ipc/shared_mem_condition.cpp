@@ -1,8 +1,8 @@
-#include "resmack/fuzz/ipc/shared_mem_condition.hpp"
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#include "resmack/fuzz/ipc/shared_mem_condition.hpp"
 
 namespace resmack {
 namespace fuzz {
