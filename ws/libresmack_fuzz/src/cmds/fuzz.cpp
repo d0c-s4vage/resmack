@@ -37,11 +37,12 @@ namespace cmds {
     kRun = true;
 
     TargetHooks hooks;
+
     Tracer tracer;
-    tracer.InsertHooks(&hooks);
+    feedbacks::Coverage cov;
 
     //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(fuzz_config->feedbackType);
-    feedbacks::Coverage cov;
+    tracer.InsertHooks(&hooks);
     cov.InsertHooks(&hooks);
 
     lock.lock();
@@ -53,7 +54,7 @@ namespace cmds {
       id,
       targets::TargetType::kDirect,
       &hooks,
-      0x1000
+      0x100000
     );
 
     lock.lock();

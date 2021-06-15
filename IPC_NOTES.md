@@ -22,7 +22,7 @@ Three parts: metadata (named), corpus data (named), and sorted items (anon)
 ## Speed requirements
 
 * Using corpus entries and counters must be *fast*
-    * Process queues up changes for N iterations and then syncs with atomics
+    * Process queues up changes after N iterations and then syncs with atomics
 * Child process should never hold any locks
 * Adding corpus entries can be slow
 * Use unix domain socket to queue changes to corpus?
@@ -34,24 +34,8 @@ Three parts: metadata (named), corpus data (named), and sorted items (anon)
 * Main process:
 * Collects stats from each IPC
 
-See the "vanilla" method of collecting counters here:
+See the various methods of collecting counters here:
 https://travisdowns.github.io/blog/2020/07/06/concurrency-costs.html
-
-Process architecture:
-
-   ┏━ parent ━━━━━━━━━━━━━━━━━━━━━┓           ┌───────┐
-   ┃                              ┃   ┌──────>│ IPC 1 │
-   ┃ ┌─ anon mmap Parent↔ Child ┳─────┘       └───────┘
-   ┃ │ IPC Metadata             ┃ ┃               ^
-   ┃ └──────────────────────────┻─────┐    ┌──────┘
-   ┃ ┌─ named mmap All↔ All ────┓ ┃ ┌─│────┘  ┌───────┐
-   ┃ │ Metadata                 ┣───┤ └──────>│ IPC 2 │
-   ┃ └──────────────────────────┛ ┃ │         └───────┘
-   ┃ ┌─ named mmap All↔ All ────┓ ┃ │             ^
-   ┃ │ Corpus Items             ┣───┴─────────────┘
-   ┃ └──────────────────────────┛ ┃
-   ┃                              ┃
-   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 Metadata includes:
 

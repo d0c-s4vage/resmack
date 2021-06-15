@@ -53,6 +53,7 @@ namespace ipc {
 
     if (fork() == 0) {
       queue.SendToParent(type, &to_send);
+      _exit(0);
     } else {
       uint16_t received_type;
       TestStruct* to_receive;
@@ -64,6 +65,46 @@ namespace ipc {
 
       free(to_receive);
     }
+  }
+
+  TEST(MessageQueue, Performance) {
+    bool rc;
+
+    struct TestStruct {
+      uint32_t message_number;
+      uint64_t data[0x100];
+    };
+
+    MessageQueue queue;
+    uint16_t type = 40;
+    int iters = 0x10000;
+
+    int pid = fork();
+    if (pid == 0) {
+      TestStruct to_send;
+      for (int i = 0; i < iters; i++) {
+        to_send.message_number = i;
+        queue.SendToParent(type, &to_send);
+      }
+      _exit(0);
+    }
+
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+
+    TestStruct* to_receive;
+    for (int i = 0; i < iters; i++) {
+      uint16_t received_type;
+      rc = queue.ReadFromChild(&received_type, &to_receive);
+      EXPECT_EQ(to_receive->message_number, i);
+      free(to_receive);
+      to_receive = nullptr;
+    }
+
+    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    printf("%0.03f message queue messages/s\n", (double)iters / span.count());
+
+    waitpid(pid, NULL, 0);
   }
 
 }
