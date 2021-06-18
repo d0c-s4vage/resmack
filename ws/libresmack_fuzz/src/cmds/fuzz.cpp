@@ -18,7 +18,7 @@ namespace cmds {
 
   static bool kRun;
   std::mutex lock;
-  size_t iters = 0x3000;
+  size_t iters = 0x30000;
   size_t fuzz_n_id_next = 1;
 
   std::vector<targets::Target*> targets;
@@ -84,7 +84,7 @@ namespace cmds {
     }
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    _DEBUG_PRINT(
+    printf(
       "%lu: Done, %lu iters in %.03fs = %.03f iters/s\n",
       id,
       iters,

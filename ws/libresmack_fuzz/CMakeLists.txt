@@ -20,8 +20,6 @@ include_directories(
 file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
     ${PROJECT_SOURCE_DIR}/src/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.hpp
     ${PROJECT_SOURCE_DIR}/src/feedbacks/*.cpp
     ${PROJECT_SOURCE_DIR}/src/feedbacks/*.hpp
     ${PROJECT_SOURCE_DIR}/src/states/*.cpp

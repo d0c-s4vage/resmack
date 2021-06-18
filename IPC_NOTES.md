@@ -31,31 +31,12 @@ Three parts: metadata (named), corpus data (named), and sorted items (anon)
 
 ### Process Architecture
 
-* Main process:
-* Collects stats from each IPC
-
-See the various methods of collecting counters here:
-https://travisdowns.github.io/blog/2020/07/06/concurrency-costs.html
-
-Metadata includes:
-
-* Total Iterations
-* Total runtime
-* Total crashes
-* Metadata for corpus items
-
-
-## Creating MMAPS
-
-1. Parent proc: create/load globally-shared mmaps
-2. Create named mmaps for each process - to be deleted if already exist
-
-
-
-
-
-
-
-
-
-
+* Fuzzing processes communicate with the root process via domain sockets
+    * Occasional updates are sent, every 0.1 seconds
+    * Corpus metadata updates
+    * Fuzzing iteration updates
+    * New corpus items updates
+* All fuzzing processes share the mmap metadata and corpus items in a read-only
+    manner
+    * No locking, period! Root process is the single writer to the mmap data
+* Root process resorts the corpus items every X iterations
