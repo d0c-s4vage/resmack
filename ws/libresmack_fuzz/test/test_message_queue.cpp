@@ -28,8 +28,9 @@ namespace ipc {
     EXPECT_TRUE(rc);
 
     uint16_t read_type = 0;
+    size_t data_length;
     TestStruct* read_test;
-    rc = queue.ReadFromChild(&read_type, &read_test);
+    rc = queue.ReadFromChild(&read_type, &data_length, reinterpret_cast<void**>(&read_test));
     EXPECT_TRUE(rc);
 
     EXPECT_EQ(read_type, 1u);
@@ -56,8 +57,9 @@ namespace ipc {
       _exit(0);
     } else {
       uint16_t received_type;
+      size_t data_length;
       TestStruct* to_receive;
-      rc = queue.ReadFromChild(&received_type, &to_receive);
+      rc = queue.ReadFromChild(&received_type, &data_length, reinterpret_cast<void**>(&to_receive));
 
       EXPECT_EQ(received_type, type);
       EXPECT_EQ(to_receive->a, to_send.a);
@@ -94,7 +96,8 @@ namespace ipc {
     TestStruct* to_receive;
     for (int i = 0; i < iters; i++) {
       uint16_t received_type;
-      rc = queue.ReadFromChild(&received_type, &to_receive);
+      size_t data_length;
+      rc = queue.ReadFromChild(&received_type, &data_length, reinterpret_cast<void**>(&to_receive));
       EXPECT_EQ(to_receive->message_number, i);
       free(to_receive);
       to_receive = nullptr;
