@@ -21,7 +21,6 @@ namespace feedbacks {
   class Feedback {
    public:
     virtual void SyncTargetToShared() {}
-    virtual void SyncSharedToTarget() {}
     virtual std::string GetSummary() = 0;
     virtual FeedbackStats GetStats() = 0;
     virtual void InsertHooks(TargetHooks* hooks) = 0;

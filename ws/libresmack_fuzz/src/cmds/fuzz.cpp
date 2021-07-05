@@ -16,8 +16,8 @@ namespace resmack {
 namespace fuzz {
 namespace cmds {
 
-  static bool kRun;
   std::mutex lock;
+  bool shouldRun = true;
   size_t iters = 0x30000;
   size_t fuzz_n_id_next = 1;
 
@@ -25,6 +25,7 @@ namespace cmds {
 
   void SignalHandler(int signum) {
     _DEBUG_PRINT("Handling signal: %d - %s\n", signum, strsignal(signum));
+    shouldRun = false;
     for (targets::Target* target : targets) {
       target->Stop();
     }
@@ -34,10 +35,8 @@ namespace cmds {
   void* FuzzN(void* config_arg) {
     Config* config = reinterpret_cast<Config*>(config_arg);
     FuzzConfig* fuzz_config = &config->fuzz_config;
-    kRun = true;
 
     TargetHooks hooks;
-
     Tracer tracer;
     feedbacks::Coverage cov;
 
@@ -49,7 +48,12 @@ namespace cmds {
       size_t id = fuzz_n_id_next++;
     lock.unlock();
 
-    //targets::Target* target = targets::CreateTarget(fuzz_config->targetType, &hooks);
+    Generator gen(id, &config->grammar_config, [](Vector<RandSnapshot>*) -> bool {
+      // no replays for now!
+      // TODO hook up to the corpus
+      return false;
+    });
+
     targets::Target* target = targets::CreateTarget(
       id,
       targets::TargetType::kDirect,
@@ -61,44 +65,26 @@ namespace cmds {
       targets.push_back(target);
     lock.unlock();
 
-    Generator gen(id, &config->grammar_config, [](Vector<RandSnapshot>*) -> bool {
-      // no replays for now!
-      // TODO hook up to the corpus
-      return false;
-    });
-    gen.Run();
+    while (shouldRun) {
+      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+      target->Start();
+      std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+      /*
+      printf(
+        "%lu: Done, %lu iters in %.03fs = %.03f iters/s\n",
+        id,
+        iters,
+        span.count(),
+        (double)iters / span.count()
+      );
+      */
 
-    size_t count = 0;
-    target->Start();
-    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-    const std::string* next_input;
-    while (kRun) {
-      gen.NextInputWait();
-      const std::string* next_input = gen.NextInputGet();
-        target->Test(next_input);
-      gen.NextInputUsed();
-
-      if (++count == iters) {
-        break;
+      if (tracer.DidCrash()) {
+        CrashInfo* info = tracer.GetCrashInfo();
+        printf("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
       }
     }
-    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    printf(
-      "%lu: Done, %lu iters in %.03fs = %.03f iters/s\n",
-      id,
-      iters,
-      span.count(),
-      (double)iters / span.count()
-    );
-    target->Stop();
-
-    if (tracer.DidCrash()) {
-      CrashInfo* info = tracer.GetCrashInfo();
-      _DEBUG_PRINT("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
-    }
-
-    gen.Stop();
 
     return NULL;
   }

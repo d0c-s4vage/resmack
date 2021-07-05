@@ -9,11 +9,18 @@
 namespace resmack {
 namespace fuzz {
 namespace ipc {
-
   QueuedSharedMem::QueuedSharedMem() {}
+
+  QueuedSharedMem::QueuedSharedMem(size_t max_size) {
+    this->Init(max_size);
+  }
 
   void QueuedSharedMem::Init(size_t max_size) {
     this->shared_mem_.Init(max_size);
+  }
+
+  size_t QueuedSharedMem::DataSize() {
+    return this->shared_mem_.DataSize();
   }
 
   void QueuedSharedMem::AddReceiveHandler(uint16_t message_type, IpcMessageHandler handler) {

@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 
+#include "resmack/fuzz/generator.hpp"
 #include "resmack/fuzz/target_new.hpp"
 #include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/ipc/locked_shared_mem.hpp"
@@ -16,8 +17,6 @@ namespace targets {
   using TargetCb = std::function<int(const char* data, size_t size)>;
 
   struct DirectTargetIpcInfo {
-    ipc::SharedMemCondition input_ready;
-    ipc::SharedMemCondition input_processed;
     int result;
     size_t data_size;
     char data; // ref this to get a pointer to the data
@@ -29,8 +28,9 @@ namespace targets {
     size_t max_input_size;
     pid_t running_target;
     TargetCb callback;
-    ipc::LockedSharedMem ipc_memory;
+    ipc::QueuedSharedMem ipc_memory;
     TargetHooks* hooks;
+    Generator* genr;
 
     DirectTargetIpcInfo* ipc;
 
@@ -42,8 +42,6 @@ namespace targets {
 
     pid_t Start();
     void Stop();
-    void ForceFinishTest();
-    int Test(const std::string* input);
   };
 
 }

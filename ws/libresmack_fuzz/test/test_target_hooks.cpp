@@ -14,7 +14,7 @@ namespace resmack {
 namespace fuzz {
 
   TEST(TargetHooks, EventHandlersAreCalledInOrder) {
-    ipc::LockedSharedMem shared_mem(0x100);
+    ipc::QueuedSharedMem shared_mem(0x100);
     uint32_t* pre_start  = shared_mem.GetNextPtrFor<uint32_t>();
     uint32_t* post_start = shared_mem.GetNextPtrFor<uint32_t>();
     uint32_t* pre_test   = shared_mem.GetNextPtrFor<uint32_t>();
@@ -24,22 +24,22 @@ namespace fuzz {
 
     TargetHooks hooks;
     (&hooks)
-      ->AddPreStart([&pre_start](ipc::LockedSharedMem*) {
+      ->AddPreStart([&pre_start](ipc::QueuedSharedMem*) {
           *pre_start  = 1;
       })
-      ->AddPostStart([&post_start](ipc::LockedSharedMem*, pid_t, targets::Target*) {
+      ->AddPostStart([&post_start](ipc::QueuedSharedMem*, pid_t, targets::Target*) {
         *post_start = 2;
       })
-      ->AddPreTest([&pre_test](ipc::LockedSharedMem*) {
+      ->AddPreTest([&pre_test](ipc::QueuedSharedMem*) {
         *pre_test   = 3;
       })
-      ->AddPostTest([&post_test](ipc::LockedSharedMem*) {
+      ->AddPostTest([&post_test](ipc::QueuedSharedMem*) {
         *post_test  = 4;
       })
-      ->AddPreStop([&pre_stop](ipc::LockedSharedMem*, pid_t) {
+      ->AddPreStop([&pre_stop](ipc::QueuedSharedMem*, pid_t) {
         *pre_stop   = 5;
       })
-      ->AddPostStop([&post_stop](ipc::LockedSharedMem*, pid_t) {
+      ->AddPostStop([&post_stop](ipc::QueuedSharedMem*, pid_t) {
         *post_stop  = 6; 
       });
 
@@ -93,7 +93,7 @@ namespace fuzz {
   }
 
   TEST(TargetHooks, IpcSetupFunctionality) {
-    ipc::LockedSharedMem shared_mem;
+    ipc::QueuedSharedMem shared_mem;
     TargetHooks hooks;
 
     uint32_t* mem1 = NULL;
@@ -101,35 +101,29 @@ namespace fuzz {
 
     (&hooks)
       ->AddIpcSize([]() -> size_t { return sizeof(uint32_t); })
-      ->AddIpcInit([&mem1](ipc::LockedSharedMem* mem) {
+      ->AddIpcInit([&mem1](ipc::QueuedSharedMem* mem) {
           mem1 = mem->GetNextPtrFor<uint32_t>();
       })
 
       ->AddIpcSize([]() -> size_t { return sizeof(uint32_t); })
-      ->AddIpcInit([&mem2](ipc::LockedSharedMem* mem) {
+      ->AddIpcInit([&mem2](ipc::QueuedSharedMem* mem) {
           mem2 = mem->GetNextPtrFor<uint32_t>();
       });
 
     shared_mem.Init(hooks.ExecAndSumIpcSize());
     hooks.ExecIpcInit(&shared_mem);
 
-    shared_mem.Lock();
-
     EXPECT_TRUE(mem1 != NULL);
     EXPECT_TRUE(mem2 != NULL);
 
     pid_t forked = fork();
     if (forked == 0) {
-      shared_mem.Lock();
       *mem1 = 100;
       *mem2 = 200;
-      shared_mem.Unlock();
       std::exit(0);
     }
 
-    shared_mem.Unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    shared_mem.Lock();
 
     waitpid(forked, NULL, 0);
 

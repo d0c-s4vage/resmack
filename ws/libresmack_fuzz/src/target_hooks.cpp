@@ -54,45 +54,45 @@ namespace fuzz {
     return res;
   }
 
-  void TargetHooks::ExecIpcInit(ipc::LockedSharedMem* ipc_mem) {
+  void TargetHooks::ExecIpcInit(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->ipc_init) {
       cb(ipc_mem);
     }
   }
 
-  void TargetHooks::ExecPreStart(ipc::LockedSharedMem* ipc_mem) {
+  void TargetHooks::ExecPreStart(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->pre_start) {
       cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem) {
+  void TargetHooks::ExecPreStartInTarget(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->pre_start_in_target) {
       cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid, targets::Target* target) {
+  void TargetHooks::ExecPostStart(ipc::QueuedSharedMem* ipc_mem, pid_t pid, targets::Target* target) {
     for (auto cb : this->post_start) {
       cb(ipc_mem, pid, target);
     }
   }
 
-  void TargetHooks::ExecPreTest(ipc::LockedSharedMem* ipc_mem) {
+  void TargetHooks::ExecPreTest(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->pre_test) {
       cb(ipc_mem);
     }
   }
-  void TargetHooks::ExecPostTest(ipc::LockedSharedMem* ipc_mem) {
+  void TargetHooks::ExecPostTest(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->post_test) {
       cb(ipc_mem);
     }
   }
 
-  void TargetHooks::ExecPreStop(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
+  void TargetHooks::ExecPreStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid) {
     for (auto cb : this->pre_stop) {
       cb(ipc_mem, pid);
     }
   }
-  void TargetHooks::ExecPostStop(ipc::LockedSharedMem* ipc_mem, pid_t pid) {
+  void TargetHooks::ExecPostStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid) {
     for (auto cb : this->post_stop) {
       cb(ipc_mem, pid);
     }

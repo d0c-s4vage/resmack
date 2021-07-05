@@ -6,6 +6,7 @@
 #include <semaphore.h>
 
 #include "resmack/fuzz/feedback.hpp"
+#include "resmack/fuzz/ipc/queued_shared_mem.hpp"
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/target_hooks.hpp"
 
@@ -16,29 +17,27 @@ namespace feedbacks {
   void HandleSanitizerCovTracePcGuard(uint32_t* guard_var);
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* end);
 
-  struct CoverageIpcInfo {
-    bool is_new;
-    uint32_t cov_map;
-  };
+  static uint16_t COV_UPDATE_TYPE = 0x10;
+  static uint32_t* SHARED_COV_FLAGS = NULL;
 
   class Coverage : public Feedback {
    private:
     size_t hash;
-    // only updated when something new is found
-    Lock cov_lock;
-    CoverageIpcInfo *ipc;
 
-    uint32_t* GetCovMap() { return &this->ipc->cov_map; }
     void SyncTargetToShared();
-    void CalcHash();
+    resmack::fuzz::ipc::QueuedSharedMem* queued_mem;
 
    public:
     Coverage();
     ~Coverage();
     // Return a summary of the state of the SHARED_COV_FLAGS
+    void Clear();
+    void CalcHash();
     std::string GetSummary();
-    void SyncSharedToTarget();
     FeedbackStats GetStats();
+
+    void TestInitShared();
+    void TestDestroyShared();
 
     void InsertHooks(TargetHooks* hooks);
   };

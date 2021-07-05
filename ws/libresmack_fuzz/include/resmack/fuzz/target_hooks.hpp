@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include "resmack/fuzz/ipc/locked_shared_mem.hpp"
+#include "resmack/fuzz/ipc/queued_shared_mem.hpp"
 #include "resmack/types.hpp"
 
 namespace resmack {
@@ -17,11 +17,11 @@ namespace fuzz {
   using TargetHookSizedCb = std::function<size_t()>;
   using TargetHookPidCb = std::function<void(pid_t)>;
   using TargetHookPidCb = std::function<void(pid_t)>;
-  using TargetHookIpcMemCb = std::function<void(ipc::LockedSharedMem*)>;
+  using TargetHookIpcMemCb = std::function<void(ipc::QueuedSharedMem*)>;
   using TargetHookIpcMemPidCb =
-    std::function<void(ipc::LockedSharedMem *, pid_t)>;
+    std::function<void(ipc::QueuedSharedMem *, pid_t)>;
   using TargetHookIpcMemPidTargetCb =
-    std::function<void(ipc::LockedSharedMem *, pid_t, targets::Target*)>;
+    std::function<void(ipc::QueuedSharedMem *, pid_t, targets::Target*)>;
 
   class TargetHooks {
    private:
@@ -55,19 +55,19 @@ namespace fuzz {
     TargetHooks* AddPostStop(TargetHookIpcMemPidCb call_back);
 
     size_t ExecAndSumIpcSize();
-    void ExecIpcInit(ipc::LockedSharedMem* ipc_mem);
+    void ExecIpcInit(ipc::QueuedSharedMem* ipc_mem);
 
-    void ExecPreStart(ipc::LockedSharedMem* ipc_mem);
-    void ExecPreStartInTarget(ipc::LockedSharedMem* ipc_mem);
-    void ExecPostStart(ipc::LockedSharedMem* ipc_mem, pid_t pid, targets::Target* target);
+    void ExecPreStart(ipc::QueuedSharedMem* ipc_mem);
+    void ExecPreStartInTarget(ipc::QueuedSharedMem* ipc_mem);
+    void ExecPostStart(ipc::QueuedSharedMem* ipc_mem, pid_t pid, targets::Target* target);
 
     // don't need the pid for both of these since they run *IN* the
     // target process - can simply do getpid() if it's needed
-    void ExecPreTest(ipc::LockedSharedMem* ipc_mem);
-    void ExecPostTest(ipc::LockedSharedMem* ipc_mem);
+    void ExecPreTest(ipc::QueuedSharedMem* ipc_mem);
+    void ExecPostTest(ipc::QueuedSharedMem* ipc_mem);
 
-    void ExecPreStop(ipc::LockedSharedMem* ipc_mem, pid_t pid);
-    void ExecPostStop(ipc::LockedSharedMem* ipc_mem, pid_t pid);
+    void ExecPreStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);
+    void ExecPostStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);
   };
 
 }

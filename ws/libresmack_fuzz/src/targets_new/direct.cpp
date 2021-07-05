@@ -34,9 +34,6 @@ namespace targets {
       sizeof(DirectTargetIpcInfo) + max_input_size // -1  // yes, leave an extra byte at the end for a null terminator
     );
 
-    this->ipc->input_ready.Init(true);
-    this->ipc->input_processed.Init(true);
-
     hooks->ExecIpcInit(&this->ipc_memory);
   }
 
@@ -45,9 +42,6 @@ namespace targets {
   pid_t DirectTarget::Start() {
     _DEBUG_PRINT("%lu: DirectTarget: Starting\n", this->id);
     this->hooks->ExecPreStart(&this->ipc_memory);
-
-    this->ipc->input_ready.Reset();
-    this->ipc->input_processed.Reset();
 
     _DEBUG_PRINT("%lu: DirectTarget: Forking\n", this->id);
     this->running_target = fork();
@@ -82,62 +76,15 @@ namespace targets {
     this->running_target = -1;
   }
 
-  int DirectTarget::Test(const std::string* input) {
-    this->hooks->ExecPreTest(&this->ipc_memory);
-
-    this->ipc->input_ready.Lock();
-    size_t in_size = input->size();
-    memcpy(
-      &this->ipc->data,
-      input->data(),
-      in_size > this->max_input_size ? this->max_input_size : in_size
-    );
-    (&this->ipc->data)[in_size] = '\0';
-    this->ipc->data_size = input->size();
-    this->ipc->result = -1;
-
-    this->ipc->input_ready.SignalRaw_Danger();
-    this->ipc->input_ready.Unlock();
-
-    this->ipc->input_processed.WaitAndHold();
-    int res = this->ipc->result;
-    this->ipc->input_processed.Unlock();
-
-    return res;
-  }
-
-  void DirectTarget::ForceFinishTest() {
-    this->ipc->input_processed.SignalRaw_Danger();
-    this->ipc->input_processed.Unlock();
-  }
-
   // --------------------------------------------------------------------------
 
   void DirectTarget::TestLoop() {
     while (true) {
-      _DEBUG_PRINT("%lu: %d Waiting for input ready\n", this->id, getpid());
-      this->ipc->input_ready.WaitAndHold();
-        _DEBUG_PRINT("%lu: %d Input ready!\n", this->id, getpid());
-        char* data = &this->ipc->data;
-        size_t data_size = this->ipc->data_size;
-        _DEBUG_PRINT("%lu: %d Calling callback\n", this->id, getpid());
-        // Call the target function!
-        int res = this->callback(data, data_size);
-      _DEBUG_PRINT("%lu: %d Unlocking input_ready!\n", this->id, getpid());
-      this->ipc->input_ready.Unlock();
-      _DEBUG_PRINT("%lu: %d Unlocked input_ready!\n", this->id, getpid());
-
-      _DEBUG_PRINT("%lu: %d Setting result - input processed lock\n", this->id, getpid());
-      this->ipc->input_processed.Lock();
-        this->ipc->result = res;
-      _DEBUG_PRINT("%lu: %d Setting result - input processed signalraw\n", this->id, getpid());
-      this->ipc->input_processed.SignalRaw_Danger();
-      _DEBUG_PRINT("%lu: %d Setting result - input processed unlock\n", this->id, getpid());
-      this->ipc->input_processed.Unlock();
-
-      _DEBUG_PRINT("%lu: %d LoopIterDone\n", this->id, getpid());
+      std::string const* data = this->genr->Generate();
+      // TODO do something with the return value?
+      this->callback(data->data(), data->size());
     }
-    _DEBUG_PRINT("%lu: %d Completely finished loop somehow\n", this->id, getpid());
+    printf("%lu: %d Completely finished loop somehow\n", this->id, getpid());
   }
 
 }

@@ -15,9 +15,7 @@ namespace targets {
    public:
     virtual ~Target() {}
     virtual pid_t Start() = 0;
-    virtual int Test(const std::string* input) = 0;
     virtual void Stop() = 0;
-    virtual void ForceFinishTest() = 0;
   };
 
   enum class TargetType {

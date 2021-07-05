@@ -18,13 +18,10 @@ namespace feedbacks {
   static size_t GUARD_COUNTER = 0;
   static size_t NUM_COV_UINT32;
 
-  // only used in the target
+  // only used in the target - temporary flag difference
   static uint32_t* IN_TARGET_COV_FLAGS = NULL;
-  static bool* IS_NEW; // ptr to the ipc mem
+  static bool IS_NEW = true; // ptr to the ipc mem
 
-  // only used outside of the target
-  static std::mutex SHARED_COV_FLAGS_LOCK;;
-  static uint32_t* SHARED_COV_FLAGS = NULL;
 
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
     if (start == stop || *start) return;  // Initialize only once.
@@ -35,6 +32,11 @@ namespace feedbacks {
     if ((GUARD_COUNTER - 1) % 32 != 0) {
       NUM_COV_UINT32++;
     }
+
+    size_t cov_flags_size = sizeof(uint32_t) * NUM_COV_UINT32;
+    IN_TARGET_COV_FLAGS = (uint32_t*)malloc(cov_flags_size);
+    memset(IN_TARGET_COV_FLAGS, 0, cov_flags_size);
+
     printf("Total Edges: %zu\n", GUARD_COUNTER);
   }
 
@@ -45,10 +47,13 @@ namespace feedbacks {
     size_t bit_no = (*guard - 1) % 32;
     size_t bit = (1 << bit_no);
 
-    // this happens *IN* the forked process, no need to use the lock
+    // We've seen this one before! Either in the shared flags, or in our
+    // flags. Most common use case is the shared flags
+    if (SHARED_COV_FLAGS[uint_no] & bit) { return; }
     if (IN_TARGET_COV_FLAGS[uint_no] & bit) { return; }
+
     IN_TARGET_COV_FLAGS[uint_no] |= bit;
-    *IS_NEW = true;
+    IS_NEW = true;
   }
 
   size_t _NumBits(uint32_t val) {
@@ -59,22 +64,19 @@ namespace feedbacks {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() : cov_lock("coverage-lock") {
-    SHARED_COV_FLAGS_LOCK.lock();
-      if (SHARED_COV_FLAGS == NULL) {
-        SHARED_COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_UINT32);
-        memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
-      }
-    SHARED_COV_FLAGS_LOCK.unlock();
+  Coverage::Coverage() : queued_mem(NULL) {
   }
 
   Coverage::~Coverage() {
-    SHARED_COV_FLAGS_LOCK.lock();
-      if (SHARED_COV_FLAGS != NULL) {
-        free(SHARED_COV_FLAGS);
-        SHARED_COV_FLAGS = NULL;
-      }
-    SHARED_COV_FLAGS_LOCK.unlock();
+    if (IN_TARGET_COV_FLAGS != NULL) {
+      free(IN_TARGET_COV_FLAGS);
+      IN_TARGET_COV_FLAGS = NULL;
+    }
+  }
+
+  void Coverage::Clear() {
+    memset(IN_TARGET_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
+    IS_NEW = false;
   }
 
   std::string Coverage::GetSummary() {
@@ -88,9 +90,8 @@ namespace feedbacks {
 
   void Coverage::CalcHash() {
     this->hash = 0;
-    uint32_t* cov_map = this->GetCovMap();
     for (size_t idx = 0; idx < NUM_COV_UINT32; idx++) {
-      uint32_t x = cov_map[idx];
+      uint32_t x = IN_TARGET_COV_FLAGS[idx];
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = (x >> 16) ^ x;
@@ -102,58 +103,64 @@ namespace feedbacks {
     }
   }
 
-  void Coverage::SyncSharedToTarget() {
-    printf("%d Syncing shared to target, waiting for lock\n", getpid());
-    SHARED_COV_FLAGS_LOCK.lock();
-      uint32_t* cov_map = this->GetCovMap();
-      memcpy(cov_map, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_UINT32);
-    SHARED_COV_FLAGS_LOCK.unlock();
-    printf("%d Done syncing shared to target, waiting for lock\n", getpid());
-  }
-
   void Coverage::SyncTargetToShared() {
-    printf("%d Syncing target to shared, waiting for lock\n", getpid());
-    SHARED_COV_FLAGS_LOCK.lock();
-      uint32_t* cov_map = this->GetCovMap();
-      for (size_t i = 0; i < NUM_COV_UINT32; i++) {
-        SHARED_COV_FLAGS[i] |= cov_map[i];
-      }
-    SHARED_COV_FLAGS_LOCK.unlock();
-    printf("%d Done syncing target to shared, waiting for lock\n", getpid());
+    this->queued_mem->QueueUpdate(
+      COV_UPDATE_TYPE,
+      sizeof(uint32_t) * NUM_COV_UINT32,
+      IN_TARGET_COV_FLAGS);
   }
 
   FeedbackStats Coverage::GetStats() {
     size_t num_bits = 0;
-    uint32_t* cov_map = this->GetCovMap();
     for (size_t idx = 0; idx < NUM_COV_UINT32; idx++) {
-      num_bits += _NumBits(cov_map[idx]);
+      num_bits += _NumBits(SHARED_COV_FLAGS[idx]);
     }
 
     return {
-      .new_coverage = *IS_NEW,
+      .new_coverage = IS_NEW, // ???? TODO
       .key = this->hash,
       .num = num_bits,
     };
   }
 
-  void Coverage::InsertHooks(TargetHooks* hooks) {
-    size_t ipc_size =
-      sizeof(CoverageIpcInfo) + sizeof(uint32_t) * (NUM_COV_UINT32 - 1);
+  void Coverage::TestInitShared() {
+    SHARED_COV_FLAGS = reinterpret_cast<uint32_t*>(malloc(sizeof(uint32_t) * NUM_COV_UINT32));
+  }
 
+  void Coverage::TestDestroyShared() {
+    free(SHARED_COV_FLAGS);
+  }
+
+  void Coverage::InsertHooks(TargetHooks* hooks) {
+    size_t cov_flags_size = sizeof(uint32_t) * NUM_COV_UINT32;
     hooks
-      ->AddIpcSize([ipc_size]() -> size_t { return ipc_size; })
-      ->AddIpcInit([this, ipc_size](ipc::LockedSharedMem* mem) {
-          this->ipc = mem->GetNextPtrFor<CoverageIpcInfo>(ipc_size);
+      ->AddIpcSize([cov_flags_size]() -> size_t { return cov_flags_size; })
+      ->AddIpcInit([this, cov_flags_size](ipc::QueuedSharedMem* mem) {
+          this->queued_mem = mem;
+          SHARED_COV_FLAGS = mem->GetNextPtrFor<uint32_t>(cov_flags_size);
+
+          mem->AddReceiveHandler(COV_UPDATE_TYPE, [](size_t data_length, void* data, ipc::LockedSharedMem*) {
+            uint32_t* flag_updates = reinterpret_cast<uint32_t*>(data);
+            if (data_length != (NUM_COV_UINT32 * sizeof(uint32_t))) {
+              printf("SOMETHING WRONG HAPPENED WITH IPC UPDATE\n");
+            }
+            for (size_t i = 0; i < NUM_COV_UINT32 && ((i * sizeof(uint32_t)) <= data_length); i++) {
+              SHARED_COV_FLAGS[i] |= *flag_updates;
+              flag_updates++;
+            }
+
+            free(data);
+          });
         })
-      ->AddPreStartInTarget([this](ipc::LockedSharedMem*) {
-          IN_TARGET_COV_FLAGS = this->GetCovMap();
-          IS_NEW = &this->ipc->is_new;
+      ->AddPreStartInTarget([](ipc::QueuedSharedMem*) {
+          memset(IN_TARGET_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
+          IS_NEW = false;
         })
-      ->AddPreTest([this](ipc::LockedSharedMem*) {
-          this->ipc->is_new = false;
+      ->AddPreTest([](ipc::QueuedSharedMem*) {
+          IS_NEW = false;
         })
-      ->AddPostTest([this](ipc::LockedSharedMem*) {
-          if (this->ipc->is_new) {
+      ->AddPostTest([this](ipc::QueuedSharedMem*) {
+          if (IS_NEW) {
             this->CalcHash();
             this->SyncTargetToShared();
           }

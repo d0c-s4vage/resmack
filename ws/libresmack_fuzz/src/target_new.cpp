@@ -14,7 +14,7 @@ namespace targets {
       case TargetType::kDirect:
         return static_cast<Target*>(new DirectTarget(
           id,
-          [id, EF](const char* data, size_t size) -> int {
+          [EF](const char* data, size_t size) -> int {
             _DEBUG_PRINT("%lu: %d calling LLVMFuzzerTestOneInput, EF: %p\n", id, getpid(), EF.LLVMFuzzerTestOneInput);
             return EF.LLVMFuzzerTestOneInput(reinterpret_cast<const uint8_t*>(data), size);
           },

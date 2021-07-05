@@ -18,6 +18,7 @@ namespace ipc {
   class QueuedSharedMem {
    public:
     QueuedSharedMem();
+    QueuedSharedMem(size_t max_size);
     void Init(size_t max_size);
     void AddReceiveHandler(uint16_t message_type, IpcMessageHandler handler);
     bool QueueUpdate(uint16_t message_type, size_t data_length, void* data);
@@ -28,6 +29,7 @@ namespace ipc {
 
     void ListenForUpdates();
     void StopListeningForUpdates();
+    size_t DataSize();
 
     // ------------------------------------------------------------------------
     // These functions are forwarded directly to the LockedSharedMem

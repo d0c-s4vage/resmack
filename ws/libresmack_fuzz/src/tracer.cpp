@@ -39,14 +39,14 @@ namespace fuzz {
       })
       ->AddIpcInit(
         [this, max_asan_size]
-        (ipc::LockedSharedMem* mem) {
+        (ipc::QueuedSharedMem* mem) {
           char* ptr = mem->GetNextPtrFor<char>(max_asan_size);
           this->last_crash.asan_info = ptr;
           this->last_crash.asan_info[0] = '\0';
       })
       ->AddPreStartInTarget(
         [this, max_asan_size]
-        (ipc::LockedSharedMem*) {
+        (ipc::QueuedSharedMem*) {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
           asan::SetAsanCallback([this, max_asan_size](const char* report) {
@@ -61,7 +61,7 @@ namespace fuzz {
       })
       ->AddPostStart(
         [this]
-        (ipc::LockedSharedMem*, pid_t new_pid, auto* target) {
+        (ipc::QueuedSharedMem*, pid_t new_pid, auto* target) {
           this->traced_pid = new_pid;
           this->target = target;
           pthread_create(
@@ -72,7 +72,7 @@ namespace fuzz {
       })
       ->AddPostStop(
         [this]
-        (ipc::LockedSharedMem*, pid_t) {
+        (ipc::QueuedSharedMem*, pid_t) {
           // force everything to wait until we've finished handling the
           // crash
           pthread_join(this->monitor_thread, NULL);
@@ -127,8 +127,6 @@ namespace fuzz {
 
     ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
     ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
-
-    this_->target->ForceFinishTest();
 
     return NULL;
   }
