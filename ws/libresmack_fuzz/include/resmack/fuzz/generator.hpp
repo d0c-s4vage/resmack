@@ -7,7 +7,6 @@
 
 #include "resmack/rules.hpp"
 #include "resmack/rand.hpp"
-#include "resmack/fuzz/target_new.hpp"
 #include "resmack/fuzz/config.hpp"
 #include "resmack/fuzz/ipc/shared_mem_condition.hpp"
 

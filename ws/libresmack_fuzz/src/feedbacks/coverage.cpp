@@ -22,7 +22,6 @@ namespace feedbacks {
   static uint32_t* IN_TARGET_COV_FLAGS = NULL;
   static bool IS_NEW = true; // ptr to the ipc mem
 
-
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
     if (start == stop || *start) return;  // Initialize only once.
     for (uint32_t *x = start; x < stop; x++) {
@@ -104,6 +103,7 @@ namespace feedbacks {
   }
 
   void Coverage::SyncTargetToShared() {
+    printf("Sending coverage update!\n");
     this->queued_mem->QueueUpdate(
       COV_UPDATE_TYPE,
       sizeof(uint32_t) * NUM_COV_UINT32,
@@ -161,6 +161,7 @@ namespace feedbacks {
         })
       ->AddPostTest([this](ipc::QueuedSharedMem*) {
           if (IS_NEW) {
+            printf("New coverage!\n");
             this->CalcHash();
             this->SyncTargetToShared();
           }

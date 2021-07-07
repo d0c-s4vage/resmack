@@ -18,12 +18,14 @@ namespace targets {
       size_t id,
       TargetCb callback,
       TargetHooks* hooks,
-      size_t max_input_size
+      size_t max_input_size,
+      Generator* genr
   ) :
     id(id),
     max_input_size(max_input_size),
     callback(callback),
     hooks(hooks),
+    genr(genr),
     ipc(NULL)
   {
     size_t ipc_max_size = hooks->ExecAndSumIpcSize();
@@ -79,10 +81,16 @@ namespace targets {
   // --------------------------------------------------------------------------
 
   void DirectTarget::TestLoop() {
+    size_t count = 0;
     while (true) {
       std::string const* data = this->genr->Generate();
       // TODO do something with the return value?
+      this->hooks->ExecPreTest(&this->ipc_memory);
       this->callback(data->data(), data->size());
+      this->hooks->ExecPostTest(&this->ipc_memory);
+      if (++count == 0x1) {
+        break;
+      }
     }
     printf("%lu: %d Completely finished loop somehow\n", this->id, getpid());
   }

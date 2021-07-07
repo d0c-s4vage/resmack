@@ -18,7 +18,7 @@ namespace cmds {
 
   std::mutex lock;
   bool shouldRun = true;
-  size_t iters = 0x30000;
+  size_t iters = 0x1;
   size_t fuzz_n_id_next = 1;
 
   std::vector<targets::Target*> targets;
@@ -58,12 +58,15 @@ namespace cmds {
       id,
       targets::TargetType::kDirect,
       &hooks,
-      0x100000
+      0x100000,
+      &gen
     );
 
     lock.lock();
       targets.push_back(target);
     lock.unlock();
+
+    size_t count = 0;
 
     while (shouldRun) {
       std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
@@ -79,10 +82,15 @@ namespace cmds {
         (double)iters / span.count()
       );
       */
+      tracer.WaitForEvent();
 
       if (tracer.DidCrash()) {
         CrashInfo* info = tracer.GetCrashInfo();
         printf("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
+      }
+
+      if (++count == iters) {
+        break;
       }
     }
 
@@ -112,7 +120,7 @@ namespace cmds {
     std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
     size_t total_iters = iters * config->fuzz_config.nprocs;
-    _DEBUG_PRINT(
+    printf(
       "Total iters: %lu in %.03fs = %.03fs iters/s\n",
       total_iters,
       span.count(),

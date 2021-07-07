@@ -22,7 +22,7 @@ namespace fuzz {
   Generator::~Generator() {}
 
   std::string const* Generator::Generate() {
-    BuildContext ctx(NULL, NULL, this->max_depth);
+    BuildContext ctx(&this->output, &this->rand, this->max_depth);
 
     if (!this->replay_init_cb(&this->base_replay)) {
       ctx.SetReplay(NULL);

@@ -48,6 +48,7 @@ namespace fuzz {
     void InsertHooks(TargetHooks* hooks);
     bool DidCrash() { return this->last_crash.crashed; }
     CrashInfo* GetCrashInfo() { return &this->last_crash; }
+    void WaitForEvent();
   };
 
 }

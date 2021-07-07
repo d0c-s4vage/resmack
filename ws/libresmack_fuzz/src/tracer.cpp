@@ -131,6 +131,10 @@ namespace fuzz {
     return NULL;
   }
 
+  void Tracer::WaitForEvent() {
+    pthread_join(this->monitor_thread, NULL);
+  }
+
   /*
   void* Tracer::MonitorTracee(void* this_arg) {
     Tracer* this_ = (Tracer*)this_arg;

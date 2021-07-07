@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "resmack/fuzz/target_hooks.hpp"
+#include "resmack/fuzz/generator.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -22,7 +23,7 @@ namespace targets {
     kDirect
   };
 
-  Target* CreateTarget(size_t id, TargetType type, TargetHooks* hooks, size_t max_input_size);
+  Target* CreateTarget(size_t id, TargetType type, TargetHooks* hooks, size_t max_input_size, Generator* genr);
 
 }
 }

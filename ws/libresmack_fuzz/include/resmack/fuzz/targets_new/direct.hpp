@@ -37,7 +37,7 @@ namespace targets {
     void TestLoop();
 
    public:
-    DirectTarget(size_t id, TargetCb callback, TargetHooks* hooks, size_t max_input_size);
+    DirectTarget(size_t id, TargetCb callback, TargetHooks* hooks, size_t max_input_size, Generator* genr);
     ~DirectTarget();
 
     pid_t Start();

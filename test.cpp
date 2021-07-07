@@ -117,7 +117,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   _DEBUG_PRINT("%d Parsing sentence\n", getpid());
   //std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  //parseSentence(data, size);
+  parseSentence(data, size);
   _DEBUG_PRINT("%d Done parsing sentence\n", getpid());
   return true;
 }
