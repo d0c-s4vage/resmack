@@ -20,17 +20,22 @@ namespace cmds {
 
   std::mutex lock;
   bool shouldRun = true;
-  size_t iters = 0x1;
+  size_t iters = 0x100;
   size_t fuzz_n_id_next = 1;
 
   std::vector<pid_t> forked_pids;
 
-  void SignalHandler(int signum) {
-    _DEBUG_PRINT("Handling signal: %d - %s\n", signum, strsignal(signum));
+  bool is_parent = true;
+  targets::Target* target = nullptr;
 
-    for (pid_t pid : forked_pids) {
-      kill(pid, SIGTERM);
-      waitpid(pid, NULL, 0);
+  void SignalHandler(int) {
+    if (is_parent) {
+      for (pid_t pid : forked_pids) {
+        kill(pid, SIGTERM);
+        waitpid(pid, NULL, 0);
+      }
+    } else {
+      target->Stop();
     }
     _exit(0);
   }
@@ -95,7 +100,7 @@ namespace cmds {
       //corpus.AddRandSnapshot(gen.GetRand()->GetSnapshots(), this_->GetStats(), descendant_of_last);
     });
 
-    targets::Target* target = targets::CreateTarget(
+    target = targets::CreateTarget(
       0,
       targets::TargetType::kDirect,
       &hooks,
@@ -114,6 +119,7 @@ namespace cmds {
     for (size_t i = 0; i < config->fuzz_config.nprocs; i++) {
       pid_t forked_pid = fork();
       if (forked_pid == 0) {
+        is_parent = false;
         FuzzN(&config->fuzz_config, &hooks, target, &tracer, &corpus, &gen, &cov);
         _exit(0);
       } else {

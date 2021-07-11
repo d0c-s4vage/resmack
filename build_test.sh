@@ -6,6 +6,7 @@ export LD_LIBRARY_PATH=build/release
 
 CMD=(
     build/release/resmack cc
+      --asan
       $@
       --
         -std=c++20

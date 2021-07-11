@@ -14,6 +14,7 @@ const char *__asan_default_options() {
 }
 
 void HandleAsan(const char* report) {
+  printf("Handling ASAN\n");
   ASAN_CB(report);
 }
 
