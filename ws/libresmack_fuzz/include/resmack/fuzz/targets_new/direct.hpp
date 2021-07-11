@@ -42,6 +42,7 @@ namespace targets {
 
     pid_t Start();
     void Stop();
+    ipc::QueuedSharedMem* GetIpcMemory() { return &this->ipc_memory; }
   };
 
 }

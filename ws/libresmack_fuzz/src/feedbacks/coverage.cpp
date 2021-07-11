@@ -19,7 +19,7 @@ namespace feedbacks {
   static size_t NUM_COV_UINT32;
 
   // only used in the target - temporary flag difference
-  static uint32_t* IN_TARGET_COV_FLAGS = NULL;
+  static uint32_t* IN_TARGET_COV_FLAGS = nullptr;
   static bool IS_NEW = true; // ptr to the ipc mem
 
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
@@ -40,7 +40,7 @@ namespace feedbacks {
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
-    if (IN_TARGET_COV_FLAGS == NULL) { return; }
+    if (SHARED_COV_FLAGS == nullptr || IN_TARGET_COV_FLAGS == nullptr) { return; }
 
     size_t uint_no = (*guard - 1) / 32;
     size_t bit_no = (*guard - 1) % 32;
@@ -63,13 +63,16 @@ namespace feedbacks {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() : queued_mem(NULL) {
+  Coverage::Coverage(NewCoverageCb new_cov_cb) :
+    new_coverage_cb(new_cov_cb),
+    queued_mem(nullptr)
+  {
   }
 
   Coverage::~Coverage() {
-    if (IN_TARGET_COV_FLAGS != NULL) {
+    if (IN_TARGET_COV_FLAGS != nullptr) {
       free(IN_TARGET_COV_FLAGS);
-      IN_TARGET_COV_FLAGS = NULL;
+      IN_TARGET_COV_FLAGS = nullptr;
     }
   }
 
@@ -164,6 +167,8 @@ namespace feedbacks {
             printf("New coverage!\n");
             this->CalcHash();
             this->SyncTargetToShared();
+
+            this->new_coverage_cb(this);
           }
         });
   }

@@ -31,6 +31,7 @@ using TargetHookGenericCb = std::function<void()>;
 
    public:
     Generator(size_t id, const GrammarConfig* config, ReplayInitCb cb);
+    Rand const* GetRand();
     ~Generator();
     std::string const* Generate();
   };

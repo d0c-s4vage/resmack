@@ -55,14 +55,15 @@ namespace corpora {
 
     free(with_sem);
 
-    if ((this->corpus_lock = sem_open(sem_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
-      perror("Could not create semaphore");
-      std::exit(1);
-    }
+    this->SyncInner();
+  }
 
-    // *ALWAYS* sync when in Init (don't use Sync())
-    WITH_LOCK(this->corpus_lock, Syncing corpus, {
-      this->SyncInner();
+  void MmapCorpus::InsertHooks(TargetHooks* hooks) {
+    MmapCorpus* this_ = this;
+    hooks->AddIpcInit([&this_](ipc::QueuedSharedMem* mem) {
+      mem->AddReceiveHandler(CORPUS_UPDATE_TYPE, [](size_t len, void* data, ipc::LockedSharedMem*){
+        // TODO HANDLE UPDATES!!!!
+      });
     });
   }
 
@@ -76,20 +77,17 @@ namespace corpora {
       return false;
     }
 
-    WITH_LOCK(this->corpus_lock, Maybe adding snapshot, {
-      DEBUG_PRINT("%d: SyncInner()\n", getpid());
-      this->SyncInner();
-      DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
+    DEBUG_PRINT("%d: SyncInner()\n", getpid());
+    this->SyncInner();
+    DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
 
-      if (this->SeenFeedback(stats.key)) {
-        DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
-        res = false;
-        break;
-      }
+    if (this->SeenFeedback(stats.key)) {
+      DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
+      return false;
+    }
 
-      DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
-      this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
-    });
+    DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
+    this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
 
     return res;
   }
@@ -99,10 +97,8 @@ namespace corpora {
     feedbacks::FeedbackStats stats,
     bool descendant_of_last
   ) {
-    WITH_LOCK(this->corpus_lock, Adding snapshot, {
-      this->SyncInner();
-      this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
-    });
+    this->SyncInner();
+    this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
   }
 
   void MmapCorpus::AddRandSnapshotInner(
@@ -179,9 +175,7 @@ namespace corpora {
       return;
     }
 
-    WITH_LOCK(this->corpus_lock, Syncing corpus, {
-      this->SyncInner();
-    });
+    this->SyncInner();
   }
 
   void MmapCorpus::SyncInner() {
@@ -263,9 +257,7 @@ namespace corpora {
       return;
     }
 
-    WITH_LOCK(this->corpus_lock, Syncing Counters, {
-      this->SyncCountersInner();
-    });
+    this->SyncCountersInner();
     this->SortedsResort();
   }
 
@@ -462,34 +454,30 @@ namespace corpora {
   }
 
   void MmapCorpus::IncLastItemCrashes() {
-    WITH_LOCK(this->corpus_lock, Incrementing Last Item Crashes, {
-      this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
-      this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
+    this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
+    this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
 
-      if (this->last_item2_one_based_idx != 0) {
-        this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
-        this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
-      }
-    });
+    if (this->last_item2_one_based_idx != 0) {
+      this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
+      this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
+    }
   }
 
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
     DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
-    WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
-      DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
-      ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
+    DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
+    ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
 
-      //DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
-      //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
+    //DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
+    //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
 
-      DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
-      header->mutations_since_offspring += 5000;
+    DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
+    header->mutations_since_offspring += 5000;
 
-      DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
-      this->last_updated_seq = ++this->meta->updated_seq;
-    });
+    DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
+    this->last_updated_seq = ++this->meta->updated_seq;
   }
 
   ser::CorpusItemHeader* MmapCorpus::GetItemHeader(size_t index) {

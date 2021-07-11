@@ -21,6 +21,10 @@ namespace fuzz {
 
   Generator::~Generator() {}
 
+  const Rand* Generator::GetRand() {
+    return &this->rand;
+  }
+
   std::string const* Generator::Generate() {
     BuildContext ctx(&this->output, &this->rand, this->max_depth);
 

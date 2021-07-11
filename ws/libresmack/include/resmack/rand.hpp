@@ -45,7 +45,7 @@ namespace resmack {
      uint32_t NextInRangeGaussian(uint32_t min_val, uint32_t max_val);
      void ReinitSeed();
      void InitState(uint32_t seed);
-     const Vector<RandSnapshot>* GetSnapshots() { return &this->snapshots_; }
+     const Vector<RandSnapshot>* GetSnapshots() const { return &this->snapshots_; }
      bool Maybe();
      void SnapshotState(uint32_t ref_depth, uint32_t max_depth, uint32_t rule_idx);
      void SnapshotClear();

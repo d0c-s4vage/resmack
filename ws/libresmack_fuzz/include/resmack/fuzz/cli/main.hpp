@@ -5,6 +5,8 @@ namespace resmack {
 namespace fuzz {
 namespace cli {
 
+  static bool SHUTTING_DOWN = false;
+
   int Main(int argc, char** argv);
 
 }

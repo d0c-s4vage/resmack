@@ -88,7 +88,8 @@ namespace targets {
       this->hooks->ExecPreTest(&this->ipc_memory);
       this->callback(data->data(), data->size());
       this->hooks->ExecPostTest(&this->ipc_memory);
-      if (++count == 0x1) {
+      if (++count == 0x1000000) {
+        printf("DONE!\n");
         break;
       }
     }

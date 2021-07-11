@@ -17,6 +17,7 @@ namespace targets {
     virtual ~Target() {}
     virtual pid_t Start() = 0;
     virtual void Stop() = 0;
+    virtual ipc::QueuedSharedMem* GetIpcMemory() = 0;
   };
 
   enum class TargetType {

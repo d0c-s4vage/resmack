@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <inttypes.h>
-#include <semaphore.h>
 
 #include "resmack/types.hpp"
 #include "resmack/fuzz/corpus.hpp"
@@ -16,11 +15,12 @@ namespace corpora {
 
   class MmapCorpus : public Corpus {
    private:
+    static const uint16_t CORPUS_UPDATE_TYPE = 0x11;
+
     void* corpus_map;
     size_t max_corpus_size;
     uint32_t strats;
     Vector<size_t(*)(MmapCorpus*, Rand*, size_t)> strat_handlers;
-    sem_t* corpus_lock;
     Set<size_t> seen_keys;
     Vector<CorpusEntry> snapshots;
     Vector<size_t> most_direct_descendants_desc;
@@ -49,6 +49,8 @@ namespace corpora {
    public:
     MmapCorpus();
     ~MmapCorpus();
+
+    void InsertHooks(TargetHooks* hooks);
 
     void SetCorpusDecay(size_t corpus_decay) {
       this->corpus_decay = corpus_decay;
