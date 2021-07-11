@@ -44,5 +44,10 @@ namespace fuzz {
     return &this->output;
   }
 
+  void Generator::ReinitRand(uint32_t seed) {
+    // wrapping here is OK
+    this->rand.InitState(this->rand.Next() + seed);
+  }
+
 }
 }

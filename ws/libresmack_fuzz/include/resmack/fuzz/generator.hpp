@@ -34,6 +34,7 @@ using TargetHookGenericCb = std::function<void()>;
     Rand const* GetRand();
     ~Generator();
     std::string const* Generate();
+    void ReinitRand(uint32_t seed);
   };
 
 }

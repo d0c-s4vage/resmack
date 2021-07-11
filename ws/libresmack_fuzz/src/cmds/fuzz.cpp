@@ -13,6 +13,7 @@
 #include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/tracer.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
+#include "resmack/fuzz/stats.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -20,7 +21,7 @@ namespace cmds {
 
   std::mutex lock;
   bool shouldRun = true;
-  size_t iters = 0x100;
+  size_t iters = 0x1;
   size_t fuzz_n_id_next = 1;
 
   std::vector<pid_t> forked_pids;
@@ -40,13 +41,12 @@ namespace cmds {
     _exit(0);
   }
 
-  void* FuzzN(FuzzConfig*, TargetHooks* hooks, targets::Target* target, Tracer* tracer, corpora::MmapCorpus* corpus, Generator* gen, feedbacks::Coverage* cov) {
+  void* FuzzN(uint32_t id, FuzzConfig*, TargetHooks* hooks, targets::Target* target, Tracer* tracer, corpora::MmapCorpus* corpus, Generator* gen, feedbacks::Coverage* cov) {
+    gen->ReinitRand(id);
 
     //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(fuzz_config->feedbackType);
 
     //corpus.InsertHooks(&hooks);
-
-    size_t id = 0; // TODO make unique?
 
     size_t count = 0;
 
@@ -70,10 +70,6 @@ namespace cmds {
       if (tracer->DidCrash()) {
         CrashInfo* info = tracer->GetCrashInfo();
         printf("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
-      }
-
-      if (++count == iters) {
-        break;
       }
     }
 
@@ -100,6 +96,14 @@ namespace cmds {
       //corpus.AddRandSnapshot(gen.GetRand()->GetSnapshots(), this_->GetStats(), descendant_of_last);
     });
 
+    Tracer tracer;
+    Stats stats;
+
+    corpus.InsertHooks(&hooks);
+    cov.InsertHooks(&hooks);
+    tracer.InsertHooks(&hooks);
+    stats.InsertHooks(&hooks);
+
     target = targets::CreateTarget(
       0,
       targets::TargetType::kDirect,
@@ -108,19 +112,13 @@ namespace cmds {
       &gen
     );
 
-    Tracer tracer;
-
-    corpus.InsertHooks(&hooks);
-    cov.InsertHooks(&hooks);
-    tracer.InsertHooks(&hooks);
-
     Vector<pid_t> forked_pids;
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < config->fuzz_config.nprocs; i++) {
       pid_t forked_pid = fork();
       if (forked_pid == 0) {
         is_parent = false;
-        FuzzN(&config->fuzz_config, &hooks, target, &tracer, &corpus, &gen, &cov);
+        FuzzN(i, &config->fuzz_config, &hooks, target, &tracer, &corpus, &gen, &cov);
         _exit(0);
       } else {
         forked_pids.push_back(forked_pid);

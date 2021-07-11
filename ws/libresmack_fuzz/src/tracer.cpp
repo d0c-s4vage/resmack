@@ -50,7 +50,7 @@ namespace fuzz {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
           asan::SetAsanCallback([this, max_asan_size](const char* report) {
-            _DEBUG_PRINT("ASAN ON %d\n", getpid());
+            printf("ASAN ON %d\n", getpid());
             size_t report_len = strlen(report);
             if (report_len > max_asan_size - 1) {
               report_len = max_asan_size - 1;

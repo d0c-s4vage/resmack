@@ -231,6 +231,11 @@
 },
 {
   "directory": "/home/saitama/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
+  "command": "/usr/bin/clang++ -Dlibresmack_fuzz_EXPORTS -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC -std=gnu++20 -o CMakeFiles/libresmack_fuzz.dir/src/stats.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/stats.cpp",
+  "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/stats.cpp"
+},
+{
+  "directory": "/home/saitama/ws/dev/resmack/build/debug/ws/libresmack_fuzz",
   "command": "/usr/bin/clang++ -Dlibresmack_fuzz_EXPORTS -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/include -I/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/../libresmack/include -I/home/saitama/ws/dev/resmack/ws/libresmack/libs/fmt/include -Wall -Wextra -fPIC -ggdb -fsanitize=address -fPIC -std=gnu++20 -o CMakeFiles/libresmack_fuzz.dir/src/target.cpp.o -c /home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/target.cpp",
   "file": "/home/saitama/ws/dev/resmack/ws/libresmack_fuzz/src/target.cpp"
 },

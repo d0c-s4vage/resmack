@@ -48,6 +48,8 @@ namespace ipc {
           continue;
         }
 
+        printf("Handling a message! type: %u\n", message_type);
+
         for (auto handler : this->handlers_[message_type]) {
           handler(data_length, data, &this->shared_mem_);
         }
