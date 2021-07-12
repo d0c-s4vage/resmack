@@ -70,7 +70,10 @@ namespace cmds {
       if (tracer->DidCrash()) {
         CrashInfo* info = tracer->GetCrashInfo();
         printf("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
+        //printf("ASAN INFO:\n\n%s\n", info->asan_info);
       }
+
+      break;
     }
 
     return NULL;

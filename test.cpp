@@ -15,6 +15,16 @@
 #include "ws/libresmack_fuzz/include/resmack/fuzz/debug.hpp"
 #include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
 
+void CrashInvalidInstruction() {
+  ((void(*)())(0))();
+}
+
+void CrashAsanArrayOOB() {
+  char* test = (char*)malloc(0x10);
+  char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
+  memcpy(test, to_copy, sizeof(to_copy));
+}
+
 void splitStr(std::string* input, std::string split, std::vector<std::string>* output) {
   size_t last_idx = 0;
   size_t split_idx = input->find(split, last_idx);
@@ -80,6 +90,8 @@ bool parseSentence(const uint8_t* data, size_t size) {
   splitStr(&input, " ", &parts);
   size_t curr_idx = 0;
 
+  CrashAsanArrayOOB();
+
   if (parts.size() == 0) {
     return false;
   }
@@ -92,8 +104,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (curr_idx >= parts.size() || !parseFruitList(&parts, &curr_idx)) {
     return false;
   }
-  printf("Crashing!!!!\n");
-  ((void(*)())(0))();
 
   if (parts.size() - curr_idx != 4) {
     return false;
@@ -102,15 +112,12 @@ bool parseSentence(const uint8_t* data, size_t size) {
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
     _DEBUG_PRINT("%d: CRASH NORMAL!\n", getpid());
-    ((void(*)())(0))();
-    //raise(SIGSEGV);
+    CrashInvalidInstruction();
   }
   curr_idx = start_idx;
   if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
     _DEBUG_PRINT("%d: CRASH ASAN!\n", getpid());
-    //char* test = (char*)malloc(0x10);
-    //char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
-    //memcpy(test, to_copy, sizeof(to_copy));
+    CrashAsanArrayOOB();
   }
 
   return false;

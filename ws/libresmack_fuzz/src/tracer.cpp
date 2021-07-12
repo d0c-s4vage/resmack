@@ -50,13 +50,13 @@ namespace fuzz {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
           asan::SetAsanCallback([this, max_asan_size](const char* report) {
-            printf("ASAN ON %d\n", getpid());
             size_t report_len = strlen(report);
             if (report_len > max_asan_size - 1) {
               report_len = max_asan_size - 1;
             }
             memcpy(this->last_crash.asan_info, report, report_len);
             this->last_crash.asan_info[report_len] = '\0';
+            this->last_crash.has_asan_info = true;
           });
       })
       ->AddPostStart(
@@ -99,8 +99,6 @@ namespace fuzz {
       }
 
       process_utils::LoadSignalInfo(status, &sig_info);
-      _DEBUG_PRINT("Done waiting for process %d\n", this_->traced_pid);
-      process_utils::PrintSignalInfo(&sig_info);
 
       if (sig_info.stopped) {
         if (sig_info.stop_signal == SIGWINCH) {
@@ -118,15 +116,16 @@ namespace fuzz {
       process_utils::PrintSignalInfo(&sig_info);
 
       this_->last_crash.crashed = true;
-      if (sig_info.stopped) {
+      //if (sig_info.stopped) {
+        printf("Calculating hashes!\n");
         this_->CalcHashes();
-      }
+      //}
     } while(false);
-
-    _DEBUG_PRINT("Done with tracing loop for %d\n", this_->traced_pid);
 
     ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
     ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
+
+    this_->target->Stop();
 
     return NULL;
   }
@@ -268,18 +267,17 @@ namespace fuzz {
     this->last_crash.minor_stack.clear();
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-    _DEBUG_PRINT("Calculating hashes on %d\n", this->traced_pid);
 
     void *context = _UPT_create(this->traced_pid);
     unw_cursor_t cursor;
     int err;
     if ((err = unw_init_remote(&cursor, as, context)) != 0) {
       if (err == -UNW_EINVAL) {
-        _DEBUG_PRINT("UNW_EINVAL\n");
+        printf("UNW_EINVAL\n");
       } else if (err == -UNW_EUNSPEC) {
-        _DEBUG_PRINT("UNW_EUNSPEC\n");
+        printf("UNW_EUNSPEC\n");
       } else if (err == -UNW_EBADREG) {
-        _DEBUG_PRINT("UNW_EBADREG\n");
+        printf("UNW_EBADREG\n");
       }
       _UPT_destroy(context);
       free(as);
