@@ -4,6 +4,8 @@
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
+#include <libunwind.h>
+#include <libunwind-x86_64.h>
 #include <libunwind-ptrace.h>
 #include <mutex>
 #include <pthread.h>
@@ -26,37 +28,43 @@
 namespace resmack {
 namespace fuzz {
 
-  Tracer::Tracer() : should_run(false), traced_pid(-1) {}
+  Tracer::Tracer() : should_run(false), traced_pid(-1), max_asan_size(0x10000), max_stack_size(0x1000) {}
   Tracer::~Tracer() {}
 
   void Tracer::InsertHooks(TargetHooks* hooks) {
-    size_t max_asan_size = 0x10000;
     hooks
       ->AddIpcSize(
-        [max_asan_size]
+        [this]
         () -> size_t {
-          return max_asan_size;
+          return this->max_asan_size + (this->max_stack_size * 2) + (48 * 2) + 4 /*has_asan_info*/;
       })
       ->AddIpcInit(
-        [this, max_asan_size]
+        [this]
         (ipc::QueuedSharedMem* mem) {
-          char* ptr = mem->GetNextPtrFor<char>(max_asan_size);
+          char* ptr = mem->GetNextPtrFor<char>(this->max_asan_size);
           this->last_crash.asan_info = ptr;
           this->last_crash.asan_info[0] = '\0';
+
+          this->last_crash.asan_minor_stack = mem->GetNextPtrFor<char>(this->max_stack_size);
+          memset(this->last_crash.asan_minor_stack, 0, this->max_stack_size);
+          this->last_crash.asan_major_stack = mem->GetNextPtrFor<char>(this->max_stack_size);
+          memset(this->last_crash.asan_major_stack, 0, this->max_stack_size);
+
+          this->last_crash.asan_major_hash = mem->GetNextPtrFor<char>(48); // even boundaries
+          memset(this->last_crash.asan_major_hash, 0, 0x48);
+          this->last_crash.asan_minor_hash = mem->GetNextPtrFor<char>(48); // even boundaries
+          memset(this->last_crash.asan_minor_hash, 0, 0x48);
+
+          this->last_crash.has_asan_info = mem->GetNextPtrFor<bool>(4); // even boundaries
+          *this->last_crash.has_asan_info = false;
       })
       ->AddPreStartInTarget(
-        [this, max_asan_size]
+        [this]
         (ipc::QueuedSharedMem*) {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
-          asan::SetAsanCallback([this, max_asan_size](const char* report) {
-            size_t report_len = strlen(report);
-            if (report_len > max_asan_size - 1) {
-              report_len = max_asan_size - 1;
-            }
-            memcpy(this->last_crash.asan_info, report, report_len);
-            this->last_crash.asan_info[report_len] = '\0';
-            this->last_crash.has_asan_info = true;
+          asan::SetAsanCallback([this](const char* report) {
+            this->SaveAsanInfo(report);
           });
       })
       ->AddPostStart(
@@ -64,35 +72,44 @@ namespace fuzz {
         (ipc::QueuedSharedMem*, pid_t new_pid, auto* target) {
           this->traced_pid = new_pid;
           this->target = target;
+          this->MonitorTracedPid();
+          /*
           pthread_create(
             &this->monitor_thread,
             NULL,
             MonitorTracedPid,
             (void*)this);
+            */
       })
       ->AddPostStop(
         [this]
         (ipc::QueuedSharedMem*, pid_t) {
           // force everything to wait until we've finished handling the
           // crash
-          pthread_join(this->monitor_thread, NULL);
+          //pthread_join(this->monitor_thread, NULL);
+
+          if (*this->last_crash.has_asan_info) {
+            this->last_crash.crashed = true;
+            this->last_crash.minor_stack.assign(this->last_crash.asan_minor_stack);
+            this->last_crash.major_stack.assign(this->last_crash.asan_major_stack);
+            memcpy(this->last_crash.major_hash, this->last_crash.asan_major_hash, sizeof(this->last_crash.major_hash));
+            memcpy(this->last_crash.minor_hash, this->last_crash.asan_minor_hash, sizeof(this->last_crash.minor_hash));
+          }
       });
   }
 
-  void* Tracer::MonitorTracedPid(void* this_arg) {
-    Tracer* this_ = reinterpret_cast<Tracer*>(this_arg);
-
+  void Tracer::MonitorTracedPid() {
     process_utils::SignalInfo sig_info;
 
     do {
-      pid_t curr_pid = this_->traced_pid;
-      this_->last_crash.crashed = false;
+      pid_t curr_pid = this->traced_pid;
+      this->last_crash.crashed = false;
 
       int status;
       if (waitpid(curr_pid, &status, 0) == -1) {
         // EINTR == signal interrupted, ECHILD == pid does not exist
         if (errno == EINTR || errno == ECHILD) {
-          _DEBUG_PRINT("ERROR WAITING FOR CHILD %d: %d - %s\n", this_->traced_pid, errno, strerror(errno));
+          _DEBUG_PRINT("ERROR WAITING FOR CHILD %d: %d - %s\n", this->traced_pid, errno, strerror(errno));
           break;
         }
         break;
@@ -113,162 +130,69 @@ namespace fuzz {
         break;
       }
 
-      process_utils::PrintSignalInfo(&sig_info);
-
-      this_->last_crash.crashed = true;
-      //if (sig_info.stopped) {
-        printf("Calculating hashes!\n");
-        this_->CalcHashes();
-      //}
+      this->last_crash.crashed = true;
+      if (sig_info.stopped) {
+        this->CalcHashesRemote();
+      }
     } while(false);
 
-    ptrace(PTRACE_DETACH, this_->traced_pid, NULL, NULL);
-    ptrace(PTRACE_CONT, this_->traced_pid, NULL, NULL);
+    ptrace(PTRACE_CONT, this->traced_pid, NULL, NULL);
+    ptrace(PTRACE_DETACH, this->traced_pid, NULL, NULL);
 
-    this_->target->Stop();
-
-    return NULL;
+    this->target->Stop();
   }
 
   void Tracer::WaitForEvent() {
     pthread_join(this->monitor_thread, NULL);
   }
 
-  /*
-  void* Tracer::MonitorTracee(void* this_arg) {
-    Tracer* this_ = (Tracer*)this_arg;
+  void Tracer::SaveAsanInfo(const char* report) {
+    size_t report_len = strlen(report);
+    if (report_len > this->max_asan_size - 1) {
+      report_len = this->max_asan_size - 1;
+    }
+    memcpy(this->last_crash.asan_info, report, report_len);
+    this->last_crash.asan_info[report_len] = '\0';
+    *this->last_crash.has_asan_info = true;
 
-    int status;
-    process_utils::SignalInfo sig_info;
+    this->CalcHashesLocal();
 
-    MonitorTimeoutArgs timeout_args {
-      .timeout = this_->timeout,
-      .tracee = &this_->tracee,
-      .should_run = &this_->should_run,
-      .timedout = false,
-      .pid = -1,
-      .idx = this_->idx,
-      .timeout_lock = &this_->timeout_lock,
-    };
+    memcpy(this->last_crash.asan_major_hash, this->last_crash.major_hash, sizeof(this->last_crash.major_hash));
+    memcpy(this->last_crash.asan_minor_hash, this->last_crash.minor_hash, sizeof(this->last_crash.minor_hash));
 
-    pthread_create(
-      &this_->monitor_timeout_thread,
-      NULL,
-      &MonitorTraceeTimeout,
-      (void*)&timeout_args
+    memcpy(
+      this->last_crash.asan_major_stack,
+      this->last_crash.major_stack.data(),
+      this->last_crash.major_stack.length() > this->max_stack_size ? this->max_stack_size : this->last_crash.major_stack.length()
     );
+    memcpy(
+      this->last_crash.asan_minor_stack,
+      this->last_crash.minor_stack.data(),
+      this->last_crash.minor_stack.length() > this->max_stack_size ? this->max_stack_size : this->last_crash.minor_stack.length()
+    );
+  }
 
-    while (this_->should_run) {
-      this_->traced_pid = -1;
-      this_->tracee.Reset();
-      this_->traced_pid = this_->target->Spawn(&this_->tracee);
+  void Tracer::CalcHashesLocal() {
+    unw_cursor_t cursor;
+    unw_context_t context;
 
-      this_->timeout_lock.Acquire();
-        pid_t curr_pid = this_->traced_pid;
-        timeout_args.pid = this_->traced_pid;
-        timeout_args.timedout = false;
-        timeout_args.should_monitor_tracee = true;
-      this_->timeout_lock.Release();
-
-      if (waitpid(curr_pid, &status, 0) == -1) {
-        perror("Error waiting for child");
-      }
-
-      this_->timeout_lock.Acquire();
-        timeout_args.should_monitor_tracee = false;
-        bool timedout = timeout_args.timedout;
-      this_->timeout_lock.Release();
-
-      process_utils::LoadSignalInfo(status, &sig_info);
-
-      if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
-        ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
-        continue;
-      }
-
-      this_->last_crash.crashed = false;
-      ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
-
-      bool should_continue;
-      if (timedout) {
-        // need to wait one more time since the first signal sent to the process
-        // SIGINT is used to help the child proc cleanup before being completely
-        // killed. Specifically used to make sure no semaphores are still held
-        // before exiting
-        ptrace(PTRACE_CONT, curr_pid, NULL, SIGINT);
-        if (waitpid(curr_pid, &status, 0) == -1) {
-          perror("Error waiting for child");
-        }
-        should_continue = this_->timeout_cb(curr_pid, this_, &this_->tracee);
-      } else {
-        this_->last_crash.crashed = true;
-        if (sig_info.exited) {
-          this_->last_crash.exit_status = sig_info.exit_status;
-          this_->last_crash.signal = 0;
-        } else if (sig_info.stopped) {
-          this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = sig_info.stop_signal;
-        } else if (sig_info.signaled) {
-          this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = sig_info.term_signal;
-        }
-
-        if (asan_info != NULL) {
-          this_->last_crash.major_stack.clear();
-          this_->last_crash.minor_stack.clear();
-          memcpy(this_->last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
-          memcpy(this_->last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
-        } else {
-          this_->last_crash.major_hash[0] = 0;
-          this_->last_crash.minor_hash[0] = 0;
-
-          if (sig_info.stopped) {
-            this_->CalcHashes();
-          }
-
-          if (this_->last_crash.major_hash[0] == 0) {
-            Rand rand;
-            std::string charset = "abcdefghijklmnopqrstuvwxyz";
-
-            snprintf(this_->last_crash.major_hash, sizeof(this_->last_crash.major_hash), "%s", "unknown_exit");
-            this_->last_crash.major_stack = "unknown_exit";
-            this_->last_crash.minor_stack = "unknown_exit";
-            std::string out;
-            resmack::utils::RandBytes(&rand, charset.c_str(), charset.size(), 10, &out);
-            snprintf(this_->last_crash.minor_hash, sizeof(this_->last_crash.minor_hash), "%s", out.c_str());
-          }
-        }
-
-        should_continue = this_->exception_cb(curr_pid, status, this_, &this_->tracee);
-      }
-
-      if (!should_continue) {
-        break;
-      }
-
-      // default action is to kill the current process, and then restart it
-      if (curr_pid > 0) {
-        ptrace(PTRACE_DETACH, curr_pid, NULL, NULL);
-        kill(curr_pid, SIGKILL);
-        waitpid(curr_pid, &status, 0);
-      }
-      //printf("[[[%d:Traced(%d) NEW CHILD\n", this_->idx, this_->traced_pid);
+    // grab the machine context and initialize the cursor
+    if (unw_getcontext(&context) < 0) {
+      std::cout << "ERROR: cannot get local machine state" << std::endl;
+      std::exit(1);
+    }
+    if (unw_init_local(&cursor, &context) < 0) {
+      std::cout << "ERROR: cannot initialize cursor for local unwinding" << std::endl;
+      std::exit(1);
     }
 
-    this_->Stop();
-
-    return NULL;
+    this->CalcHashes(&cursor, "__asan::Report");
   }
-  */
 
-  // https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
-  void Tracer::CalcHashes() {
-    this->last_crash.major_stack.clear();
-    this->last_crash.minor_stack.clear();
-
+  void Tracer::CalcHashesRemote() {
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
 
-    void *context = _UPT_create(this->traced_pid);
+    void* context = _UPT_create(this->traced_pid);
     unw_cursor_t cursor;
     int err;
     if ((err = unw_init_remote(&cursor, as, context)) != 0) {
@@ -277,31 +201,44 @@ namespace fuzz {
       } else if (err == -UNW_EUNSPEC) {
         printf("UNW_EUNSPEC\n");
       } else if (err == -UNW_EBADREG) {
-        printf("UNW_EBADREG\n");
+        printf("could not init remote: UNW_EBADREG\n");
       }
       _UPT_destroy(context);
       free(as);
       return;
     }
 
+    this->CalcHashes(&cursor, nullptr);
+
+    _UPT_destroy(context);
+    free(as);
+  }
+
+  // https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
+  void Tracer::CalcHashes(unw_cursor_t* cursor, const char* skip_until_past) {
+    this->last_crash.major_stack.clear();
+    this->last_crash.minor_stack.clear();
+
     // last five frames
     std::string* major_stack = &this->last_crash.major_stack;
     // all frames
     std::string* minor_stack = &this->last_crash.minor_stack;
 
-    char sym[4096];
+    char sym[0x1000];
     size_t count = 0;
+    // default case is that we already saw the skip_until_past and there's
+    // nothing that needs to be skipped.
+    bool saw_skip_until = (skip_until_past == nullptr);
     do {
       count++;
       unw_word_t offset;
       unw_word_t pc;
 
-      if (unw_get_reg(&cursor, UNW_REG_IP, &pc)) {
-        _UPT_destroy(context);
+      if (unw_get_reg(cursor, UNW_REG_IP, &pc)) {
         return;
       }
 
-      int res = unw_get_proc_name(&cursor, sym, sizeof(sym), &offset);
+      int res = unw_get_proc_name(cursor, sym, sizeof(sym), &offset);
       if (res == 0 || res == UNW_ENOMEM) {
         int status;
         size_t demangled_size;
@@ -316,6 +253,17 @@ namespace fuzz {
         snprintf(sym, sizeof(sym), "??");
       }
 
+      if (skip_until_past != nullptr) {
+        // always skip the skip_until_past
+        if (strstr(sym, skip_until_past) != nullptr) {
+          saw_skip_until = true;
+          continue;
+        // keep skipping until we've seen the skip until past
+        } else if (!saw_skip_until) {
+          continue;
+        }
+      }
+
       if (count <= 5) {
         if (count > 0) { *major_stack += "\n"; }
         *major_stack += sym;
@@ -326,10 +274,7 @@ namespace fuzz {
       if (strstr(sym, "LLVMFuzzerTestOneInput") != NULL) {
         break;
       }
-    } while (unw_step(&cursor) > 0);
-
-    _UPT_destroy(context);
-    free(as);
+    } while (unw_step(cursor) > 0);
 
     utils::sha1_hex(major_stack->data(), major_stack->size(), this->last_crash.major_hash);
     utils::sha1_hex(minor_stack->data(), minor_stack->size(), this->last_crash.minor_hash);

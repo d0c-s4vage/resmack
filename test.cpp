@@ -90,7 +90,8 @@ bool parseSentence(const uint8_t* data, size_t size) {
   splitStr(&input, " ", &parts);
   size_t curr_idx = 0;
 
-  CrashAsanArrayOOB();
+  //CrashInvalidInstruction();
+  //CrashAsanArrayOOB();
 
   if (parts.size() == 0) {
     return false;
@@ -109,14 +110,15 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
+  //CrashInvalidInstruction();
+  //CrashAsanArrayOOB();
+
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    _DEBUG_PRINT("%d: CRASH NORMAL!\n", getpid());
     CrashInvalidInstruction();
   }
   curr_idx = start_idx;
   if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
-    _DEBUG_PRINT("%d: CRASH ASAN!\n", getpid());
     CrashAsanArrayOOB();
   }
 
@@ -124,10 +126,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  _DEBUG_PRINT("%d Parsing sentence\n", getpid());
-  //std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  parseSentence(data, size);
-  _DEBUG_PRINT("%d Done parsing sentence\n", getpid());
+  //parseSentence(data, size);
   return true;
 }
 

@@ -86,6 +86,7 @@ namespace ipc {
     if (out_data == nullptr) {
       return false;
     }
+    memset(*out_data, 0, header.length);
 
     rc = read(this->parent_socket, *out_data, header.length);
     if (rc == -1) {

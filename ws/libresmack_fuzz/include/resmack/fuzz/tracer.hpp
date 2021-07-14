@@ -3,6 +3,7 @@
 
 #include <string>
 #include <algorithm>
+#include <libunwind-ptrace.h>
 #include <pthread.h>
 #include <sys/ptrace.h>
 
@@ -26,8 +27,13 @@ namespace fuzz {
     // all frames
     char minor_hash[41];
     Vector<std::string> stack_trace;
-    bool has_asan_info;
+
+    bool* has_asan_info;
     char* asan_info;
+    char* asan_major_stack;
+    char* asan_minor_stack;
+    char* asan_major_hash;
+    char* asan_minor_hash;
   };
 
   class Tracer {
@@ -37,18 +43,23 @@ namespace fuzz {
     bool should_run;
     pid_t traced_pid;
     targets::Target* target;
+    size_t max_asan_size;
+    size_t max_stack_size;
 
-    void CalcHashes();
+    void CalcHashesLocal();
+    void CalcHashesRemote();
+    void CalcHashes(unw_cursor_t* cursor, const char* skip_until_past);
 
    public:
     Tracer();
     ~Tracer();
 
-    static void* MonitorTracedPid(void* this_arg);
+    void MonitorTracedPid();
     void InsertHooks(TargetHooks* hooks);
     bool DidCrash() { return this->last_crash.crashed; }
     CrashInfo* GetCrashInfo() { return &this->last_crash; }
     void WaitForEvent();
+    void SaveAsanInfo(const char* report);
   };
 
 }

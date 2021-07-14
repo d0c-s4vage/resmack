@@ -37,6 +37,11 @@ namespace fuzz {
     return this;
   }
 
+  TargetHooks* TargetHooks::AddOnCrash(TargetHookIpcMemCb callback) {
+    this->on_crash.push_back(callback);
+    return this;
+  }
+
   TargetHooks* TargetHooks::AddPreStop(TargetHookIpcMemPidCb callback) {
     this->pre_stop.push_back(callback);
     return this;
@@ -83,6 +88,12 @@ namespace fuzz {
   }
   void TargetHooks::ExecPostTest(ipc::QueuedSharedMem* ipc_mem) {
     for (auto cb : this->post_test) {
+      cb(ipc_mem);
+    }
+  }
+
+  void TargetHooks::ExecOnCrash(ipc::QueuedSharedMem* ipc_mem) {
+    for (auto cb : this->on_crash) {
       cb(ipc_mem);
     }
   }

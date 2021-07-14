@@ -35,6 +35,8 @@ namespace fuzz {
     Vector<TargetHookIpcMemCb> pre_test;
     Vector<TargetHookIpcMemCb> post_test;
 
+    Vector<TargetHookIpcMemCb> on_crash;
+
     Vector<TargetHookIpcMemPidCb> pre_stop;
     Vector<TargetHookIpcMemPidCb> post_stop;
 
@@ -51,6 +53,8 @@ namespace fuzz {
     TargetHooks* AddPreTest(TargetHookIpcMemCb call_back);
     TargetHooks* AddPostTest(TargetHookIpcMemCb call_back);
 
+    TargetHooks* AddOnCrash(TargetHookIpcMemCb callback);
+
     TargetHooks* AddPreStop(TargetHookIpcMemPidCb call_back);
     TargetHooks* AddPostStop(TargetHookIpcMemPidCb call_back);
 
@@ -65,6 +69,8 @@ namespace fuzz {
     // target process - can simply do getpid() if it's needed
     void ExecPreTest(ipc::QueuedSharedMem* ipc_mem);
     void ExecPostTest(ipc::QueuedSharedMem* ipc_mem);
+
+    void ExecOnCrash(ipc::QueuedSharedMem* ipc_mem);
 
     void ExecPreStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);
     void ExecPostStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);

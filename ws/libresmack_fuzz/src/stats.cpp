@@ -31,16 +31,17 @@ void Stats::InsertHooks(TargetHooks* hooks) {
         std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
         printf(
-          "Total iters: %lu in %.03fs = %.03fs iters/s\n",
+          "Total iters: %lu in %.03fs = %.03fs iters, %lu crashes\n",
           this->ipc_stats->iterations,
           span.count(),
-          (double)this->ipc_stats->iterations / span.count()
+          (double)this->ipc_stats->iterations / span.count(),
+          this->ipc_stats->crashes
         );
       });
     })
     ->AddPreTest([](ipc::QueuedSharedMem* mem) {
       counter++;
-      if ((counter % 0x10000) != 0) {
+      if ((counter % 0x1000) != 0) {
         return;
       }
 
@@ -49,6 +50,21 @@ void Stats::InsertHooks(TargetHooks* hooks) {
         .iterations = counter
       };
       counter = 0;
+      mem->QueueUpdate(UPDATE_TYPE, &info);
+    })
+    ->AddOnCrash([](ipc::QueuedSharedMem* mem) {
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      printf("IN ON CRASH\n");
+      StatsInfo info {
+        .crashes = 1,
+        .iterations = 1,
+      };
       mem->QueueUpdate(UPDATE_TYPE, &info);
     });
 }

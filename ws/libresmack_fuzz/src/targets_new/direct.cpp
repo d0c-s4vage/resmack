@@ -70,7 +70,6 @@ namespace targets {
   void DirectTarget::Stop() {
     if (this->running_target == -1) { return; }
 
-    _DEBUG_PRINT("%lu: Stopping the target\n", this->id);
     this->hooks->ExecPreStop(&this->ipc_memory, this->running_target);
     kill(this->running_target, SIGKILL);
     waitpid(this->running_target, NULL, 0);
@@ -81,30 +80,13 @@ namespace targets {
   // --------------------------------------------------------------------------
 
   void DirectTarget::TestLoop() {
-    size_t iters = 0x1000000;
-    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-    size_t count = 0;
     while (true) {
       std::string const* data = this->genr->Generate();
       this->hooks->ExecPreTest(&this->ipc_memory);
       // TODO do something with the return value?
       this->callback(data->data(), data->size());
       this->hooks->ExecPostTest(&this->ipc_memory);
-      if (++count == iters) {
-        printf("DONE!\n");
-        break;
-      }
     }
-    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    printf(
-      "%lu: Done, %lu iters in %.03fs = %.03f iters/s\n",
-      id,
-      iters,
-      span.count(),
-      (double)iters / span.count()
-    );
-    printf("%lu: %d Completely finished loop somehow\n", this->id, getpid());
   }
 
 }
