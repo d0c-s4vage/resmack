@@ -85,7 +85,6 @@ namespace cmds {
 
     feedbacks::Coverage cov([&gen, corpus](feedbacks::Coverage* this_) {
       //bool descendant_of_last = false;
-      printf("Should add snapshot!\n");
       //corpus.AddRandSnapshot(gen.GetRand()->GetSnapshots(), this_->GetStats(), descendant_of_last);
     });
 

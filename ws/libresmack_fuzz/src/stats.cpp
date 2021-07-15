@@ -25,13 +25,12 @@ void Stats::InsertHooks(TargetHooks* hooks) {
         StatsInfo* info = reinterpret_cast<StatsInfo*>(data);
         this->ipc_stats->crashes += info->crashes;
         this->ipc_stats->iterations += info->iterations;
-        free(info);
 
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
         printf(
-          "Total iters: %lu in %.03fs = %.03fs iters, %lu crashes\n",
+          "Total iters: %lu in %.03fs = %.03fs iters/s, %lu crashes\n",
           this->ipc_stats->iterations,
           span.count(),
           (double)this->ipc_stats->iterations / span.count(),
@@ -41,7 +40,7 @@ void Stats::InsertHooks(TargetHooks* hooks) {
     })
     ->AddPreTest([](ipc::QueuedSharedMem* mem) {
       counter++;
-      if ((counter % 0x1000) != 0) {
+      if ((counter % 0x10000) != 0) {
         return;
       }
 
@@ -53,14 +52,6 @@ void Stats::InsertHooks(TargetHooks* hooks) {
       mem->QueueUpdate(UPDATE_TYPE, &info);
     })
     ->AddOnCrash([](ipc::QueuedSharedMem* mem) {
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
-      printf("IN ON CRASH\n");
       StatsInfo info {
         .crashes = 1,
         .iterations = 1,

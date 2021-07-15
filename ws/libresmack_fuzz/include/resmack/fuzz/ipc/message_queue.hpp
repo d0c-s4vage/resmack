@@ -12,6 +12,7 @@ namespace fuzz {
 namespace ipc {
 
   struct MessageHeader {
+    uint16_t magic;
     uint16_t type;
     size_t length;
   };
@@ -19,6 +20,7 @@ namespace ipc {
   class MessageQueue {
    public:
     static const uint16_t TYPE_NO_MESSAGE = 0x1111;
+    static const uint16_t MAGIC = 0x524d; // "RM" - resmack
 
     MessageQueue();
 

@@ -15,10 +15,14 @@
 #include "ws/libresmack_fuzz/include/resmack/fuzz/debug.hpp"
 #include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
 
+int test;
+
+__attribute__ ((optnone))
 void CrashInvalidInstruction() {
   ((void(*)())(0))();
 }
 
+__attribute__ ((optnone))
 void CrashAsanArrayOOB() {
   char* test = (char*)malloc(0x10);
   char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
@@ -126,7 +130,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  //parseSentence(data, size);
+  parseSentence(data, size);
   return true;
 }
 

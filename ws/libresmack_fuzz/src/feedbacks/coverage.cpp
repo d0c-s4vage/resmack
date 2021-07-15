@@ -106,7 +106,6 @@ namespace feedbacks {
   }
 
   void Coverage::SyncTargetToShared() {
-    printf("Sending coverage update!\n");
     this->queued_mem->QueueUpdate(
       COV_UPDATE_TYPE,
       sizeof(uint32_t) * NUM_COV_UINT32,
@@ -141,7 +140,6 @@ namespace feedbacks {
       ->AddIpcInit([this, cov_flags_size](ipc::QueuedSharedMem* mem) {
           this->queued_mem = mem;
           SHARED_COV_FLAGS = mem->GetNextPtrFor<uint32_t>(cov_flags_size);
-          printf("SHARED_COV_FLAGS SHOULD BE SET! %p\n", SHARED_COV_FLAGS);
 
           mem->AddReceiveHandler(COV_UPDATE_TYPE, [](size_t data_length, void* data, ipc::LockedSharedMem*) {
             uint32_t* flag_updates = reinterpret_cast<uint32_t*>(data);
@@ -152,8 +150,6 @@ namespace feedbacks {
               SHARED_COV_FLAGS[i] |= *flag_updates;
               flag_updates++;
             }
-
-            free(data);
           });
         })
       ->AddPreStartInTarget([](ipc::QueuedSharedMem*) {
@@ -165,7 +161,6 @@ namespace feedbacks {
         })
       ->AddPostTest([this](ipc::QueuedSharedMem*) {
           if (IS_NEW) {
-            printf("New coverage!\n");
             this->CalcHash();
             this->SyncTargetToShared();
 

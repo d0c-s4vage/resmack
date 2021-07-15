@@ -41,7 +41,6 @@ namespace ipc {
         *number2 += data_update->number2;
         *number3 += data_update->number3;
         *number4 += data_update->number4;
-        free(data_update);
         end = std::chrono::high_resolution_clock::now();
     });
 
