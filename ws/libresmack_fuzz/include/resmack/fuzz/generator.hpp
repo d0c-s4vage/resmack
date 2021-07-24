@@ -8,6 +8,7 @@
 #include "resmack/rules.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/fuzz/config.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/ipc/shared_mem_condition.hpp"
 
 namespace resmack {
@@ -28,11 +29,15 @@ using TargetHookGenericCb = std::function<void()>;
 
     std::string output;
     Rand rand;
+    uint32_t* last_rand_state;
 
    public:
     Generator(size_t id, const GrammarConfig* config, ReplayInitCb cb);
-    Rand const* GetRand();
     ~Generator();
+
+    void InsertHooks(TargetHooks* hooks);
+    std::string const* RegenerateLast();
+    Rand const* GetRand();
     std::string const* Generate();
     void ReinitRand(uint32_t seed);
   };

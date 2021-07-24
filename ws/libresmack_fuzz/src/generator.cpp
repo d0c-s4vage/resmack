@@ -21,11 +21,33 @@ namespace fuzz {
 
   Generator::~Generator() {}
 
+  void Generator::InsertHooks(TargetHooks* hooks) {
+    hooks->AddPrivateIpcSize([]() -> size_t {
+      return sizeof(uint32_t) * 4;
+    })->AddPrivateIpcInit([this](ipc::QueuedSharedMem* priv_mem) {
+      this->last_rand_state = priv_mem->GetNextPtrFor<uint32_t>(sizeof(uint32_t) * 4);
+    });
+  }
+
   const Rand* Generator::GetRand() {
     return &this->rand;
   }
 
+  std::string const* Generator::RegenerateLast() {
+    uint32_t curr_state[4];
+    this->rand.CopyState(curr_state);
+    this->rand.SetState(this->last_rand_state);
+
+    this->Generate();
+    this->rand.SetState(&curr_state[0]);
+    return &this->output;
+  }
+
   std::string const* Generator::Generate() {
+    // Maybe put this inside of a PreTest hook? makes more sense to me to
+    // keep it here though...
+    memcpy(this->last_rand_state, this->rand.GetState(), sizeof(uint32_t) * 4);
+
     BuildContext ctx(&this->output, &this->rand, this->max_depth);
 
     if (!this->replay_init_cb(&this->base_replay)) {

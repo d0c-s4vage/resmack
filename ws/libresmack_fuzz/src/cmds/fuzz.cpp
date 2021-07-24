@@ -96,9 +96,11 @@ namespace cmds {
     cov.InsertHooks(&hooks);
     tracer.InsertHooks(&hooks);
     stats.InsertHooks(&hooks);
+    gen.InsertHooks(&hooks);
 
-    hooks.AddOnCrash([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
-        printf("Saw crash!\n");
+    hooks.AddOnCrash([&gen](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+        std::string const* crashing_input = gen.RegenerateLast();
+        std::cout << "Crashing input: " << *crashing_input << std::endl;
     });
 
     target = targets::CreateTarget(
