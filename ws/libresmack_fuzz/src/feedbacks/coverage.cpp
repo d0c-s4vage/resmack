@@ -136,8 +136,8 @@ namespace feedbacks {
   void Coverage::InsertHooks(TargetHooks* hooks) {
     size_t cov_flags_size = sizeof(uint32_t) * NUM_COV_UINT32;
     hooks
-      ->AddIpcSize([cov_flags_size]() -> size_t { return cov_flags_size; })
-      ->AddIpcInit([this, cov_flags_size](ipc::QueuedSharedMem* mem) {
+      ->AddGlobalIpcSize([cov_flags_size]() -> size_t { return cov_flags_size; })
+      ->AddGlobalIpcInit([this, cov_flags_size](ipc::QueuedSharedMem* mem) {
           this->queued_mem = mem;
           SHARED_COV_FLAGS = mem->GetNextPtrFor<uint32_t>(cov_flags_size);
 
@@ -152,14 +152,14 @@ namespace feedbacks {
             }
           });
         })
-      ->AddPreStartInTarget([](ipc::QueuedSharedMem*) {
+      ->AddPreStartInTarget([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
           memset(IN_TARGET_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
           IS_NEW = false;
         })
-      ->AddPreTest([](ipc::QueuedSharedMem*) {
+      ->AddPreTest([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
           IS_NEW = false;
         })
-      ->AddPostTest([this](ipc::QueuedSharedMem*) {
+      ->AddPostTest([this](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
           if (IS_NEW) {
             this->CalcHash();
             this->SyncTargetToShared();

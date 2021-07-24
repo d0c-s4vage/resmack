@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -25,25 +26,31 @@ namespace targets {
     max_input_size(max_input_size),
     callback(callback),
     hooks(hooks),
-    genr(genr),
-    ipc(NULL)
+    genr(genr)
   {
-    size_t ipc_max_size = hooks->ExecAndSumIpcSize();
-    ipc_max_size += sizeof(DirectTargetIpcInfo) + max_input_size - 1;
-    this->ipc_memory.Init(ipc_max_size);
+    size_t global_ipc_size = hooks->ExecAndSumGlobalIpcSize();
 
-    this->ipc = this->ipc_memory.GetNextPtrFor<DirectTargetIpcInfo>(
-      sizeof(DirectTargetIpcInfo) + max_input_size // -1  // yes, leave an extra byte at the end for a null terminator
-    );
+    // DirectTarget should be created *before* any forking occurs so that
+    // the global memory will be shared by all
+    this->global_mem.Init(global_ipc_size);
 
-    hooks->ExecIpcInit(&this->ipc_memory);
+    this->hooks->ExecGlobalIpcInit(&this->global_mem);
   }
 
   DirectTarget::~DirectTarget() {}
 
+  bool DirectTarget::InitPrivateMem() {
+    size_t private_ipc_size = hooks->ExecAndSumPrivateIpcSize();
+    this->private_mem.Init(private_ipc_size);
+    this->hooks->ExecPrivateIpcInit(&this->private_mem);
+    return true;
+  }
+
   pid_t DirectTarget::Start() {
+    static bool inited = this->InitPrivateMem();
+
     _DEBUG_PRINT("%lu: DirectTarget: Starting\n", this->id);
-    this->hooks->ExecPreStart(&this->ipc_memory);
+    this->hooks->ExecPreStart(&this->private_mem, &this->global_mem);
 
     _DEBUG_PRINT("%lu: DirectTarget: Forking\n", this->id);
     this->running_target = fork();
@@ -54,15 +61,21 @@ namespace targets {
     }
 
     if (this->running_target == 0) {
+      // TODO if mute
+      int fd = open("/dev/null", O_WRONLY);
+      dup2(fd, 1);
+      dup2(fd, 2);
+      close(fd);
+
       _DEBUG_PRINT("%lu: %d DirectTarget: In fork, executing pre start in target\n", this->id, getpid());
-      this->hooks->ExecPreStartInTarget(&this->ipc_memory);
+      this->hooks->ExecPreStartInTarget(&this->private_mem, &this->global_mem);
       _DEBUG_PRINT("%lu: %d DirectTarget: In fork, done executing pre start in target\n", this->id, getpid());
       this->TestLoop();
       _exit(0);
     }
 
     _DEBUG_PRINT("%lu: DirectTarget: Forked, child proc: %d\n", this->id, this->running_target);
-    this->hooks->ExecPostStart(&this->ipc_memory, this->running_target, this);
+    this->hooks->ExecPostStart(&this->private_mem, &this->global_mem, this->running_target, this);
 
     return this->running_target;
   }
@@ -70,10 +83,10 @@ namespace targets {
   void DirectTarget::Stop() {
     if (this->running_target == -1) { return; }
 
-    this->hooks->ExecPreStop(&this->ipc_memory, this->running_target);
+    this->hooks->ExecPreStop(&this->private_mem, &this->global_mem, this->running_target);
     kill(this->running_target, SIGKILL);
     waitpid(this->running_target, NULL, 0);
-    this->hooks->ExecPostStop(&this->ipc_memory, this->running_target);
+    this->hooks->ExecPostStop(&this->private_mem, &this->global_mem, this->running_target);
     this->running_target = -1;
   }
 
@@ -82,10 +95,10 @@ namespace targets {
   void DirectTarget::TestLoop() {
     while (true) {
       std::string const* data = this->genr->Generate();
-      this->hooks->ExecPreTest(&this->ipc_memory);
+      this->hooks->ExecPreTest(&this->private_mem, &this->global_mem);
       // TODO do something with the return value?
       this->callback(data->data(), data->size());
-      this->hooks->ExecPostTest(&this->ipc_memory);
+      this->hooks->ExecPostTest(&this->private_mem, &this->global_mem);
     }
   }
 

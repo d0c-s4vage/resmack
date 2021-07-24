@@ -59,10 +59,21 @@ namespace corpora {
   }
 
   void MmapCorpus::InsertHooks(TargetHooks* hooks) {
-    MmapCorpus* this_ = this;
-    hooks->AddIpcInit([&this_](ipc::QueuedSharedMem* mem) {
-      mem->AddReceiveHandler(CORPUS_UPDATE_TYPE, [](size_t len, void* data, ipc::LockedSharedMem*){
+    hooks->AddGlobalIpcInit([this](ipc::QueuedSharedMem* mem) {
+      mem->AddReceiveHandler(UPDATE_TYPE, [this](size_t len, void* data, ipc::LockedSharedMem*) {
         // TODO HANDLE UPDATES!!!!
+        //const MmapCorpusUpdate* update = reinterpret_cast<MmapCorpusUpdate*>(data);
+        /*
+        this->next_item->size = update->num_states;
+        auto cov_stats = this->coverage->GetStats();
+        this->next_item->feedback_key = cov_stats.key;
+        this->next_item->iter_discovered = this->stats->GetCurrIter();
+        this->next_item->parent1_one_based_idx = update->parent1_one_based_idx;
+        this->next_item->parent1_two_based_idx = update->parent1_two_based_idx;
+        this->next_item->num_crashes = 0;
+        this->next_item->num_ancestors = 0;
+        this->next_item->num_descendants = 0;
+        */
       });
     });
   }

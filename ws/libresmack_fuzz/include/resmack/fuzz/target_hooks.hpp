@@ -17,16 +17,19 @@ namespace fuzz {
   using TargetHookSizedCb = std::function<size_t()>;
   using TargetHookPidCb = std::function<void(pid_t)>;
   using TargetHookPidCb = std::function<void(pid_t)>;
-  using TargetHookIpcMemCb = std::function<void(ipc::QueuedSharedMem*)>;
+  using TargetHookSingleIpcMemCb = std::function<void(ipc::QueuedSharedMem* mem)>;
+  using TargetHookIpcMemCb = std::function<void(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem)>;
   using TargetHookIpcMemPidCb =
-    std::function<void(ipc::QueuedSharedMem *, pid_t)>;
+    std::function<void(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem, pid_t)>;
   using TargetHookIpcMemPidTargetCb =
-    std::function<void(ipc::QueuedSharedMem *, pid_t, targets::Target*)>;
+    std::function<void(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem, pid_t, targets::Target*)>;
 
   class TargetHooks {
    private:
-    Vector<TargetHookSizedCb> ipc_size;
-    Vector<TargetHookIpcMemCb> ipc_init;
+    Vector<TargetHookSizedCb> private_ipc_size;
+    Vector<TargetHookSizedCb> global_ipc_size;
+    Vector<TargetHookSingleIpcMemCb> private_ipc_init;
+    Vector<TargetHookSingleIpcMemCb> global_ipc_init;
 
     Vector<TargetHookIpcMemCb> pre_start;
     Vector<TargetHookIpcMemCb> pre_start_in_target;
@@ -43,8 +46,11 @@ namespace fuzz {
    public:
     TargetHooks();
 
-    TargetHooks* AddIpcSize(TargetHookSizedCb call_back);
-    TargetHooks* AddIpcInit(TargetHookIpcMemCb call_back);
+    TargetHooks* AddPrivateIpcSize(TargetHookSizedCb call_back);
+    TargetHooks* AddGlobalIpcSize(TargetHookSizedCb call_back);
+
+    TargetHooks* AddPrivateIpcInit(TargetHookSingleIpcMemCb call_back);
+    TargetHooks* AddGlobalIpcInit(TargetHookSingleIpcMemCb call_back);
 
     TargetHooks* AddPreStart(TargetHookIpcMemCb call_back);
     TargetHooks* AddPreStartInTarget(TargetHookIpcMemCb call_back);
@@ -58,22 +64,28 @@ namespace fuzz {
     TargetHooks* AddPreStop(TargetHookIpcMemPidCb call_back);
     TargetHooks* AddPostStop(TargetHookIpcMemPidCb call_back);
 
-    size_t ExecAndSumIpcSize();
-    void ExecIpcInit(ipc::QueuedSharedMem* ipc_mem);
+    size_t ExecAndSumPrivateIpcSize();
+    size_t ExecAndSumGlobalIpcSize();
 
-    void ExecPreStart(ipc::QueuedSharedMem* ipc_mem);
-    void ExecPreStartInTarget(ipc::QueuedSharedMem* ipc_mem);
-    void ExecPostStart(ipc::QueuedSharedMem* ipc_mem, pid_t pid, targets::Target* target);
+    void ExecPrivateIpcInit(ipc::QueuedSharedMem* private_mem);
+    void ExecGlobalIpcInit(ipc::QueuedSharedMem* global_mem);
+
+    void ExecPreStart(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem);
+    void ExecPreStartInTarget(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem);
+    void ExecPostStart(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem, pid_t pid, targets::Target* target);
 
     // don't need the pid for both of these since they run *IN* the
     // target process - can simply do getpid() if it's needed
-    void ExecPreTest(ipc::QueuedSharedMem* ipc_mem);
-    void ExecPostTest(ipc::QueuedSharedMem* ipc_mem);
+    void ExecPreTest(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem);
+    void ExecPostTest(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem);
 
-    void ExecOnCrash(ipc::QueuedSharedMem* ipc_mem);
+    void ExecOnCrash(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem);
 
-    void ExecPreStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);
-    void ExecPostStop(ipc::QueuedSharedMem* ipc_mem, pid_t pid);
+    void ExecPreStop(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem, pid_t pid);
+    void ExecPostStop(ipc::QueuedSharedMem* private_mem, ipc::QueuedSharedMem* global_mem, pid_t pid);
+
+   private:
+    size_t ExecAndSumSizeCallbacks(Vector<TargetHookSizedCb>* callbacks);
   };
 
 }

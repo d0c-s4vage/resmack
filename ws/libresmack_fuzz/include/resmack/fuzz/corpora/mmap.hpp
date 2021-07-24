@@ -13,9 +13,17 @@ namespace resmack {
 namespace fuzz {
 namespace corpora {
 
+  struct MmapCorpusUpdate {
+    uint64_t iter_discovered;
+    uint64_t parent1_one_based_idx;
+    uint64_t parent2_one_based_idx;
+    uint64_t num_states;
+    // followed by N GenState headers
+  };
+
   class MmapCorpus : public Corpus {
    private:
-    static const uint16_t CORPUS_UPDATE_TYPE = 0x11;
+    static const uint16_t UPDATE_TYPE = 0x11;
 
     void* corpus_map;
     size_t max_corpus_size;

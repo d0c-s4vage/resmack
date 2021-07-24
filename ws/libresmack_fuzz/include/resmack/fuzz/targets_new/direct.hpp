@@ -16,25 +16,19 @@ namespace targets {
 
   using TargetCb = std::function<int(const char* data, size_t size)>;
 
-  struct DirectTargetIpcInfo {
-    int result;
-    size_t data_size;
-    char data; // ref this to get a pointer to the data
-  };
-
   class DirectTarget : public Target {
    private:
     size_t id;
     size_t max_input_size;
     pid_t running_target;
     TargetCb callback;
-    ipc::QueuedSharedMem ipc_memory;
+    ipc::QueuedSharedMem private_mem;
+    ipc::QueuedSharedMem global_mem;
     TargetHooks* hooks;
     Generator* genr;
 
-    DirectTargetIpcInfo* ipc;
-
     void TestLoop();
+    bool InitPrivateMem();
 
    public:
     DirectTarget(size_t id, TargetCb callback, TargetHooks* hooks, size_t max_input_size, Generator* genr);
@@ -42,7 +36,8 @@ namespace targets {
 
     pid_t Start();
     void Stop();
-    ipc::QueuedSharedMem* GetIpcMemory() { return &this->ipc_memory; }
+    ipc::QueuedSharedMem* GetPrivateMem() { return &this->private_mem; }
+    ipc::QueuedSharedMem* GetGlobalMem() { return &this->global_mem; }
   };
 
 }

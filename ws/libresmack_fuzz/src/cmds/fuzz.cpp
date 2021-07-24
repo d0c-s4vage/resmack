@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/wait.h>
 
+#include "resmack/fuzz/ipc/queued_shared_mem.hpp"
 #include "resmack/types.hpp"
 #include "resmack/fuzz/debug.hpp"
 #include "resmack/fuzz/cmds/fuzz.hpp"
@@ -62,7 +63,7 @@ namespace cmds {
         // TODO save crash info to disk
         //printf("%lu: Crashed!\nStack:\n%s\n", id, info->minor_stack.c_str());
         //printf("ASAN INFO:\n\n%s\n", info->asan_info);
-        hooks->ExecOnCrash(target->GetIpcMemory());
+        hooks->ExecOnCrash(target->GetPrivateMem(), target->GetGlobalMem());
       }
     }
 
@@ -96,6 +97,10 @@ namespace cmds {
     tracer.InsertHooks(&hooks);
     stats.InsertHooks(&hooks);
 
+    hooks.AddOnCrash([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+        printf("Saw crash!\n");
+    });
+
     target = targets::CreateTarget(
       0,
       targets::TargetType::kDirect,
@@ -117,11 +122,13 @@ namespace cmds {
       }
     }
 
-    target->GetIpcMemory()->ListenForUpdates();
+    target->GetPrivateMem()->ListenForUpdates();
+    target->GetGlobalMem()->ListenForUpdates();
 
     while (wait(nullptr) > 0);
 
-    target->GetIpcMemory()->StopListeningForUpdates();
+    target->GetPrivateMem()->StopListeningForUpdates();
+    target->GetGlobalMem()->StopListeningForUpdates();
 
     std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);

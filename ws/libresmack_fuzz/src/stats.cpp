@@ -14,8 +14,8 @@ void Stats::InsertHooks(TargetHooks* hooks) {
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   static uint64_t counter = 0;
   hooks
-    ->AddIpcSize([]() -> size_t { return sizeof(StatsInfo); })
-    ->AddIpcInit([this, start](ipc::QueuedSharedMem* mem) {
+    ->AddGlobalIpcSize([]() -> size_t { return sizeof(StatsInfo); })
+    ->AddGlobalIpcInit([this, start](ipc::QueuedSharedMem* mem) {
       this->ipc_stats = mem->GetNextPtrFor<StatsInfo>();
       memset(this->ipc_stats, 0, sizeof(StatsInfo));
       this->ipc_stats->iterations = 0;
@@ -38,7 +38,7 @@ void Stats::InsertHooks(TargetHooks* hooks) {
         );
       });
     })
-    ->AddPreTest([](ipc::QueuedSharedMem* mem) {
+    ->AddPreTest([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem* global_mem) {
       counter++;
       if ((counter % 0x10000) != 0) {
         return;
@@ -49,14 +49,14 @@ void Stats::InsertHooks(TargetHooks* hooks) {
         .iterations = counter
       };
       counter = 0;
-      mem->QueueUpdate(UPDATE_TYPE, &info);
+      global_mem->QueueUpdate(UPDATE_TYPE, &info);
     })
-    ->AddOnCrash([](ipc::QueuedSharedMem* mem) {
+    ->AddOnCrash([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem* global_mem) {
       StatsInfo info {
         .crashes = 1,
         .iterations = 1,
       };
-      mem->QueueUpdate(UPDATE_TYPE, &info);
+      global_mem->QueueUpdate(UPDATE_TYPE, &info);
     });
 }
 

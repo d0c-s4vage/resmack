@@ -33,12 +33,12 @@ namespace fuzz {
 
   void Tracer::InsertHooks(TargetHooks* hooks) {
     hooks
-      ->AddIpcSize(
+      ->AddPrivateIpcSize(
         [this]
         () -> size_t {
           return this->max_asan_size + (this->max_stack_size * 2) + (48 * 2) + 4 /*has_asan_info*/;
       })
-      ->AddIpcInit(
+      ->AddPrivateIpcInit(
         [this]
         (ipc::QueuedSharedMem* mem) {
           char* ptr = mem->GetNextPtrFor<char>(this->max_asan_size);
@@ -60,7 +60,7 @@ namespace fuzz {
       })
       ->AddPreStartInTarget(
         [this]
-        (ipc::QueuedSharedMem*) {
+        (ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
           ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
           asan::SetAsanCallback([this](const char* report) {
@@ -69,7 +69,7 @@ namespace fuzz {
       })
       ->AddPostStart(
         [this]
-        (ipc::QueuedSharedMem*, pid_t new_pid, auto* target) {
+        (ipc::QueuedSharedMem*, ipc::QueuedSharedMem*, pid_t new_pid, auto* target) {
           this->traced_pid = new_pid;
           this->target = target;
           this->MonitorTracedPid();
@@ -83,7 +83,7 @@ namespace fuzz {
       })
       ->AddPostStop(
         [this]
-        (ipc::QueuedSharedMem*, pid_t) {
+        (ipc::QueuedSharedMem*, ipc::QueuedSharedMem*, pid_t) {
           // force everything to wait until we've finished handling the
           // crash
           //pthread_join(this->monitor_thread, NULL);
