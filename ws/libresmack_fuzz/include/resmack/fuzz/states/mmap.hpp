@@ -15,6 +15,7 @@
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -44,6 +45,7 @@ class MmapState : public State {
 
   void* state_map;
   StateMetadata* metadata;
+  ipc::QueuedSharedMem* ipc_mem;
 
   corpora::MmapCorpus corpus;
 
@@ -53,6 +55,7 @@ class MmapState : public State {
 
   StateStats* GetStats() { return &this->metadata->stats; };
   void InitNewStats();
+  void InsertHooks(TargetHooks* hooks);
   //void SyncStats(targets::TargetStats* stats);
 
   uint64_t GetNumIterations();

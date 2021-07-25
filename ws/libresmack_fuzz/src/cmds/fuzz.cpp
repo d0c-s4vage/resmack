@@ -13,8 +13,8 @@
 #include "resmack/fuzz/target_new.hpp"
 #include "resmack/fuzz/target_hooks.hpp"
 #include "resmack/fuzz/tracer.hpp"
+#include "resmack/fuzz/states/mmap.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
-#include "resmack/fuzz/stats.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -45,10 +45,6 @@ namespace cmds {
   void* FuzzN(uint32_t id, FuzzConfig*, TargetHooks* hooks, targets::Target* target, Tracer* tracer, corpora::MmapCorpus* corpus, Generator* gen, feedbacks::Coverage* cov) {
     gen->ReinitRand(id);
 
-    //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(fuzz_config->feedbackType);
-
-    //corpus.InsertHooks(&hooks);
-
     size_t count = 0;
 
     while (shouldRun) {
@@ -74,7 +70,8 @@ namespace cmds {
     signal(SIGINT, SignalHandler);
 
     TargetHooks hooks;
-    corpora::MmapCorpus corpus;
+    states::MmapState state(config->fuzz_config.state_path);
+    corpora::MmapCorpus* corpus = state.GetMmapCorpus();
 
     Generator gen(0, &config->grammar_config, [](Vector<RandSnapshot>*) -> bool {
       // TODO:
@@ -84,24 +81,26 @@ namespace cmds {
       return false;
     });
 
+    bool crashed = false;
+    hooks.AddOnCrash([&gen](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+        std::string const* crashing_input = gen.RegenerateLast();
+        std::cout << "Crashing input:: " << *crashing_input << std::endl;
+    });
+
+
+    //feedbacks::Feedback* feedback = feedbacks::CreateFeedback(fuzz_config->feedbackType);
     feedbacks::Coverage cov([&gen, corpus](feedbacks::Coverage* this_) {
-      //bool descendant_of_last = false;
-      //corpus.AddRandSnapshot(gen.GetRand()->GetSnapshots(), this_->GetStats(), descendant_of_last);
+      printf("New coverage!\n");
+      bool descendant_of_last = false;
+      //corpus->AddRandSnapshot(gen.GetRand()->GetSnapshots(), this_->GetStats(), descendant_of_last);
     });
 
     Tracer tracer;
-    Stats stats;
 
-    corpus.InsertHooks(&hooks);
+    corpus->InsertHooks(&hooks);
     cov.InsertHooks(&hooks);
     tracer.InsertHooks(&hooks);
-    stats.InsertHooks(&hooks);
     gen.InsertHooks(&hooks);
-
-    hooks.AddOnCrash([&gen](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
-        std::string const* crashing_input = gen.RegenerateLast();
-        std::cout << "Crashing input: " << *crashing_input << std::endl;
-    });
 
     target = targets::CreateTarget(
       0,
@@ -112,12 +111,11 @@ namespace cmds {
     );
 
     Vector<pid_t> forked_pids;
-    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < config->fuzz_config.nprocs; i++) {
       pid_t forked_pid = fork();
       if (forked_pid == 0) {
         is_parent = false;
-        FuzzN(i, &config->fuzz_config, &hooks, target, &tracer, &corpus, &gen, &cov);
+        FuzzN(i, &config->fuzz_config, &hooks, target, &tracer, corpus, &gen, &cov);
         _exit(0);
       } else {
         forked_pids.push_back(forked_pid);
@@ -131,17 +129,6 @@ namespace cmds {
 
     target->GetPrivateMem()->StopListeningForUpdates();
     target->GetGlobalMem()->StopListeningForUpdates();
-
-    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-
-    size_t total_iters = iters * config->fuzz_config.nprocs;
-    printf(
-      "Total iters: %lu in %.03fs = %.03fs iters/s\n",
-      total_iters,
-      span.count(),
-      (double)total_iters / span.count()
-    );
   }
 
 } // cmds

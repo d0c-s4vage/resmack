@@ -1,8 +1,9 @@
 #ifndef RESMACK_FUZZ_SERIALIZED_H
 #define RESMACK_FUZZ_SERIALIZED_H
 
-#include "stddef.h"
-#include "inttypes.h"
+#include <atomic>
+#include <stddef.h>
+#include <inttypes.h>
 
 namespace resmack {
 namespace fuzz {
@@ -26,8 +27,8 @@ struct CorpusItemHeader {
   uint64_t iter_discovered;
   uint64_t parent1_one_based_idx; // 1-based!!! 0 == no parent
   uint64_t parent2_one_based_idx;
-  uint64_t mutations_since_offspring;
-  uint64_t num_crashes;
+  std::atomic<uint64_t> mutations_since_offspring;
+  std::atomic<uint64_t> num_crashes;
   uint64_t num_ancestors;
   uint64_t num_descendants;
   uint64_t num_direct_descendants;

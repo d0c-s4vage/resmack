@@ -27,7 +27,6 @@ namespace corpora {
   }
 
   void MmapCorpus::Init(
-    const char* state_path,
     void* corpus_map,
     size_t max_corpus_size
   ) {
@@ -40,20 +39,6 @@ namespace corpora {
     this->last_item2_one_based_idx = 0;
 
     this->meta = (ser::CorpusMetadata*)this->corpus_map;
-
-    const char* suffix = "-corpus";
-    size_t suffix_len = strlen(suffix);
-    size_t state_len = strlen(state_path);
-    char* with_sem = (char*)malloc(state_len + suffix_len + 1);
-    memcpy(with_sem, state_path, state_len);
-    // keep the null terminator
-    memcpy(with_sem + state_len, suffix, suffix_len + 1);
-
-    char sem_path[2 + (SHA_DIGEST_LENGTH * 2)]; // leading '/' + SHA_DIGEST_LENGTH + NULL
-    utils::sha1_hex(with_sem, strlen(with_sem), sem_path+1);
-    sem_path[0] = '/';
-
-    free(with_sem);
 
     this->SyncInner();
   }
@@ -88,16 +73,12 @@ namespace corpora {
       return false;
     }
 
-    DEBUG_PRINT("%d: SyncInner()\n", getpid());
     this->SyncInner();
-    DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
 
     if (this->SeenFeedback(stats.key)) {
-      DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
       return false;
     }
 
-    DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
     this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
 
     return res;
@@ -440,7 +421,6 @@ namespace corpora {
 
       CorpusEntry* parent = &this->snapshots[parent_idx];
       if (parent == entry) {
-        DEBUG_PRINT("%d: PARENT WAS ENTRY! idx: %d\n", getpid(), parent_idx);
         break;
       }
       ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
@@ -477,17 +457,12 @@ namespace corpora {
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
-    DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
-    DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
     ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
 
-    //DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
     //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
 
-    DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
     header->mutations_since_offspring += 5000;
 
-    DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
     this->last_updated_seq = ++this->meta->updated_seq;
   }
 

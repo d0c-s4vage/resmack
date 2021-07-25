@@ -52,6 +52,7 @@ namespace feedbacks {
     if (IN_TARGET_COV_FLAGS[uint_no] & bit) { return; }
 
     IN_TARGET_COV_FLAGS[uint_no] |= bit;
+    printf("NEW COVERAGE\n");
     IS_NEW = true;
   }
 
@@ -161,6 +162,8 @@ namespace feedbacks {
         })
       ->AddPostTest([this](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
           if (IS_NEW) {
+            printf("It's NEW, should be sending coverage update\n");
+            fflush(stdout);
             this->CalcHash();
             this->SyncTargetToShared();
 
