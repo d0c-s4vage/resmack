@@ -71,7 +71,7 @@ namespace corpora {
     float GetDecayPercent();
 
     void SetStrats(uint32_t strats);
-    void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
+    void Init(void* corpus_map, size_t max_corpus_size);
     void AddRandSnapshot(
       const resmack::Vector<RandSnapshot>* snapshot,
       feedbacks::FeedbackStats stats,

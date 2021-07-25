@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <chrono>
 #include <iostream>
 #include <semaphore.h>
 #include <sys/mman.h>
@@ -10,6 +11,7 @@
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
 #include "resmack/fuzz/utils.hpp"
+#include "resmack/fuzz/ipc/queued_update_types.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -60,7 +62,6 @@ namespace states {
 
     size_t meta_size = sizeof(StateMetadata);
     this->corpus.Init(
-      this->state_path,
       (void*)((char*)this->state_map + meta_size),
       state_max_size - meta_size
     );
@@ -85,6 +86,71 @@ namespace states {
     munmap(this->state_map, this->state_max_size);
     fclose(this->state_file);
     sem_close(this->state_lock);
+  }
+
+  void MmapState::InsertHooks(TargetHooks* hooks) {
+    this->start = std::chrono::high_resolution_clock::now();
+    auto last = std::chrono::high_resolution_clock::now();
+    static uint64_t local_counter = 0;
+
+    hooks
+      ->AddGlobalIpcInit([this, &last](ipc::QueuedSharedMem* mem) {
+        mem->AddReceiveHandler(
+          ipc::QueuedUpdateTypes::STATE,
+          [this, &last](size_t, void* data, ipc::LockedSharedMem*) {
+            StateMetadata* update = reinterpret_cast<StateMetadata*>(data);
+            this->metadata->crashes += update->crashes;
+            this->metadata->iterations += update->iterations;
+            fflush(stdout);
+
+            auto now = std::chrono::high_resolution_clock::now();
+            auto span = std::chrono::duration_cast<std::chrono::duration<double>>(now - last);
+
+            if (update->crashes > 0) {
+              this->PrintStatus();
+            } else if (span.count() > 1.0f) {
+              last = now;
+              //count_between_iters *= 2.0f;
+              this->PrintStatus();
+            }
+          }
+        );
+      })
+      ->AddPreTest([this](ipc::QueuedSharedMem*, ipc::QueuedSharedMem* global_mem) {
+        local_counter++;
+        auto end = std::chrono::high_resolution_clock::now();
+        auto span = std::chrono::duration_cast<std::chrono::duration<double>>(end - this->start);
+        // either every 0x10000 iterations, or ten times a second
+        if ((local_counter % 0x10000 || span.count() < 0.1) != 0) {
+          return;
+        }
+        this->start = end;
+
+        StateMetadata info {
+          .iterations = local_counter,
+          .crashes = 0,
+        };
+        local_counter = 0;
+        global_mem->QueueUpdate(ipc::QueuedUpdateTypes::STATE, &info);
+      })
+      ->AddOnCrash([this](ipc::QueuedSharedMem*, ipc::QueuedSharedMem* global_mem) {
+        StateMetadata info {
+          .iterations = 0,
+          .crashes = 1,
+        };
+        global_mem->QueueUpdate(ipc::QueuedUpdateTypes::STATE, &info);
+      });
+  }
+
+  void MmapState::PrintStatus() {
+    auto end = std::chrono::high_resolution_clock::now();
+    auto span = std::chrono::duration_cast<std::chrono::duration<double>>(end - this->start);
+
+    printf("%lu iters, %lu crashes, %.02f iters/s\n",
+      this->metadata->iterations,
+      this->metadata->crashes,
+      (double)this->metadata->iterations / span.count()
+    );
   }
 
   void MmapState::InitNewStats() {

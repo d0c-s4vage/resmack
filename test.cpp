@@ -114,7 +114,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
-  CrashInvalidInstruction();
+  //CrashInvalidInstruction();
   //CrashAsanArrayOOB();
 
   size_t start_idx = curr_idx;
@@ -130,7 +130,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  parseSentence(data, size);
+  //parseSentence(data, size);
   return true;
 }
 

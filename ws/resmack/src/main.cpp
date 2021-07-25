@@ -6,7 +6,6 @@
 #include "resmack/logo.hpp"
 
 #include "compile.hpp"
-#include "debug_state.hpp"
 
 namespace resmack {
 namespace cli {
@@ -21,7 +20,7 @@ namespace root {
 
     std::cout << "Available sub-commands. Each has their own --help" << std::endl << std::endl;
     std::cout << "  cc           - Compilation" << std::endl;
-    std::cout << "  debug-state  - State file debugging" << std::endl;
+    //std::cout << "  debug-state  - State file debugging" << std::endl;
     std::cout << "  gen          - Grammar generation" << std::endl;
   }
 
@@ -59,8 +58,8 @@ namespace root {
 
     if (has_args && strncmp(argv[1], "cc", strlen("cc")) == 0) {
       return resmack::cli::compile::Run(argc - 1, &argv[1]);
-    } else if (has_args && strncmp(argv[1], "debug-state", strlen("debug-state")) == 0) {
-      return resmack::cli::debug_state::Run(argc - 1, &argv[1]);
+    //} else if (has_args && strncmp(argv[1], "debug-state", strlen("debug-state")) == 0) {
+    //  return resmack::cli::debug_state::Run(argc - 1, &argv[1]);
     }
 
     if (!ParseOpts(argc, argv, &opts)) {

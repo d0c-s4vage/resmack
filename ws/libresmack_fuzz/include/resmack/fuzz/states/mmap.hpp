@@ -1,6 +1,7 @@
 #ifndef RESMACK_FUZZ_MMAP_STATE_H
 #define RESMACK_FUZZ_MMAP_STATE_H
 
+#include <chrono>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -44,15 +46,19 @@ class MmapState : public State {
 
   void* state_map;
   StateMetadata* metadata;
+  ipc::QueuedSharedMem* ipc_mem;
 
   corpora::MmapCorpus corpus;
+  std::chrono::high_resolution_clock::time_point start;
 
  public:
   MmapState(const char* statePath);
   ~MmapState();
 
+  void PrintStatus();
   StateStats* GetStats() { return &this->metadata->stats; };
   void InitNewStats();
+  void InsertHooks(TargetHooks* hooks);
   //void SyncStats(targets::TargetStats* stats);
 
   uint64_t GetNumIterations();
