@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <inttypes.h>
-#include <semaphore.h>
 
 #include "resmack/types.hpp"
 #include "resmack/fuzz/corpus.hpp"
@@ -14,27 +13,22 @@ namespace resmack {
 namespace fuzz {
 namespace corpora {
 
-  enum CorpusStrat : uint32_t {
-    STRAT_RAND                     = 0b1,
-    STRAT_MOST_FEEDBACK            = 0b10,
-    STRAT_LEAST_FEEDBACK           = 0b100,
-    STRAT_MOST_RECENT              = 0b1000,
-    STRAT_LEAST_RECENT             = 0b10000,
-    STRAT_MOST_ANCESTORS           = 0b100000,
-    STRAT_LEAST_ANCESTORS          = 0b1000000,
-    STRAT_MOST_DIRECT_DESCENDANTS  = 0b10000000,
-    STRAT_LEAST_DIRECT_DESCENDANTS = 0b100000000,
-    STRAT_MOST_DESCENDANTS         = 0b1000000000,
-    STRAT_LEAST_DESCENDANTS        = 0b10000000000,
+  struct MmapCorpusUpdate {
+    uint64_t iter_discovered;
+    uint64_t parent1_one_based_idx;
+    uint64_t parent2_one_based_idx;
+    uint64_t num_states;
+    // followed by N GenState headers
   };
 
   class MmapCorpus : public Corpus {
    private:
+    static const uint16_t UPDATE_TYPE = 0x11;
+
     void* corpus_map;
     size_t max_corpus_size;
     uint32_t strats;
     Vector<size_t(*)(MmapCorpus*, Rand*, size_t)> strat_handlers;
-    sem_t* corpus_lock;
     Set<size_t> seen_keys;
     Vector<CorpusEntry> snapshots;
     Vector<size_t> most_direct_descendants_desc;
@@ -64,6 +58,8 @@ namespace corpora {
     MmapCorpus();
     ~MmapCorpus();
 
+    void InsertHooks(TargetHooks* hooks);
+
     void SetCorpusDecay(size_t corpus_decay) {
       this->corpus_decay = corpus_decay;
     }
@@ -75,15 +71,15 @@ namespace corpora {
     float GetDecayPercent();
 
     void SetStrats(uint32_t strats);
-    void Init(const char* state_path, void* corpus_map, size_t max_corpus_size);
+    void Init(void* corpus_map, size_t max_corpus_size);
     void AddRandSnapshot(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     bool AddRandSnapshotIfNotSeen(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     virtual const Vector<CorpusEntry>* GetItems() { return &this->snapshots; }
@@ -107,7 +103,7 @@ namespace corpora {
    private:
     void AddRandSnapshotInner(
       const resmack::Vector<RandSnapshot>* snapshot,
-      FeedbackStats stats,
+      feedbacks::FeedbackStats stats,
       bool descendant_of_last
     );
     void SyncInner();

@@ -1,3 +1,4 @@
+#include <chrono>
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -8,8 +9,25 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <thread>
+#include <unistd.h>
 
+#include "ws/libresmack_fuzz/include/resmack/fuzz/debug.hpp"
 #include "ws/libresmack_fuzz/include/resmack/fuzz/interface.hpp"
+
+int test;
+
+__attribute__ ((optnone))
+void CrashInvalidInstruction() {
+  ((void(*)())(0))();
+}
+
+__attribute__ ((optnone))
+void CrashAsanArrayOOB() {
+  char* test = (char*)malloc(0x10);
+  char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
+  memcpy(test, to_copy, sizeof(to_copy));
+}
 
 void splitStr(std::string* input, std::string split, std::vector<std::string>* output) {
   size_t last_idx = 0;
@@ -76,6 +94,9 @@ bool parseSentence(const uint8_t* data, size_t size) {
   splitStr(&input, " ", &parts);
   size_t curr_idx = 0;
 
+  //CrashInvalidInstruction();
+  //CrashAsanArrayOOB();
+
   if (parts.size() == 0) {
     return false;
   }
@@ -93,23 +114,23 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
+  //CrashInvalidInstruction();
+  //CrashAsanArrayOOB();
+
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
-    ((void(*)())(0))();
-    //raise(SIGSEGV);
+    CrashInvalidInstruction();
   }
   curr_idx = start_idx;
   if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
-    char* test = (char*)malloc(0x10);
-    char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
-    memcpy(test, to_copy, sizeof(to_copy));
+    CrashAsanArrayOOB();
   }
 
   return false;
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  parseSentence(data, size);
+  //parseSentence(data, size);
   return true;
 }
 

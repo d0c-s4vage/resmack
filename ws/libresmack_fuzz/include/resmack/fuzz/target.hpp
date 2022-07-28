@@ -1,6 +1,8 @@
 #ifndef RESMACK_FUZZ_TARGET
 #define RESMACK_FUZZ_TARGET
 
+/*
+
 #include <chrono>
 #include <cstddef>
 #include <string>
@@ -50,7 +52,7 @@ namespace fuzz {
 
   class Target {
    public:
-    virtual void Launch(Feedback* feedback,
+    virtual void Launch(feedbacks::Feedback* feedback,
                         std::string* output,
                         TargetSettings* settings,
                         TargetStats* stats) = 0;
@@ -59,5 +61,6 @@ namespace fuzz {
 
 }
 }
+*/
 
 #endif

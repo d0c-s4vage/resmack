@@ -9,3 +9,5 @@ externals
 libs-test
 perf.data
 perf.data.old
+.cache
+a.out

@@ -1,44 +1,58 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
+#include <mutex>
 #include <stdio.h>
 #include <semaphore.h>
 #include <sys/mman.h>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
+#include "resmack/fuzz/ipc/locked_shared_mem.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/target_hooks.hpp"
 
 namespace resmack {
 namespace fuzz {
+namespace feedbacks {
 
   static size_t GUARD_COUNTER = 0;
-  static uint32_t* COV_FLAGS = NULL;
-  static uint32_t* SHARED_COV_FLAGS = NULL;
-  static size_t NUM_COV_FLAGS;
-  static bool IS_NEW = false;
+  static size_t NUM_COV_UINT32;
+
+  // only used in the target - temporary flag difference
+  static uint32_t* IN_TARGET_COV_FLAGS = nullptr;
+  static bool IS_NEW = true; // ptr to the ipc mem
 
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
     if (start == stop || *start) return;  // Initialize only once.
     for (uint32_t *x = start; x < stop; x++) {
       *x = ++GUARD_COUNTER;  // Guards should start from 1.
     }
-    NUM_COV_FLAGS = (GUARD_COUNTER - 1) / 32;
+    NUM_COV_UINT32 = (GUARD_COUNTER - 1) / 32;
     if ((GUARD_COUNTER - 1) % 32 != 0) {
-      NUM_COV_FLAGS++;
+      NUM_COV_UINT32++;
     }
+
+    size_t cov_flags_size = sizeof(uint32_t) * NUM_COV_UINT32;
+    IN_TARGET_COV_FLAGS = (uint32_t*)malloc(cov_flags_size);
+    memset(IN_TARGET_COV_FLAGS, 0, cov_flags_size);
+
     printf("Total Edges: %zu\n", GUARD_COUNTER);
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
-    if (COV_FLAGS == NULL) { return; }
+    if (SHARED_COV_FLAGS == nullptr || IN_TARGET_COV_FLAGS == nullptr) { return; }
 
     size_t uint_no = (*guard - 1) / 32;
     size_t bit_no = (*guard - 1) % 32;
     size_t bit = (1 << bit_no);
 
-    if (COV_FLAGS[uint_no] & bit) { return; }
-    COV_FLAGS[uint_no] |= bit;
+    // We've seen this one before! Either in the shared flags, or in our
+    // flags. Most common use case is the shared flags
+    if (SHARED_COV_FLAGS[uint_no] & bit) { return; }
+    if (IN_TARGET_COV_FLAGS[uint_no] & bit) { return; }
 
+    IN_TARGET_COV_FLAGS[uint_no] |= bit;
+    printf("NEW COVERAGE\n");
     IS_NEW = true;
   }
 
@@ -50,50 +64,37 @@ namespace fuzz {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() : cov_lock("coverage-lock") {
-    this->shared = mmap(
-      NULL,
-      NUM_COV_FLAGS * sizeof(uint32_t),
-      PROT_READ | PROT_WRITE,
-      MAP_SHARED | MAP_ANONYMOUS,
-      -1,
-     0
-    );
-
-    if (this->shared == MAP_FAILED) {
-      perror("Could not create coverage mmap");
-      std::exit(1);
-    }
-
-    SHARED_COV_FLAGS = (uint32_t*)this->shared;
-    COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+  Coverage::Coverage(NewCoverageCb new_cov_cb) :
+    new_coverage_cb(new_cov_cb),
+    queued_mem(nullptr)
+  {
   }
 
   Coverage::~Coverage() {
-    munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
-    free(COV_FLAGS);
+    if (IN_TARGET_COV_FLAGS != nullptr) {
+      free(IN_TARGET_COV_FLAGS);
+      IN_TARGET_COV_FLAGS = nullptr;
+    }
+  }
+
+  void Coverage::Clear() {
+    memset(IN_TARGET_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
+    IS_NEW = false;
   }
 
   std::string Coverage::GetSummary() {
     size_t total_bits = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      total_bits += _NumBits(COV_FLAGS[idx]);
+    for (size_t idx = 0; idx < NUM_COV_UINT32; idx++) {
+      total_bits += _NumBits(SHARED_COV_FLAGS[idx]);
     }
 
     return std::to_string(total_bits) + " edges";
   }
 
-  void Coverage::Start() {
-    IS_NEW = false;
-    //memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
-  }
-
-  void Coverage::Stop() {
+  void Coverage::CalcHash() {
     this->hash = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      uint32_t x = COV_FLAGS[idx];
+    for (size_t idx = 0; idx < NUM_COV_UINT32; idx++) {
+      uint32_t x = IN_TARGET_COV_FLAGS[idx];
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = (x >> 16) ^ x;
@@ -105,31 +106,72 @@ namespace fuzz {
     }
   }
 
-  void Coverage::Sync() {
-    this->cov_lock.Acquire();
-    for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
-      SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
-    }
-    memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
-    this->cov_lock.Release();
+  void Coverage::SyncTargetToShared() {
+    this->queued_mem->QueueUpdate(
+      COV_UPDATE_TYPE,
+      sizeof(uint32_t) * NUM_COV_UINT32,
+      IN_TARGET_COV_FLAGS);
   }
 
   FeedbackStats Coverage::GetStats() {
     size_t num_bits = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      num_bits += _NumBits(COV_FLAGS[idx]);
-    }
-
-    if (IS_NEW) {
-      this->Sync();
+    for (size_t idx = 0; idx < NUM_COV_UINT32; idx++) {
+      num_bits += _NumBits(SHARED_COV_FLAGS[idx]);
     }
 
     return {
-      .new_coverage = IS_NEW,
+      .new_coverage = IS_NEW, // ???? TODO
       .key = this->hash,
       .num = num_bits,
     };
   }
 
+  void Coverage::TestInitShared() {
+    SHARED_COV_FLAGS = reinterpret_cast<uint32_t*>(malloc(sizeof(uint32_t) * NUM_COV_UINT32));
+  }
+
+  void Coverage::TestDestroyShared() {
+    free(SHARED_COV_FLAGS);
+  }
+
+  void Coverage::InsertHooks(TargetHooks* hooks) {
+    size_t cov_flags_size = sizeof(uint32_t) * NUM_COV_UINT32;
+    hooks
+      ->AddGlobalIpcSize([cov_flags_size]() -> size_t { return cov_flags_size; })
+      ->AddGlobalIpcInit([this, cov_flags_size](ipc::QueuedSharedMem* mem) {
+          this->queued_mem = mem;
+          SHARED_COV_FLAGS = mem->GetNextPtrFor<uint32_t>(cov_flags_size);
+
+          mem->AddReceiveHandler(COV_UPDATE_TYPE, [](size_t data_length, void* data, ipc::LockedSharedMem*) {
+            uint32_t* flag_updates = reinterpret_cast<uint32_t*>(data);
+            if (data_length != (NUM_COV_UINT32 * sizeof(uint32_t))) {
+              printf("SOMETHING WRONG HAPPENED WITH IPC UPDATE\n");
+            }
+            for (size_t i = 0; i < NUM_COV_UINT32 && ((i * sizeof(uint32_t)) <= data_length); i++) {
+              SHARED_COV_FLAGS[i] |= *flag_updates;
+              flag_updates++;
+            }
+          });
+        })
+      ->AddPreStartInTarget([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+          memset(IN_TARGET_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_UINT32);
+          IS_NEW = false;
+        })
+      ->AddPreTest([](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+          IS_NEW = false;
+        })
+      ->AddPostTest([this](ipc::QueuedSharedMem*, ipc::QueuedSharedMem*) {
+          if (IS_NEW) {
+            printf("It's NEW, should be sending coverage update\n");
+            fflush(stdout);
+            this->CalcHash();
+            this->SyncTargetToShared();
+
+            this->new_coverage_cb(this);
+          }
+        });
+  }
+
+}
 }
 }

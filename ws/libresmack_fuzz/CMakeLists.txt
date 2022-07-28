@@ -7,7 +7,8 @@ option(DEBUG_IPC "Debug IPC waits/releases" OFF)
 
 include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
-set(RESMACK_FUZZ_LIB libresmack_fuzz)
+set(RESMACK_FUZZ_LIB libresmack_fuzz
+    CACHE INTERNAL "${PROJECT_NAME}: Name" FORCE)
 
 include(GNUInstallDirs)
 
@@ -19,8 +20,6 @@ include_directories(
 file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
     ${PROJECT_SOURCE_DIR}/src/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.hpp
     ${PROJECT_SOURCE_DIR}/src/feedbacks/*.cpp
     ${PROJECT_SOURCE_DIR}/src/feedbacks/*.hpp
     ${PROJECT_SOURCE_DIR}/src/states/*.cpp
@@ -28,7 +27,11 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/corpora/*.cpp
     ${PROJECT_SOURCE_DIR}/src/corpora/*.hpp
     ${PROJECT_SOURCE_DIR}/src/trace_targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
+    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp
+    ${PROJECT_SOURCE_DIR}/src/ipc/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/cli/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/cmds/*.cpp
+    ${PROJECT_SOURCE_DIR}/src/targets_new/*.cpp)
 
 add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
 
@@ -42,10 +45,12 @@ target_link_libraries(
     pthread
     crypto
     unwind
-    unwind-ptrace
     unwind-generic
+    unwind-ptrace
 )
-set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
+set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES
+    OUTPUT_NAME "resmack_fuzz"
+    POSITION_INDEPENDENT_CODE ON)
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS ${RESMACK_FUZZ_LIB} EXPORT

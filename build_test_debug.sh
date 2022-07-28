@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+make debug
+
 export LD_LIBRARY_PATH=build/debug
 
 CMD=(
@@ -14,7 +16,8 @@ clang++
     -lresmack_fuzz_main
     -lresmack_fuzz
     -lresmack
-    -Ofast
+    -ggdb
+    # -Ofast
     -march=native
     -fsanitize-coverage=trace-pc-guard
     -std=c++20

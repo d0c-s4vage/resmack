@@ -4,7 +4,8 @@ project(libresmack_fuzz_main VERSION 0.0.1 DESCRIPTION "resmack fuzzing library 
 
 option(BUILD_TEST "Build the unit tests" OFF)
 
-set(RESMACK_FUZZ_MAIN_LIB libresmack_fuzz_main)
+set(RESMACK_FUZZ_MAIN_LIB libresmack_fuzz_main
+    CACHE INTERNAL "${PROJECT_NAME}: Name" FORCE)
 
 include(GNUInstallDirs)
 

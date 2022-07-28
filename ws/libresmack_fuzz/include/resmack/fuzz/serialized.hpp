@@ -1,8 +1,8 @@
 #ifndef RESMACK_FUZZ_SERIALIZED_H
 #define RESMACK_FUZZ_SERIALIZED_H
 
-#include "stddef.h"
-#include "inttypes.h"
+#include <stddef.h>
+#include <inttypes.h>
 
 namespace resmack {
 namespace fuzz {

@@ -9,12 +9,13 @@ namespace process_utils {
     bool stopped;
     bool exited;
     bool signaled;
-    bool exit_status;
-    bool stop_signal;
-    bool term_signal;
+    int exit_status;
+    int stop_signal;
+    int term_signal;
   };
 
   void LoadSignalInfo(int status, SignalInfo* out);
+  void PrintSignalInfo(SignalInfo* info);
 
 }
 }

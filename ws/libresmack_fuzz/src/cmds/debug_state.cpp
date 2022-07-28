@@ -1,63 +1,14 @@
-#include <getopt.h>
-#include <iostream>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#include <stdio.h>
 
-#include "resmack/logo.hpp"
-#include "resmack/fuzz/serialized.hpp"
-#include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
-#include "resmack/fuzz/corpus.hpp"
-#include "resmack/fuzz/corpora/mmap.hpp"
+#include "resmack/fuzz/cmds/debug_state.hpp"
 
 namespace resmack {
-namespace cli {
-namespace debug_state {
-
-  struct DebugStateOpts {
-    int help;
-  };
-
-  void PrintHelp() {
-    std::cout << GetResmackLogo() << std::endl;
-
-    std::cout << "resmack debug-state" << std::endl << std::endl;
-    std::cout << "  Debug persisted state information" << std::endl << std::endl;
-    std::cout << "resmack debug-state STATE_FILE" << std::endl << std::endl;
-    std::cout << "    --help,-h             Show this help message" << std::endl;
-    std::cout << "              STATE_FILE  The state file to debug" << std::endl;
-    std::cout << std::endl;
-    std::cout << "Example:" << std::endl << std::endl;
-    std::cout << "  resmack debug-state a.out.resmack-state" << std::endl << std::endl;
-  }
-
-  bool ParseOpts(int argc, char** argv, DebugStateOpts* opts) {
-    static struct option long_options[] = {
-      { "help", no_argument, &opts->help, 'h' },
-      { 0, 0, 0, 0 },
-    };
-    int opt_index = 0;
-
-    while (true) {
-      int c = getopt_long(argc, argv, "h", long_options, &opt_index);
-      if (c == -1) {
-        break;
-      }
-
-      switch (c) {
-        case 0:
-          break;
-        case 'h':
-          opts->help = true;
-          break;
-      }
-    }
-
-    return true;
-  }
+namespace fuzz {
+namespace cmds {
 
   void DebugCorpusEntry(char** curr_entry) {
-    fuzz::ser::CorpusItemHeader* header = (fuzz::ser::CorpusItemHeader*)*curr_entry;
+    ser::CorpusItemHeader* header = (ser::CorpusItemHeader*)*curr_entry;
     printf("    size:                       %zu\n", header->size);
     printf("    feedback_key:               0x%zx\n", header->feedback_key);
     printf("    feedback_num:               %zu\n", header->feedback_num);
@@ -74,7 +25,7 @@ namespace debug_state {
     printf("    item_header:\n");
     printf("      num_states: %zu\n", header->item_header.num_states);
 
-    fuzz::ser::GenState* curr = (fuzz::ser::GenState*)(header + 1);
+    ser::GenState* curr = (ser::GenState*)(header + 1);
     for (size_t i = 0; i < header->item_header.num_states; i++) {
       printf("        state[%3lu]: ref_depth: %5u max_depth: %5u rule_idx: %5u rand_state: %08x|%08x|%08x|%08x\n",
         i,
@@ -93,21 +44,21 @@ namespace debug_state {
   }
 
   void DebugCorpus(char* corpus_data) {
-    fuzz::ser::CorpusMetadata* meta = (fuzz::ser::CorpusMetadata*)corpus_data;
+    ser::CorpusMetadata* meta = (ser::CorpusMetadata*)corpus_data;
     printf("Corpus Metadata:\n");
     printf("  updated_seq: %u\n", meta->updated_seq);
     printf("  reorg_seq:   %u\n", meta->reorg_seq);
     printf("  num_entries: %u\n", meta->num_entries);
 
-    char* curr_ptr = corpus_data + sizeof(fuzz::ser::CorpusMetadata);
+    char* curr_ptr = corpus_data + sizeof(ser::CorpusMetadata);
     for(size_t i = 0; i < meta->num_entries; i++) {
       printf("  entry[%lu]:\n", i);
       DebugCorpusEntry(&curr_ptr);
     }
   }
 
-  void DebugState(char* state_data) {
-    fuzz::states::StateMetadata* meta = (fuzz::states::StateMetadata*)state_data;
+  void DebugStateData(char* state_data) {
+    states::StateMetadata* meta = (states::StateMetadata*)state_data;
     printf("State Metadata:\n");
     printf("  iterations: %lu\n", meta->iterations);
     printf("  crashes:    %lu\n", meta->crashes);
@@ -124,52 +75,32 @@ namespace debug_state {
     printf("  reserved7:  %lu\n", meta->reserved7);
     printf("  reserved8:  %lu\n", meta->reserved8);
 
-    DebugCorpus(state_data + sizeof(fuzz::states::StateMetadata));
+    DebugCorpus(state_data + sizeof(states::StateMetadata));
   }
 
-  int Run(int argc, char** argv) {
-    DebugStateOpts opts {
-      .help = false,
-    };
-
-    ParseOpts(argc, argv, &opts);
-    if (opts.help) {
-      PrintHelp();
-      return 1;
-    }
-
-    if (argv[optind] == NULL) {
-      std::cout << "Must provide the STATE_FILE\n" << std::endl;
-      PrintHelp();
-      return 1;
-    }
-
-    const char* state_file = argv[optind];
+  void DebugState(DebugStateConfig* config) {
     struct stat stat_info;
-    if (stat(state_file, &stat_info) == -1) {
+    if (stat(config->state_path, &stat_info) == -1) {
       perror("Error fetching info about state file");
-      return 1;
+      return;
     }
 
     char* file_contents = (char*)malloc(stat_info.st_size);
     printf("State file size: %lx\n", stat_info.st_size);
     
-    FILE* fd = fopen(state_file, "rb");
+    FILE* fd = fopen(config->state_path, "rb");
     if (fd == NULL) {
       perror("Error opening file");
-      return 1;
+      return;
     }
 
     if (fread(file_contents, 1, stat_info.st_size, fd) != (size_t)stat_info.st_size) {
       printf("Could not read full file\n");
-      return 1;
+      return;
     }
 
-    DebugState(file_contents);
-
+    DebugStateData(file_contents);
     free(file_contents);
-
-    return 0;
   }
 
 }

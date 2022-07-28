@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 
+/*
 #include "resmack/defs.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/trace.hpp"
@@ -36,3 +37,4 @@ namespace fuzz {
 
 }
 }
+*/

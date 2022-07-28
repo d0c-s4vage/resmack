@@ -15,9 +15,16 @@ add_executable(test_${PROJECT_NAME}
   ${TESTS}
 )
 
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+message(STATUS "RESMACK_LIB=${RESMACK_LIB}")
+
 target_link_libraries(test_${PROJECT_NAME}
-  libresmack.so
   ${RESMACK_FUZZ_LIB}
+  ${RESMACK_LIB}
   ${GTEST_LIB_DIR}/libgtest.a
   pthread
   crypto

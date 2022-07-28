@@ -6,7 +6,8 @@ option(BUILD_TEST "Build the unit tests" OFF)
 
 include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
 
-set(RESMACK_LIB libresmack)
+set(RESMACK_LIB libresmack
+    CACHE INTERNAL "${PROJECT_NAME}: Name" FORCE)
 
 include(GNUInstallDirs)
 
@@ -25,7 +26,10 @@ file(GLOB LIBRESMACK_SOURCES
     ${PROJECT_SOURCE_DIR}/src/items/*.hpp)
 
 add_library(${RESMACK_LIB} SHARED ${LIBRESMACK_SOURCES})
-set_target_properties(${RESMACK_LIB} PROPERTIES OUTPUT_NAME "resmack")
+
+set_target_properties(${RESMACK_LIB} PROPERTIES
+    OUTPUT_NAME "resmack"
+    POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
 target_link_libraries(${RESMACK_LIB} fmt)
