@@ -2,6 +2,7 @@
 #define RESMACK_FUZZ_ASAN_UTIL_H
 
 #include <algorithm>
+#include <functional>
 #include <sanitizer/asan_interface.h>
 
 #include "resmack/defs.hpp"

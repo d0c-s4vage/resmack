@@ -4,7 +4,8 @@ make release-syms
 
 CMD=(
     clang++
-        -Ofast
+        -O3
+        -ffast-math
         -march=native
         -fsanitize-coverage=trace-pc-guard
         -std=c++20

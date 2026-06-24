@@ -1,5 +1,5 @@
-#ifndef RESMACK_FUZZ_DEBUG_H
-#define RESMACK_FUZZ_DEBUG_H
+#ifndef RESMACK_DEBUG_H
+#define RESMACK_DEBUG_H
 
 #define _DEBUG_PRINT(...) printf(__VA_ARGS__); std::cout << std::flush;
 

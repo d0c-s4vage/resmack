@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+make release-syms
 
 CMD=(
     clang++
-        -Ofast
+        -O3
+        -ffast-math
         -march=native
         -fsanitize-coverage=trace-pc-guard
         -fsanitize=address

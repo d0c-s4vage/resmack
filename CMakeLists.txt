@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.0)
 
 project(resmack-main)
 
-set(CMAKE_INSTALL_PREFIX "/usr")
+include(CTest)
+enable_testing()
 
-set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_INSTALL_PREFIX "/usr")
 
 add_subdirectory(ws/libresmack)
 add_subdirectory(ws/libresmack_fuzz)

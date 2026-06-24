@@ -5,12 +5,12 @@
 #include <signal.h>
 #include <sys/ptrace.h>
 #include <unistd.h>
-#include <thread>
+
+#include "resmack/debug.hpp"
 
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
-#include "resmack/fuzz/utils.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
 
 #include "asan_util.hpp"
@@ -21,9 +21,10 @@ namespace trace_targets {
 
   // install signal handler here to catch SIGINT --> set SHUTTING_DOWN = true
 
-  void sigint_handler(int signum) {
+  void sigint_handler([[maybe_unused]] int signum) {
     DEBUG_PRINT("%d:%d: >>Handling signal handler\n", getpid(), std::this_thread::get_id());
 
+    [[maybe_unused]]
     int sem_val = resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.GetValue();
     DEBUG_PRINT(
       "%d:%d: >>Waiting to acquire sig lock, curr val: %d\n",

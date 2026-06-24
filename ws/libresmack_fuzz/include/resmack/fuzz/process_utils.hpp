@@ -10,7 +10,7 @@ namespace process_utils {
     bool exited;
     bool signaled;
     bool exit_status;
-    bool stop_signal;
+    int stop_signal;
     bool term_signal;
   };
 

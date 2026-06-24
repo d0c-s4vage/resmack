@@ -86,7 +86,6 @@ namespace fuzz {
     float pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
 
     float alive_max = 600.0f;
-    float sleep_int_ms = 10.0f;
 
     while (*args->should_run) {
       args->timeout_lock->Acquire();
@@ -97,7 +96,6 @@ namespace fuzz {
         bool should_monitor = args->should_monitor_tracee;
         bool timedout = args->timedout;
         float timeout = args->timeout;
-        int idx = args->idx;
       args->timeout_lock->Release();
 
 
@@ -140,11 +138,12 @@ namespace fuzz {
     process_utils::SignalInfo sig_info;
 
     MonitorTimeoutArgs timeout_args {
+      .pid = -1,
       .timeout = this_->timeout,
       .tracee = &this_->tracee,
+      .should_monitor_tracee = true,
       .should_run = &this_->should_run,
       .timedout = false,
-      .pid = -1,
       .idx = this_->idx,
       .timeout_lock = &this_->timeout_lock,
     };

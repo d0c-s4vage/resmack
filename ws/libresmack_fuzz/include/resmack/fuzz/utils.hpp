@@ -10,7 +10,10 @@ namespace resmack {
 namespace fuzz {
 namespace utils {
 
+  [[maybe_unused]]
   static pid_t MAIN_PID;
+
+  [[maybe_unused]]
   static bool KEEP_RUNNING;
 
   // Caller is responsible for freeing the returned (malloc'd) hex digest

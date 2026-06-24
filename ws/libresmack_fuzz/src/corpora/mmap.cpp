@@ -2,9 +2,9 @@
 #include <cstring>
 #include <cstddef>
 #include <fcntl.h>
-#include <iostream>
-#include <signal.h>
 #include <semaphore.h>
+
+#include "resmack/debug.hpp"
 
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"

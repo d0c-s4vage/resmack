@@ -5,10 +5,13 @@ project(libresmack_fuzz VERSION 0.0.1 DESCRIPTION "resmack fuzzing library")
 option(BUILD_TEST "Build the unit tests" OFF)
 option(DEBUG_IPC "Debug IPC waits/releases" OFF)
 
-include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
+find_package(OpenSSL REQUIRED)
+
+include(${CMAKE_SOURCE_DIR}/compiler_options.cmake)
 
 set(RESMACK_FUZZ_LIB libresmack_fuzz)
 
+find_package(libresmack)
 include(GNUInstallDirs)
 
 include_directories(
@@ -31,6 +34,10 @@ file(GLOB LIBRESMACK_FUZZ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
 
 add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
+set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
+
+add_library(${RESMACK_FUZZ_LIB}_static STATIC ${LIBRESMACK_FUZZ_SOURCES})
+set_target_properties(${RESMACK_FUZZ_LIB}_static PROPERTIES OUTPUT_NAME "resmack_fuzz")
 
 if (DEBUG_IPC)
   add_definitions(-DDEBUG_IPC)
@@ -40,12 +47,11 @@ target_link_libraries(
     ${RESMACK_FUZZ_LIB}
     ${RESMACK_LIB}
     pthread
-    crypto
+    OpenSSL::Crypto
     unwind
     unwind-ptrace
     unwind-generic
 )
-set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS ${RESMACK_FUZZ_LIB} EXPORT
@@ -56,6 +62,4 @@ install(
     DIRECTORY ${PROJECT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()
+add_subdirectory(test)

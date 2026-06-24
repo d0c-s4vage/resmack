@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 
+#include "resmack/debug.hpp"
 #include "resmack/fuzz/lock.hpp"
 
 namespace resmack {
@@ -17,7 +18,6 @@ namespace resmack {
 #define DEBUG_IPC
 #define DEBUG_MESSAGES
 
-#define _DEBUG_PRINT(...) printf(__VA_ARGS__); std::cout << std::flush;
 #define IPC_DEBUG_ALWAYS(...) DEBUG_PRINT(__VA_ARGS__)
 
 #define _WITH_LOCK_DEBUG(LOCK, MSG, STATEMENTS) { \

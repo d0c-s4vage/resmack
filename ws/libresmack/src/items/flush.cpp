@@ -1,3 +1,4 @@
+#include "resmack/debug.hpp"
 #include "resmack/item.hpp"
 #include "resmack/items/flush.hpp"
 
@@ -9,6 +10,7 @@ namespace items {
   }
 
   void Flush::Build(BuildContext* ctx) {
+    _DEBUG_PRINT("Flush::Build calling FlushPrePost: %p\n", ctx->pre_output);
     ctx->FlushPrePost();
   }
 

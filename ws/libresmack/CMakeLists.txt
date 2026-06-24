@@ -1,3 +1,5 @@
+include(CTest)
+
 cmake_minimum_required(VERSION 3.0)
 
 project(libresmack VERSION 0.0.1 DESCRIPTION "resmack core grammar library")
@@ -27,6 +29,9 @@ file(GLOB LIBRESMACK_SOURCES
 add_library(${RESMACK_LIB} SHARED ${LIBRESMACK_SOURCES})
 set_target_properties(${RESMACK_LIB} PROPERTIES OUTPUT_NAME "resmack")
 
+add_library(${RESMACK_LIB}_static STATIC ${LIBRESMACK_SOURCES})
+set_target_properties(${RESMACK_LIB}_static PROPERTIES OUTPUT_NAME "resmack")
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
 target_link_libraries(${RESMACK_LIB} fmt)
 
@@ -39,11 +44,4 @@ install(
     DIRECTORY ${PROJECT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if(BUILD_TEST)
-  add_subdirectory(test)
-    #add_executable(${RESMACK_PERF_EXE} ${PROJECT_SOURCE_DIR}/src/mains/perf.cpp)
-    #target_link_libraries(${RESMACK_PERF_EXE} ${RESMACK_LIB})
-
-    #add_executable(${RESMACK_EXE} ${PROJECT_SOURCE_DIR}/src/mains/resmack.cpp)
-    #target_link_libraries(${RESMACK_EXE} ${RESMACK_LIB})
-endif()
+add_subdirectory(test)

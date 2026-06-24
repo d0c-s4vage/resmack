@@ -21,19 +21,12 @@ file(GLOB LIBRESMACK_FUZZ_MAIN_SOURCES
 
 add_library(${RESMACK_FUZZ_MAIN_LIB} STATIC ${LIBRESMACK_FUZZ_MAIN_SOURCES})
 target_link_libraries(${RESMACK_FUZZ_MAIN_LIB} ${RESMACK_LIB} ${RESMACK_FUZZ_LIB})
-set_target_properties(${RESMACK_FUZZ_MAIN_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz_main")
+set_target_properties(${RESMACK_FUZZ_MAIN_LIB} PROPERTIES
+    OUTPUT_NAME "resmack_fuzz_main"
+)
 
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS ${RESMACK_FUZZ_MAIN_LIB} EXPORT
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})  # This is for Windows
-
-# nothing to include for this one
-#install(
-#    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-#    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-#if(BUILD_TEST)
-#  add_subdirectory(test)
-#endif()

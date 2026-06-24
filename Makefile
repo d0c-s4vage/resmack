@@ -5,25 +5,57 @@ clean:
 all: clean debug release
 
 OPTS=
-
 RESMACK_EXE=resmack
 RESMACK_PERF_EXE=resmack_perf
-
 NPROCS=$(shell nproc)
-
 TEST="*"
 
 export CXX=clang++
+
+
+# -----------------------------------------------------------------------------
+# CMAKE -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+_RESMACK_CMAKE_FILES=$(shell find . -type f \( -name CMakeLists.txt -or -name "*.cmake" \) -and -not -wholename "*/libs/*")
+
+_BUILD_TYPE=""
+_BUILD_PATH="/dev/null"
+
+$(_BUILD_PATH)/Makefile: $(_RESMACK_CMAKE_FILES)
+	cmake \
+		-DCMAKE_BUILD_TYPE=$(_BUILD_TYPE) \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+		-Wno-deprecated \
+		-B $(_BUILD_PATH) \
+		$(OPTS) ;
+
+_cmake_build: $(_BUILD_PATH)/Makefile
+	cmake \
+		--build $(_BUILD_PATH) \
+		-j $(NPROCS) \
+		$(OPTS) ;
 
 # -----------------------------------------------------------------------------
 # DEBUG -----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-DEBUG_SUFFIX=""
-DEBUG_PATH=build/debug$(RELEASE_SUFFIX)
+DEBUG_TYPE=Debug
+DEBUG_PATH=build/debug
 
-.PHONY: debug
-debug: build/debug build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
+$(DEBUG_PATH):
+	$(MAKE) \
+		_cmake_build \
+		_BUILD_TYPE=$(DEBUG_TYPE) \
+		_BUILD_PATH=$(DEBUG_PATH)
+
+$(DEBUG_PATH):
+	$(MAKE) \
+		_cmake_build \
+		_BUILD_TYPE=$(DEBUG_TYPE) \
+		_BUILD_PATH=$(DEBUG_PATH)
+
+debug: $(DEBUG_PATH)
 
 .PHONY: clean-debug
 clean-debug:
@@ -41,23 +73,12 @@ gdb-test-libresmack: test-libresmack
 gdb-test-libresmack-fuzz: test-libresmack-fuzz
 	gdb -ex run --args build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
-build/debug:
-	mkdir -p build/debug ; \
-	cd build/debug ; \
-	cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $(OPTS) ; \
-	cp -u compile_commands.json ../../
-
-.PHONY: build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE)
-build/debug/ws/resmack_perf/$(RESMACK_PERF_EXE):
-	cd build/debug ; \
-	make -j $(NPROCS)
-
 # -----------------------------------------------------------------------------
 # RELEASE ---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 RELEASE_TYPE=Release
-RELEASE_SUFFIX=""
+RELEASE_SUFFIX=
 RELEASE_PATH=build/release$(RELEASE_SUFFIX)
 
 .PHONY: \
@@ -131,6 +152,12 @@ $(RELEASE_PATH):
 	cd $(RELEASE_PATH) ; \
 	cmake ../../ -DCMAKE_BUILD_TYPE=$(RELEASE_TYPE) -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $(OPTS)
 
+$(RELEASE_PATH)/Makefile:
+	cmake \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+		-B $(RELEASE_PATH) $(OPTS) ;
+
 # -----------------------------------------------------------------------------
 # TEST ------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -140,8 +167,8 @@ $(RELEASE_PATH):
 tests: libs-test/googletest test-libresmack test-libresmack-fuzz
 
 run-tests: test-libresmack test-libresmack-fuzz
-	LD_LIBRARY_PATH=build/test build/test/test_libresmack --gtest_filter=$(TEST)
 	LD_LIBRARY_PATH=build/test build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/test_libresmack --gtest_filter=$(TEST)
 
 clean-tests:
 	rm -rf build/test
@@ -151,7 +178,7 @@ test-libresmack-fuzz: build/test
 	make -j $(NPROCS)
 
 run-test-libresmack-fuzz: test-libresmack-fuzz
-	LD_LIBRARY_PATH=build/test build/test/test_libresmack_fuzz --gtest_filter=$(TEST)
+	LD_LIBRARY_PATH=build/test build/test/ws/libresmack_fuzz/test/test_libresmack_fuzz --gtest_filter=$(TEST)
 
 test-libresmack: build/test
 	cd build/test/ws/libresmack/test ; \

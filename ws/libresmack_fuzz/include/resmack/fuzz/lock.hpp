@@ -5,9 +5,6 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#include "resmack/fuzz/debug.hpp"
-#include "resmack/fuzz/utils.hpp"
-
 namespace resmack {
 namespace fuzz {
 

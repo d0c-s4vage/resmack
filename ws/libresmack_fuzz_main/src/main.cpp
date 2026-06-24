@@ -2,17 +2,14 @@
 #include <cstddef>
 #include <cstring>
 #include <ctime>
-#include <ctype.h>
 #include <filesystem>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
 #include <openssl/sha.h>
 #include <pthread.h>
-#include <ratio>
 #include <sched.h>
 #include <semaphore.h>
-#include <set>
 #include <signal.h>
 #include <string>
 #include <thread>
@@ -23,17 +20,12 @@
 #include "resmack/rand.hpp"
 #include "resmack/types.hpp"
 #include "resmack/rules.hpp"
-#include "resmack/items/str.hpp"
-#include "resmack/items/or.hpp"
-#include "resmack/items/opt.hpp"
-#include "resmack/items/ref.hpp"
-#include "resmack/items/and.hpp"
+#include "resmack/debug.hpp"
 
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/external.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
-#include "resmack/fuzz/feedbacks/noop.hpp"
 #include "resmack/fuzz/mutate.hpp"
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
@@ -110,7 +102,7 @@ static FuzzOptions OPTS {
   .corpus_decay = 1000000, // 100,000 default decay
 };
 
-void sigint_handler(int signum) {
+void sigint_handler([[maybe_unused]] int signum) {
   if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
 
   SHUTTING_DOWN = true;
@@ -307,9 +299,10 @@ void PrintStatus(
   bool show_stats = args->show_stats;
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
-  printf("%d:%d: Syncing feedback\n", getpid(), std::this_thread::get_id());
+  std::hash<std::thread::id> hasher;
+  printf("%d:%zu: Syncing feedback\n", getpid(), hasher(std::this_thread::get_id()));
   args->feedback->Sync();
-  printf("%d:%d: Done syncing feedback\n", getpid(), std::this_thread::get_id());
+  printf("%d:%zu: Done syncing feedback\n", getpid(), hasher(std::this_thread::get_id()));
   /*
   corpus->Sync();
   */
@@ -521,11 +514,11 @@ void FuzzLoop(
 }
 
 bool HandleTimeout(
-  resmack::Rules* rules,
+  [[maybe_unused]] resmack::Rules* rules,
   resmack::fuzz::State* state,
-  size_t rule_idx,
-  pid_t pid, // pid
-  resmack::fuzz::Tracer* tracer,
+  [[maybe_unused]] size_t rule_idx,
+  [[maybe_unused]] pid_t pid, // pid
+  [[maybe_unused]] resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
   if (SHUTTING_DOWN) {
@@ -557,7 +550,7 @@ bool HandleException(
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
-  pid_t pid, // pid
+  [[maybe_unused]] pid_t pid, // pid
   int, // status
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee

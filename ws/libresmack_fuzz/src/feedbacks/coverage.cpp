@@ -26,7 +26,6 @@ namespace fuzz {
     if ((GUARD_COUNTER - 1) % 32 != 0) {
       NUM_COV_FLAGS++;
     }
-    printf("Total Edges: %zu\n", GUARD_COUNTER);
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {

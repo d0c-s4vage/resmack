@@ -108,7 +108,8 @@ namespace compile {
       options.emplace_back("-O0");
       options.emplace_back("-fsanitize=address");
     } else {
-      options.emplace_back("-Ofast");
+      options.emplace_back("-O3");
+      options.emplace_back("-ffast-math");
       options.emplace_back("-march=native");
     }
     options.emplace_back("-fsanitize-coverage=trace-pc-guard");

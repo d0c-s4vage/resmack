@@ -2,6 +2,7 @@
 #define RESMACK_FUZZ_STATE_H
 
 #include <algorithm>
+#include <functional>
 #include <unistd.h>
 
 #include "resmack/fuzz/corpus.hpp"

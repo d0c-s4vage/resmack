@@ -3,6 +3,7 @@
 
 #include <string>
 #include <algorithm>
+#include <functional>
 #include <pthread.h>
 #include <sys/ptrace.h>
 

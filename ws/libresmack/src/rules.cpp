@@ -1,17 +1,19 @@
-#include <iostream>
+#include <cstring>
+#include <functional>
+#include <memory>
 #include <stdio.h>
 #include <string>
-#include <signal.h>
-#include <cstring>
-#include <signal.h>
 #include <unistd.h>
 
-#include "resmack/types.hpp"
 #include "resmack/items/or.hpp"
 #include "resmack/rules.hpp"
+#include "resmack/debug.hpp"
 
 #include "calc/reach.hpp"
 #include "calc/ref_depth.hpp"
+
+using namespace std;
+using defer = shared_ptr<void>;
 
 namespace resmack {
 

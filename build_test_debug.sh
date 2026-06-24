@@ -14,7 +14,8 @@ clang++
     -lresmack_fuzz_main
     -lresmack_fuzz
     -lresmack
-    -Ofast
+    -O3
+    -ffast-math
     -march=native
     -fsanitize-coverage=trace-pc-guard
     -std=c++20

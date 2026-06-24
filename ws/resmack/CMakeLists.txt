@@ -24,7 +24,3 @@ add_executable(${RESMACK_CLI} ${RESMACK_SOURCES})
 target_link_libraries(${RESMACK_CLI} libresmack libresmack_fuzz)
 
 install(TARGETS ${RESMACK_CLI} RUNTIME DESTINATION /usr/bin)
-
-#if(BUILD_TEST)
-#  add_subdirectory(test)
-#endif()

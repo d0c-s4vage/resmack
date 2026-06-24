@@ -1,7 +1,7 @@
 #include <cstring>
-#include <exception>
 
 #include "resmack/build_context.hpp"
+#include "resmack/debug.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/item.hpp"
 
@@ -117,6 +117,7 @@ namespace resmack {
 
     // clear the post items
     this->post_items.clear();
+    this->pre_output = NULL;
   }
 
   void BuildContext::AddPostItem(Item* item) {
