@@ -1,27 +1,29 @@
-include(${CMAKE_SOURCE_DIR}/gtest.cmake)
-include(GoogleTest)
+include(${CMAKE_SOURCE_DIR}/cmake/gtest.cmake)
+enable_testing()
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/test
-)
+file(GLOB TEST_SOURCES *.cpp)
 
-file(GLOB TESTS *.cpp)
-add_executable(test_${PROJECT_NAME}
-  ./main.cpp
-  ${TESTS}
-)
+foreach(TEST_FILE IN LISTS TEST_SOURCES)
+  cmake_path(GET TEST_FILE STEM TEST_NAME)
+  set(CURR_TEST_NAME "test_${PROJECT_NAME}_${TEST_NAME}")
 
-target_link_libraries(test_${PROJECT_NAME}
-  libresmack
-  libresmack_fuzz
-  gtest
-  pthread
-  crypto
-  unwind-ptrace
-  unwind-generic
-)
+  add_executable("${CURR_TEST_NAME}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+    "${TEST_FILE}"
+  )
 
-gtest_discover_tests(
-    test_${PROJECT_NAME}
-)
+  target_link_libraries("${CURR_TEST_NAME}"
+    GTest::gtest_main
+    ${LIBRESMACK_FUZZ_SHARED}
+  )
+  target_compile_options(
+    "${CURR_TEST_NAME}"
+      PRIVATE
+        -fno-omit-frame-pointer
+        # -fsanitize-coverage=trace-pc-guard
+  )
+
+  gtest_discover_tests(
+    "${CURR_TEST_NAME}"
+  )
+endforeach()

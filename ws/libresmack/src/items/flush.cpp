@@ -10,7 +10,7 @@ namespace items {
   }
 
   void Flush::Build(BuildContext* ctx) {
-    _DEBUG_PRINT("Flush::Build calling FlushPrePost: %p\n", ctx->pre_output);
+    DEBUG_PRINT("Flush::Build calling FlushPrePost: %p\n", ctx->pre_output);
     ctx->FlushPrePost();
   }
 

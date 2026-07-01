@@ -5,8 +5,8 @@
 #include "resmack/items/str.hpp"
 #include "resmack/utils.hpp"
 
-#include "calc/reach.hpp"
-#include "calc/ref_depth.hpp"
+#include "../calc/reach.hpp"
+#include "../calc/ref_depth.hpp"
 
 namespace resmack {
 namespace items {

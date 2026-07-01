@@ -1,32 +1,34 @@
-cmake_minimum_required(VERSION 3.0)
+include(variables.cmake)
 
-project(libresmack_fuzz_main VERSION 0.0.1 DESCRIPTION "resmack fuzzing library with 'main'")
+project(libresmack_fuzz_main
+  VERSION 0.0.1
+  DESCRIPTION "resmack fuzzing library with 'main'"
+)
 
-option(BUILD_TEST "Build the unit tests" OFF)
+file(GLOB_RECURSE LIBRESMACK_FUZZ_MAIN_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
+)
 
-set(RESMACK_FUZZ_MAIN_LIB libresmack_fuzz_main)
-
-include(GNUInstallDirs)
-
-include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
-
-include_directories(
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/../libresmack/include
-    ${PROJECT_SOURCE_DIR}/../libresmack_fuzz/include)
-
-file(GLOB LIBRESMACK_FUZZ_MAIN_SOURCES
-    ${PROJECT_SOURCE_DIR}/src/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/*.hpp)
-
-add_library(${RESMACK_FUZZ_MAIN_LIB} STATIC ${LIBRESMACK_FUZZ_MAIN_SOURCES})
-target_link_libraries(${RESMACK_FUZZ_MAIN_LIB} ${RESMACK_LIB} ${RESMACK_FUZZ_LIB})
-set_target_properties(${RESMACK_FUZZ_MAIN_LIB} PROPERTIES
+add_library(${LIBRESMACK_FUZZ_MAIN}
+  STATIC ${LIBRESMACK_FUZZ_MAIN_SRC}
+)
+target_link_libraries(${LIBRESMACK_FUZZ_MAIN}
+  PUBLIC ${LIBRESMACK_SHARED}
+  PUBLIC ${LIBRESMACK_FUZZ_SHARED}
+)
+set_target_properties(${LIBRESMACK_FUZZ_MAIN} PROPERTIES
     OUTPUT_NAME "resmack_fuzz_main"
 )
 
-# 'make install' to the correct locations (provided by GNUInstallDirs).
-install(TARGETS ${RESMACK_FUZZ_MAIN_LIB} EXPORT
-    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})  # This is for Windows
+install(
+    TARGETS ${LIBRESMACK_FUZZ_MAIN}
+    EXPORT ${LIBRESMACK_FUZZ_MAIN}_targets
+    FILE_SET HEADERS DESTINATION include
+    PUBLIC_HEADER
+        DESTINATION include
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)

@@ -1,65 +1,90 @@
-cmake_minimum_required(VERSION 3.0)
+include("${CMAKE_CURRENT_SOURCE_DIR}/variables.cmake")
 
-project(libresmack_fuzz VERSION 0.0.1 DESCRIPTION "resmack fuzzing library")
+project("${LIBRESMACK_FUZZ}"
+    VERSION 0.0.1
+    DESCRIPTION "resmack fuzzing library"
+)
 
-option(BUILD_TEST "Build the unit tests" OFF)
-option(DEBUG_IPC "Debug IPC waits/releases" OFF)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBUNWIND REQUIRED libunwind)
+pkg_check_modules(LIBUNWIND_PTRACE REQUIRED libunwind-ptrace)
+pkg_check_modules(LIBUNWIND_GENERIC REQUIRED libunwind-generic)
 
 find_package(OpenSSL REQUIRED)
 
-include(${CMAKE_SOURCE_DIR}/compiler_options.cmake)
-
-set(RESMACK_FUZZ_LIB libresmack_fuzz)
-
-find_package(libresmack)
-include(GNUInstallDirs)
-
-include_directories(
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/../libresmack/include)
-
-file(GLOB LIBRESMACK_FUZZ_SOURCES
-    ${PROJECT_SOURCE_DIR}/src/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/targets/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/feedbacks/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/feedbacks/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/states/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/states/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/corpora/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/corpora/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/trace_targets/*.hpp)
-
-add_library(${RESMACK_FUZZ_LIB} SHARED ${LIBRESMACK_FUZZ_SOURCES})
-set_target_properties(${RESMACK_FUZZ_LIB} PROPERTIES OUTPUT_NAME "resmack_fuzz")
-
-add_library(${RESMACK_FUZZ_LIB}_static STATIC ${LIBRESMACK_FUZZ_SOURCES})
-set_target_properties(${RESMACK_FUZZ_LIB}_static PROPERTIES OUTPUT_NAME "resmack_fuzz")
-
-if (DEBUG_IPC)
-  add_definitions(-DDEBUG_IPC)
-endif()
-
-target_link_libraries(
-    ${RESMACK_FUZZ_LIB}
-    ${RESMACK_LIB}
-    pthread
-    OpenSSL::Crypto
-    unwind
-    unwind-ptrace
-    unwind-generic
+file(GLOB_RECURSE LIBRESMACK_FUZZ_PRIVATE_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+file(GLOB_RECURSE LIBRESMACK_FUZZ_INCLUDES
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/resmack/fuzz/*.hpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/resmack/fuzz/*.hpp"
 )
 
-# 'make install' to the correct locations (provided by GNUInstallDirs).
-install(TARGETS ${RESMACK_FUZZ_LIB} EXPORT
-    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})  # This is for Windows
-install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# -------------------------------------------
+# OBJECT FILE (so we only have to build once)
+# -------------------------------------------
 
-add_subdirectory(test)
+add_library(${LIBRESMACK_FUZZ_OBJ} OBJECT)
+target_sources(
+    ${LIBRESMACK_FUZZ_OBJ}
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS
+            "${CMAKE_CURRENT_SOURCE_DIR}/include"
+            "${CMAKE_CURRENT_BINARY_DIR}/include"
+        FILES
+            ${LIBRESMACK_FUZZ_INCLUDES}
+    PRIVATE
+        ${LIBRESMACK_FUZZ_PRIVATE_SRC}
+)
+
+target_link_libraries(
+    ${LIBRESMACK_FUZZ_OBJ}
+    PUBLIC ${LIBRESMACK_SHARED}
+    PUBLIC OpenSSL::Crypto
+    PUBLIC ${LIBUNWIND_LIBRARIES}
+    PUBLIC ${LIBUNWIND_PTRACE_LIBRARIES}
+    PUBLIC ${LIBUNWIND_GENERIC_LIBRARIES}
+)
+
+# -------------------------------------------
+# static and shared libs that use the object
+# file
+# -------------------------------------------
+
+add_library("${LIBRESMACK_FUZZ_SHARED}" SHARED $<TARGET_OBJECTS:${LIBRESMACK_FUZZ_OBJ}>)
+set_target_properties(${LIBRESMACK_FUZZ_SHARED} PROPERTIES
+    OUTPUT_NAME "resmack_fuzz"
+)
+target_link_libraries(
+    "${LIBRESMACK_FUZZ_SHARED}"
+    PUBLIC ${LIBRESMACK_FUZZ_OBJ}
+)
+
+add_library("${LIBRESMACK_FUZZ_STATIC}" STATIC $<TARGET_OBJECTS:${LIBRESMACK_FUZZ_OBJ}>)
+set_target_properties(${LIBRESMACK_FUZZ_STATIC} PROPERTIES
+    OUTPUT_NAME "resmack_fuzz"
+)
+target_link_libraries(
+    "${LIBRESMACK_FUZZ_STATIC}"
+    PUBLIC ${LIBRESMACK_FUZZ_OBJ}
+)
+
+# -------------------------------------------
+
+install(
+    TARGETS ${LIBRESMACK_FUZZ_STATIC} ${LIBRESMACK_FUZZ_SHARED}
+    EXPORT ${LIBRESMACK_FUZZ}_targets
+    FILE_SET HEADERS DESTINATION include
+    PUBLIC_HEADER
+        DESTINATION include
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+if (BUILD_TESTING)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test")
+endif()

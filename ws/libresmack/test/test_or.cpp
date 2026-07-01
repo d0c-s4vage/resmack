@@ -1,13 +1,10 @@
 #include "gtest/gtest.h"
 
 #include "resmack/build_context.hpp"
-#include "resmack/types.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/rules.hpp"
 #include "resmack/item.hpp"
 #include "resmack/items/or.hpp"
-#include "resmack/items/raw.hpp"
-#include "resmack/items/ref.hpp"
 
 #include "calc/reach.hpp"
 #include "calc/ref_depth.hpp"

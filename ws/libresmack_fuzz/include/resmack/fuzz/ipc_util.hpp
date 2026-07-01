@@ -16,7 +16,6 @@ namespace resmack {
 }
 
 #define DEBUG_IPC
-#define DEBUG_MESSAGES
 
 #define IPC_DEBUG_ALWAYS(...) DEBUG_PRINT(__VA_ARGS__)
 

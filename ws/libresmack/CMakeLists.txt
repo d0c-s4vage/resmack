@@ -1,47 +1,97 @@
-include(CTest)
+include("${CMAKE_CURRENT_SOURCE_DIR}/variables.cmake")
 
-cmake_minimum_required(VERSION 3.0)
+project("${LIBRESMACK}"
+    VERSION 0.0.1
+    DESCRIPTION "resmack core grammar library"
+)
 
-project(libresmack VERSION 0.0.1 DESCRIPTION "resmack core grammar library")
+include(FetchContent)
+FetchContent_Declare(
+    fmt
+    # Specify the commit you depend on and update it regularly.
+    GIT_REPOSITORY https://github.com/fmtlib/fmt
+    GIT_TAG 12.2.0
+)
+FetchContent_MakeAvailable(fmt)
 
-option(BUILD_TEST "Build the unit tests" OFF)
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/resmack/debug.hpp.in"
+    "include/resmack/debug.hpp"
+)
 
-include(${PROJECT_SOURCE_DIR}/../../compiler_options.cmake)
+file(GLOB_RECURSE LIBRESMACK_PRIVATE_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+)
 
-set(RESMACK_LIB libresmack)
+file(GLOB_RECURSE LIBRESMACK_INCLUDES
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/resmack/*.hpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/resmack/*.hpp"
+)
 
-include(GNUInstallDirs)
+# -------------------------------------------
+# OBJECT FILE (so we only have to build once)
+# -------------------------------------------
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/libs
-    ${PROJECT_SOURCE_DIR}/libs/fmt/include)
+add_library("${LIBRESMACK_OBJ}" OBJECT)
+target_sources(
+    ${LIBRESMACK_OBJ}
+        PUBLIC
+            FILE_SET HEADERS
+                BASE_DIRS
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_BINARY_DIR}/include"
+                FILES ${LIBRESMACK_INCLUDES}
+        PRIVATE
+            ${LIBRESMACK_PRIVATE_SRC}
+)
+target_link_libraries(
+    "${LIBRESMACK_OBJ}"
+    PUBLIC fmt::fmt-header-only
+)
 
-file(GLOB LIBRESMACK_SOURCES
-    ${PROJECT_SOURCE_DIR}/src/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/calc/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/calc/*.hpp
-    ${PROJECT_SOURCE_DIR}/src/items/*.cpp
-    ${PROJECT_SOURCE_DIR}/src/items/*.hpp)
+# -------------------------------------------
+# static and shared libs that use the object
+# file
+# -------------------------------------------
 
-add_library(${RESMACK_LIB} SHARED ${LIBRESMACK_SOURCES})
-set_target_properties(${RESMACK_LIB} PROPERTIES OUTPUT_NAME "resmack")
+add_library("${LIBRESMACK_SHARED}" SHARED $<TARGET_OBJECTS:${LIBRESMACK_OBJ}>)
+set_target_properties(${LIBRESMACK_SHARED} PROPERTIES
+    OUTPUT_NAME "resmack"
+    #INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${LIBRESMACK_OBJ},INCLUDE_DIRECTORIES>
+    #INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${LIBRESMACK_OBJ},INTERFACE_INCLUDE_DIRECTORIES>
+)
+target_link_libraries(
+    "${LIBRESMACK_SHARED}"
+    PUBLIC ${LIBRESMACK_OBJ}
+)
 
-add_library(${RESMACK_LIB}_static STATIC ${LIBRESMACK_SOURCES})
-set_target_properties(${RESMACK_LIB}_static PROPERTIES OUTPUT_NAME "resmack")
+add_library("${LIBRESMACK_STATIC}" STATIC $<TARGET_OBJECTS:${LIBRESMACK_OBJ}>)
+set_target_properties(${LIBRESMACK_STATIC} PROPERTIES
+    OUTPUT_NAME "resmack"
+    #INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${LIBRESMACK_OBJ},INCLUDE_DIRECTORIES>
+    #INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${LIBRESMACK_OBJ},INTERFACE_INCLUDE_DIRECTORIES>
+)
+target_link_libraries(
+    "${LIBRESMACK_STATIC}"
+    PUBLIC ${LIBRESMACK_OBJ}
+)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/libs/fmt)
-target_link_libraries(${RESMACK_LIB} fmt)
 
-# 'make install' to the correct locations (provided by GNUInstallDirs).
-install(TARGETS ${RESMACK_LIB} EXPORT
-    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})  # This is for Windows
+# -------------------------------------------
+
 install(
-    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    TARGETS ${LIBRESMACK_STATIC} ${LIBRESMACK_SHARED}
+    EXPORT ${LIBRESMACK}_targets
+    FILE_SET HEADERS DESTINATION include
+    PUBLIC_HEADER
+        DESTINATION include
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
 
-add_subdirectory(test)
+if (BUILD_TESTING)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test")
+endif()

@@ -56,10 +56,11 @@ namespace fuzz {
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
-     0
+      0
     );
 
     if (this->shared == MAP_FAILED) {
+      DEBUG_PRINT("Could not create coverage mmap: NUM_COV_FLAGS: %zu", NUM_COV_FLAGS);
       perror("Could not create coverage mmap");
       std::exit(1);
     }

@@ -433,7 +433,7 @@ namespace corpora {
 
       CorpusEntry* parent = &this->snapshots[parent_idx];
       if (parent == entry) {
-        DEBUG_PRINT("%d: PARENT WAS ENTRY! idx: %d\n", getpid(), parent_idx);
+        DEBUG_PRINT("%d: PARENT WAS ENTRY! idx: %zu\n", getpid(), parent_idx);
         break;
       }
       ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);

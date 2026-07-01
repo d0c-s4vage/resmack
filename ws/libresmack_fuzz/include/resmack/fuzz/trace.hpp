@@ -2,20 +2,20 @@
 #define RESMACK_FUZZ_TRACE_H
 
 #include <string>
-#include <algorithm>
 #include <functional>
 #include <pthread.h>
 #include <sys/ptrace.h>
 
-#include "resmack/rand.hpp"
-#include "resmack/types.hpp"
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/lock.hpp"
-#include "resmack/fuzz/serialized.hpp"
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_target.hpp"
 
 namespace resmack {
 namespace fuzz {
+  extern "C"
+  ATTRIBUTE_NO_SANITIZING
+  const char *__asan_default_options();
 
   struct MonitorTimeoutArgs {
     pid_t pid;
@@ -86,12 +86,22 @@ namespace fuzz {
     ~Tracer();
 
     uint32_t GetIdx() { return this->idx; }
+
+    ATTRIBUTE_NO_SANITIZING
     void Trace();
+
+    ATTRIBUTE_NO_SANITIZING
     void Stop();
+
+    ATTRIBUTE_NO_SANITIZING
     void Join();
+
     CrashInfo* GetCrashInfo() { return &this->last_crash; }
    
+    ATTRIBUTE_NO_SANITIZING
     static void* MonitorTracee(void* this_arg);
+
+    ATTRIBUTE_NO_SANITIZING
     static void* MonitorTraceeTimeout(void* this_arg);
    
    private:

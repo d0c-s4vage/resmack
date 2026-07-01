@@ -3,9 +3,7 @@
 #include <cxxabi.h>
 #include <csignal>
 #include <cstdlib>
-#include <iostream>
 #include <libunwind-ptrace.h>
-#include <mutex>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
@@ -15,17 +13,22 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "resmack/debug.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/utils.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/utils.hpp"
-#include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/process_utils.hpp"
 
-#include "asan_util.hpp"
+
+#include "resmack/fuzz/asan_util.hpp"
+
 
 namespace resmack {
 namespace fuzz {
+  const char *__asan_default_options() {
+    return resmack::fuzz::asan::__asan_default_options();
+  }
 
   Tracer::Tracer(
     TraceTarget* target,
@@ -45,11 +48,13 @@ namespace fuzz {
   Tracer::~Tracer() {}
 
   void Tracer::Trace() {
+    DEBUG_PRINT("Tracer::Trace\n");
     this->should_run = true;
     pthread_create(&this->monitor_thread, NULL, &MonitorTracee, (void*)this);
   }
 
   void Tracer::Stop() {
+    DEBUG_PRINT("Tracer::Stop\n");
     this->should_run = false;
     pid_t pid = this->traced_pid;
     if (pid <= 0) {
@@ -69,6 +74,8 @@ namespace fuzz {
   }
 
   void Tracer::Join() {
+    DEBUG_PRINT("Tracer::Join\n");
+    DEBUG_PRINT("Tracer::Join - monitor_thread status: %i\n", pthread_kill(this->monitor_thread, 0));
     pthread_join(this->monitor_thread, NULL);
   }
 
@@ -132,6 +139,7 @@ namespace fuzz {
   }
 
   void* Tracer::MonitorTracee(void* this_arg) {
+    DEBUG_PRINT("MonitorTracee: start\n");
     Tracer* this_ = (Tracer*)this_arg;
 
     int status;
@@ -148,6 +156,7 @@ namespace fuzz {
       .timeout_lock = &this_->timeout_lock,
     };
 
+    DEBUG_PRINT("MonitorTracee: creating monitor timeout thread\n");
     pthread_create(
       &this_->monitor_timeout_thread,
       NULL,
@@ -155,30 +164,39 @@ namespace fuzz {
       (void*)&timeout_args
     );
 
+    DEBUG_PRINT("MonitorTracee: Entering run loop\n");
     while (this_->should_run) {
+      DEBUG_PRINT("MonitorTracee: Loop start\n");
       this_->traced_pid = -1;
       this_->tracee.Reset();
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
-      this_->timeout_lock.Acquire();
-        pid_t curr_pid = this_->traced_pid;
-        timeout_args.pid = this_->traced_pid;
-        timeout_args.timedout = false;
-        timeout_args.should_monitor_tracee = true;
-      this_->timeout_lock.Release();
+      pid_t curr_pid = this_->traced_pid;
 
+//       DEBUG_PRINT("MonitorTracee: Acquiring timeout lock\n");
+//       this_->timeout_lock.Acquire();
+//         pid_t curr_pid = this_->traced_pid;
+//         timeout_args.pid = this_->traced_pid;
+//         timeout_args.timedout = false;
+//         timeout_args.should_monitor_tracee = true;
+//       this_->timeout_lock.Release();
+
+      DEBUG_PRINT("MonitorTracee: waiting for the child\n");
       if (waitpid(curr_pid, &status, 0) == -1) {
         perror("Error waiting for child");
       }
 
+      DEBUG_PRINT("MonitorTracee: Acquiring timeout lock again\n");
       this_->timeout_lock.Acquire();
         timeout_args.should_monitor_tracee = false;
         bool timedout = timeout_args.timedout;
       this_->timeout_lock.Release();
 
+      DEBUG_PRINT("MonitorTracee: Loading signal info\n");
       process_utils::LoadSignalInfo(status, &sig_info);
 
       if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
+        DEBUG_PRINT("MonitorTracee: PTRACE_CONT\n");
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
         continue;
       }

@@ -8,6 +8,7 @@
 namespace resmack {
 namespace fuzz {
 
+  ATTRIBUTE_NO_SANITIZING
   TEST(Fuzz, CoverageHitTwice) {
     uint32_t vars[3] = {0, 0, 0};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
@@ -23,6 +24,7 @@ namespace fuzz {
     EXPECT_NE(cov.GetStats().key, 0u);
   }
 
+  ATTRIBUTE_NO_SANITIZING
   TEST(Fuzz, CoverageNotHit) {
     Coverage cov;
     cov.Start();

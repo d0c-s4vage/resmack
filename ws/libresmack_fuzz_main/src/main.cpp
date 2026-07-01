@@ -299,10 +299,9 @@ void PrintStatus(
   bool show_stats = args->show_stats;
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
-  std::hash<std::thread::id> hasher;
-  printf("%d:%zu: Syncing feedback\n", getpid(), hasher(std::this_thread::get_id()));
+  printf("%d:%zu: Syncing feedback\n", getpid(), pthread_self());
   args->feedback->Sync();
-  printf("%d:%zu: Done syncing feedback\n", getpid(), hasher(std::this_thread::get_id()));
+  printf("%d:%zu: Done syncing feedback\n", getpid(), pthread_self());
   /*
   corpus->Sync();
   */

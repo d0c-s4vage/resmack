@@ -4,25 +4,37 @@
         {
             "name": "common",
             "warnings": {
-                "deprecated": false
+                "deprecated": false,
+                "uninitialized": true
+            },
+            "errors": {
+                "dev": true
             },
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
-                "BUILD_TESTING": "ON"
+                "BUILD_TESTING": "ON",
+                "DEBUG_MESSAGES": "0"
             }
         },
-
         {
             "name": "debug",
-            "inherits": [ "common" ],
+            "inherits": "common",
             "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
+            "name": "debug-verbose",
+            "inherits": "debug",
+            "binaryDir": "${sourceDir}/build/debug-verbose",
+            "cacheVariables": {
+                "DEBUG_MESSAGES": "1"
+            }
+        },
+        {
             "name": "release",
-            "inherits": [ "common" ],
+            "inherits": "common",
             "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
@@ -34,49 +46,78 @@
         },
         {
             "name": "release-syms",
-            "inherits": [ "release" ],
+            "inherits": "release",
             "binaryDir": "${sourceDir}/build/release-syms",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
-        },
-
-        {
-            "name": "default",
-            "inherits": [ "debug" ]
         }
     ],
     "buildPresets": [
         {
-            "name": "default",
-            "configurePreset": "default",
+            "name": "debug",
+            "configurePreset": "debug",
+            "jobs": 0
+        },
+        {
+            "name": "debug-verbose",
+            "configurePreset": "debug-verbose",
             "jobs": 0
         }
     ],
     "testPresets": [
         {
-            "name": "default",
-            "configurePreset": "default",
+            "name": "debug",
+            "configurePreset": "debug",
             "environment": {
                 "LD_LIBRARY_PATH": "${sourceDirName}"
+            },
+            "output": {
+              "outputOnFailure": true
+            },
+            "execution": {
+              "noTestsAction": "error",
+              "stopOnFailure": true
             }
+        },
+        {
+            "name": "debug-verbose",
+            "inherits": "debug",
+            "configurePreset": "debug-verbose"
         }
     ],
     "workflowPresets": [
         {
-            "name": "debug-workflow",
+            "name": "debug",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "default"
+                    "name": "debug"
                 },
                 {
                     "type": "build",
-                    "name": "default"
+                    "name": "debug"
                 },
                 {
                     "type": "test",
-                    "name": "default"
+                    "name": "debug"
+                }
+            ]
+        },
+        {
+            "name": "debug-verbose",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "debug-verbose"
+                },
+                {
+                    "type": "build",
+                    "name": "debug-verbose"
+                },
+                {
+                    "type": "test",
+                    "name": "debug-verbose"
                 }
             ]
         }

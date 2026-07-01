@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "resmack/defs.hpp"
+#include "resmack/debug.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/tracee.hpp"
@@ -14,9 +14,10 @@ namespace fuzz {
 
   TEST(Trace, CatchesCrashes) {
     trace_targets::Fork fork_target(true, [](Tracee* tracee) {
+      DEBUG_PRINT("CatchesCrashes: in crashing code\n");
       tracee->SaveLastCorpusInfo(true, 1337, 1338, 1339);
-      //raise(SIGSEGV);
-      ((void(*)())(0))();
+      raise(SIGSEGV);
+      //((void(*)())(0))();
     });
 
     Tracer t(

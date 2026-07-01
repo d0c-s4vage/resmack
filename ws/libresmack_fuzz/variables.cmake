@@ -1,0 +1,6 @@
+include(${libresmack_SOURCE_DIR}/variables.cmake)
+
+set(LIBRESMACK_FUZZ "${LIBRESMACK}_fuzz")
+set(LIBRESMACK_FUZZ_SHARED "${LIBRESMACK_FUZZ}_shared")
+set(LIBRESMACK_FUZZ_STATIC "${LIBRESMACK_FUZZ}_static")
+set(LIBRESMACK_FUZZ_OBJ "${LIBRESMACK_FUZZ}_obj")

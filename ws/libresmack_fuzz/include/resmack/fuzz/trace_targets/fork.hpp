@@ -2,8 +2,8 @@
 #define RESMACK_FUZZ_TRACE_FORK_H
 
 #include <functional>
-#include <utility>
 
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/trace_target.hpp"
 
 namespace resmack {
@@ -21,7 +21,10 @@ namespace trace_targets {
     Fork(bool mute_io, TraceSpawnCb spawn_cb);
     ~Fork();
 
+    ATTRIBUTE_NO_SANITIZING
     static void* SpawnThreadTarget(void* tracee_arg);
+
+    ATTRIBUTE_NO_SANITIZING
     pid_t Spawn(Tracee* tracee);
   };
 
