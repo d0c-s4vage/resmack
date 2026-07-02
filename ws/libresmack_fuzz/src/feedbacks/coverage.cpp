@@ -3,6 +3,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <semaphore.h>
+#include <mutex>
+#include <thread>
 #include <sys/mman.h>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
@@ -10,37 +12,6 @@
 
 namespace resmack {
 namespace fuzz {
-
-  static size_t GUARD_COUNTER = 0;
-  static uint32_t* COV_FLAGS = NULL;
-  static uint32_t* SHARED_COV_FLAGS = NULL;
-  static size_t NUM_COV_FLAGS;
-  static bool IS_NEW = false;
-
-  void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
-    if (start == stop || *start) return;  // Initialize only once.
-    for (uint32_t *x = start; x < stop; x++) {
-      *x = ++GUARD_COUNTER;  // Guards should start from 1.
-    }
-    NUM_COV_FLAGS = (GUARD_COUNTER - 1) / 32;
-    if ((GUARD_COUNTER - 1) % 32 != 0) {
-      NUM_COV_FLAGS++;
-    }
-  }
-
-  void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
-    if (COV_FLAGS == NULL) { return; }
-
-    size_t uint_no = (*guard - 1) / 32;
-    size_t bit_no = (*guard - 1) % 32;
-    size_t bit = (1 << bit_no);
-
-    if (COV_FLAGS[uint_no] & bit) { return; }
-    COV_FLAGS[uint_no] |= bit;
-
-    IS_NEW = true;
-  }
-
   size_t _NumBits(uint32_t val) {
      val = val - ((val >> 1) & 0x55555555);
      val = (val & 0x33333333) + ((val >> 2) & 0x33333333);
@@ -49,10 +20,11 @@ namespace fuzz {
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() : cov_lock("coverage-lock") {
+  Coverage::Coverage() : shared_cov_lock("coverage-lock") {
+    size_t num_flags_to_alloc = NUM_COV_FLAGS ? NUM_COV_FLAGS : 1; 
     this->shared = mmap(
       NULL,
-      NUM_COV_FLAGS * sizeof(uint32_t),
+      num_flags_to_alloc * sizeof(uint32_t),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
@@ -65,67 +37,93 @@ namespace fuzz {
       std::exit(1);
     }
 
-    SHARED_COV_FLAGS = (uint32_t*)this->shared;
-    COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    this->cov_flags = NULL;
+    COV_FLAGS = &this->cov_flags;
+
+    this->shared_cov_flags = (uint32_t*)this->shared;
+    memset(this->shared_cov_flags, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
   }
 
   Coverage::~Coverage() {
     munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
-    free(COV_FLAGS);
+    {
+      DEBUG_PRINT("Coverage::~Coverage Waiting for scoped lock\n");
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      DEBUG_PRINT("Coverage::~Coverage got it\n");
+      free(this->cov_flags);
+      this->cov_flags = NULL;
+      COV_FLAGS = NULL;
+      DEBUG_PRINT("Coverage::~Coverage DONE\n");
+    }
   }
 
   std::string Coverage::GetSummary() {
     size_t total_bits = 0;
     for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      total_bits += _NumBits(COV_FLAGS[idx]);
+      total_bits += _NumBits(this->cov_flags[idx]);
     }
 
     return std::to_string(total_bits) + " edges";
   }
 
   void Coverage::Start() {
-    IS_NEW = false;
-    //memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      IS_NEW = false;
+      this->cov_flags = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
+      memset(this->cov_flags, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    }
   }
 
   void Coverage::Stop() {
-    this->hash = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      uint32_t x = COV_FLAGS[idx];
-      x = ((x >> 16) ^ x) * 0x45d9f3b;
-      x = ((x >> 16) ^ x) * 0x45d9f3b;
-      x = (x >> 16) ^ x;
-      if ((idx & 1) == 0) {
-        this->hash ^= x;
-      } else {
-        this->hash ^= ((size_t)x << 32);
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      this->hash = 0;
+      for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+        uint32_t x = this->cov_flags[idx];
+        x = ((x >> 16) ^ x) * 0x45d9f3b;
+        x = ((x >> 16) ^ x) * 0x45d9f3b;
+        x = (x >> 16) ^ x;
+        if ((idx & 1) == 0) {
+          this->hash ^= x;
+        } else {
+          this->hash ^= ((size_t)x << 32);
+        }
       }
     }
   }
 
-  void Coverage::Sync() {
-    this->cov_lock.Acquire();
-    for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
-      SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
+  bool Coverage::Sync() {
+    bool was_new = false;
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      this->shared_cov_lock.Acquire();
+        if (IS_NEW) {
+          // copy our changes to the shared coverage flags
+          for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
+            this->shared_cov_flags[i] |= this->cov_flags[i];
+          }
+          // now pull in any coverage flags that were seen by
+          // others
+          memcpy(this->cov_flags, this->shared_cov_flags, sizeof(uint32_t) * NUM_COV_FLAGS);
+        }
+        was_new = IS_NEW;
+        IS_NEW = false;
+      this->shared_cov_lock.Release();
     }
-    memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
-    this->cov_lock.Release();
+    return was_new;
   }
 
   FeedbackStats Coverage::GetStats() {
     size_t num_bits = 0;
     for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      num_bits += _NumBits(COV_FLAGS[idx]);
+      num_bits += _NumBits(this->cov_flags[idx]);
     }
 
-    if (IS_NEW) {
-      this->Sync();
-    }
+    bool had_new = this->Sync();
 
     return {
-      .new_coverage = IS_NEW,
+      .new_coverage = had_new,
       .key = this->hash,
       .num = num_bits,
     };

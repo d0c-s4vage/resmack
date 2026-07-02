@@ -21,9 +21,11 @@ namespace trace_targets {
     Fork(bool mute_io, TraceSpawnCb spawn_cb);
     ~Fork();
 
+  __attribute__((noinline))
     ATTRIBUTE_NO_SANITIZING
     static void* SpawnThreadTarget(void* tracee_arg);
 
+  __attribute__((noinline))
     ATTRIBUTE_NO_SANITIZING
     pid_t Spawn(Tracee* tracee);
   };

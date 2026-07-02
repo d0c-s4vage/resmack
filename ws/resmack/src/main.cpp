@@ -22,7 +22,6 @@ namespace root {
     std::cout << "Available sub-commands. Each has their own --help" << std::endl << std::endl;
     std::cout << "  cc           - Compilation" << std::endl;
     std::cout << "  debug-state  - State file debugging" << std::endl;
-    std::cout << "  gen          - Grammar generation" << std::endl;
   }
 
   bool ParseOpts(int argc, char** argv, MainOpts* opts) {

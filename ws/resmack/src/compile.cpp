@@ -112,7 +112,7 @@ namespace compile {
       options.emplace_back("-ffast-math");
       options.emplace_back("-march=native");
     }
-    options.emplace_back("-fsanitize-coverage=trace-pc-guard");
+    options.emplace_back("-fsanitize-coverage=trace-pc-guard,-sanitizer-coverage-gated-trace-callbacks");
 
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);

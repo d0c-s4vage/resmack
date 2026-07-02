@@ -10,10 +10,6 @@ namespace resmack {
 namespace fuzz {
 namespace asan {
 
-const char *__asan_default_options() {
-  return ASAN_DEFAULT_OPTIONS;
-}
-
 void HandleAsan(const char* report) {
   ASAN_CB(report);
 }

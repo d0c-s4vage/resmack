@@ -73,6 +73,7 @@ namespace resmack {
   resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();\
 }
 
+#define DEBUG_IPC
 #ifdef DEBUG_IPC
 #define WITH_LOCK(...) _WITH_LOCK_DEBUG(__VA_ARGS__)
 #else

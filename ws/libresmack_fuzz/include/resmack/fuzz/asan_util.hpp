@@ -1,8 +1,10 @@
-#ifndef RESMACK_FUZZ_ASAN_UTIL_H
-#define RESMACK_FUZZ_ASAN_UTIL_H
+// #ifndef RESMACK_FUZZ_ASAN_UTIL_H
+// #define RESMACK_FUZZ_ASAN_UTIL_H
+#pragma once
 
 #include <functional>
 #include <sanitizer/asan_interface.h>
+#include <sanitizer/coverage_interface.h>
 
 #include "resmack/defs.hpp"
 
@@ -82,33 +84,35 @@
 # define ATTRIBUTE_NO_SANITIZE_THREAD
 #endif  // __clang__
 
+#define INIT_ASAN_OPTS \
+  extern "C" { \
+  };
+
+extern "C" {
+  static const char *ASAN_DEFAULT_OPTIONS = "halt_on_error=1:exitcode=199:detect_leaks=0:verbose=2";
+
+  __attribute__((__weak__, __visibility__("default")))
+  const char *__asan_default_options() {
+    return ASAN_DEFAULT_OPTIONS;
+  }
+}
+
 __attribute__((weak, visibility("default")))
 void __asan_set_error_report_callback(void(*)(const char*));
 
 namespace resmack {
 namespace fuzz {
 namespace asan {
-
-  UNUSED_DECL
-  static const char *ASAN_DEFAULT_OPTIONS = "help=1 exitcode=199:detect_leaks=0:print_options=1";
-  UNUSED_DECL
   static const int ASAN_EXIT_CODE = 199;
-
-  ATTRIBUTE_NO_SANITIZE_ADDRESS
-  ATTRIBUTE_NO_SANITIZE_MEMORY
-  ATTRIBUTE_NO_SANITIZE_THREAD
-  __attribute__((weak, visibility("default")))
-  const char *__asan_default_options();
 
   using AsanCb = std::function<void(const char*)>;
   static AsanCb ASAN_CB = NULL;
 
   void HandleAsan(const char* report);
-
   void SetAsanCallback(AsanCb cb);
 
 }
 }
 }
 
-#endif
+//#endif

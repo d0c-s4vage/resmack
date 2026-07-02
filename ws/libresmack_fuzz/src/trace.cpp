@@ -26,9 +26,9 @@
 
 namespace resmack {
 namespace fuzz {
-  const char *__asan_default_options() {
-    return resmack::fuzz::asan::__asan_default_options();
-  }
+//   const char *__asan_default_options() {
+//     return resmack::fuzz::asan::__asan_default_options();
+//   }
 
   Tracer::Tracer(
     TraceTarget* target,
@@ -65,9 +65,6 @@ namespace fuzz {
 
     this->timeout_lock.Acquire();
     pthread_join(this->monitor_timeout_thread, NULL);
-
-    kill(pid, SIGINT);
-    waitpid(pid, NULL, 0);
 
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
@@ -173,13 +170,12 @@ namespace fuzz {
 
       pid_t curr_pid = this_->traced_pid;
 
-//       DEBUG_PRINT("MonitorTracee: Acquiring timeout lock\n");
-//       this_->timeout_lock.Acquire();
-//         pid_t curr_pid = this_->traced_pid;
-//         timeout_args.pid = this_->traced_pid;
-//         timeout_args.timedout = false;
-//         timeout_args.should_monitor_tracee = true;
-//       this_->timeout_lock.Release();
+      DEBUG_PRINT("MonitorTracee: Acquiring timeout lock\n");
+      this_->timeout_lock.Acquire();
+      timeout_args.pid = this_->traced_pid;
+      timeout_args.timedout = false;
+      timeout_args.should_monitor_tracee = true;
+      this_->timeout_lock.Release();
 
       DEBUG_PRINT("MonitorTracee: waiting for the child\n");
       if (waitpid(curr_pid, &status, 0) == -1) {

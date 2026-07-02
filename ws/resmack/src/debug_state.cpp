@@ -151,8 +151,9 @@ namespace debug_state {
       return 1;
     }
 
-    char* file_contents = (char*)malloc(stat_info.st_size);
-    printf("State file size: %lx\n", stat_info.st_size);
+    size_t file_size = static_cast<size_t>(stat_info.st_size);
+    char* file_contents = (char*)malloc(file_size);
+    printf("State file size: %zu\n", file_size);
     
     FILE* fd = fopen(state_file, "rb");
     if (fd == NULL) {
@@ -160,7 +161,7 @@ namespace debug_state {
       return 1;
     }
 
-    if (fread(file_contents, 1, stat_info.st_size, fd) != (size_t)stat_info.st_size) {
+    if (fread(file_contents, 1, file_size, fd) != file_size) {
       printf("Could not read full file\n");
       return 1;
     }

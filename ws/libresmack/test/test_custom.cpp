@@ -26,16 +26,16 @@ namespace items {
     }
 
     void Build(BuildContext *ctx) {
-      uint8_t len;
+      size_t len;
       len = 0;
 
       size_t len_pos = ctx->output->size();
-      *ctx->output += (char)len;
+      *ctx->output += static_cast<char>(len);
 
       this->item_->Build(ctx);
 
       len = ctx->output->size() - len_pos - sizeof(len);
-      ctx->output->data()[len_pos] = len;
+      ctx->output->data()[len_pos] = static_cast<char>(len);
     }
   };
 

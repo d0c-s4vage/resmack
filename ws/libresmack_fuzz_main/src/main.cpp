@@ -580,7 +580,7 @@ bool HandleException(
 
   rules->Build(rule_idx, &ctx);
 
-  resmack::fuzz::CrashInfo* info = tracer->GetCrashInfo();
+  const resmack::fuzz::CrashInfo* info = tracer->GetCrashInfo();
   std::string out_path = std::string(OPTS.crash_output) + "/" + info->major_hash;
   if (!std::filesystem::exists(out_path)) {
     std::filesystem::create_directories(out_path);

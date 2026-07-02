@@ -13,9 +13,6 @@
 
 namespace resmack {
 namespace fuzz {
-  extern "C"
-  ATTRIBUTE_NO_SANITIZING
-  const char *__asan_default_options();
 
   struct MonitorTimeoutArgs {
     pid_t pid;
@@ -96,7 +93,7 @@ namespace fuzz {
     ATTRIBUTE_NO_SANITIZING
     void Join();
 
-    CrashInfo* GetCrashInfo() { return &this->last_crash; }
+    const CrashInfo* GetCrashInfo() { return &this->last_crash; }
    
     ATTRIBUTE_NO_SANITIZING
     static void* MonitorTracee(void* this_arg);

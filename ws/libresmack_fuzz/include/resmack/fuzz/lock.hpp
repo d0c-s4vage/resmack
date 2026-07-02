@@ -11,7 +11,7 @@ namespace fuzz {
   class Lock {
    private:
     std::string name;
-    sem_t* lock;
+    sem_t* _lock;
     pid_t creator;
     bool anonymous;
     std::string lock_path;
@@ -28,6 +28,10 @@ namespace fuzz {
     bool Acquire();
     bool Release();
     int GetValue();
+
+    void lock();
+    void unlock();
+    bool try_lock();
 
    private:
     void Init();

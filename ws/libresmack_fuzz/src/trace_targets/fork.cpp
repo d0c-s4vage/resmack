@@ -35,7 +35,10 @@ namespace trace_targets {
       pthread_self(),
       sem_val
     );
-    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
+    if (sem_val == 1) {
+      DEBUG_PRINT("SIGNAL_HANDLER_LOCK was 1, releasing it\n");
+      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();
+    }
     DEBUG_PRINT("%d:%lu: >>Acquired lock, exiting without cleanup\n", getpid(), pthread_self());
     _exit(0); // no cleanup!
   }
@@ -61,12 +64,12 @@ namespace trace_targets {
       DEBUG_PRINT("Fork::Spawn: In forked subprocess\n");
       if (this->mute_io) {
         DEBUG_PRINT("Fork::Spawn: Muting I/O and opening /dev/null\n");
-//         int fd = open("/dev/null", O_WRONLY);
-//         fflush(stdout);
-//         dup2(fd, 1);
-//         fflush(stderr);
-//         dup2(fd, 2);
-//         close(fd);
+        int fd = open("/dev/null", O_WRONLY);
+        fflush(stdout);
+        dup2(fd, 1);
+        fflush(stderr);
+        dup2(fd, 2);
+        close(fd);
       }
 
       DEBUG_PRINT("Fork::Spawn: Installing signal handler\n");
@@ -92,7 +95,9 @@ namespace trace_targets {
         perror("Forked process could not call PTRACE_TRACEME");
         DEBUG_PRINT("Forked process could not call PTRACE_TRACEME\n");
       }
+      DEBUG_PRINT("TARGET:: RAISING SIGSTOP, signalling to parent proc\n");
       raise(SIGSTOP);
+      DEBUG_PRINT("TARGET:: Yay, continuing\n");
 
       /* We need the actual execution to occur *NOT* on the main thread
        * so that we can gracefully handle signals. Without this, the timeout
@@ -103,14 +108,16 @@ namespace trace_targets {
         .this_ = this,
         .tracee = tracee,
       };
-      pthread_t thread;
 
       DEBUG_PRINT("Fork::Spawn: Creating separate thread for target\n");
-      pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
 
-      DEBUG_PRINT("Fork::Spawn: Waiting for target thread\n");
-      pthread_join(thread, NULL);
-      DEBUG_PRINT("Fork::Spawn: Target thread exited\n");
+      //pthread_t thread;
+      //DEBUG_PRINT("Fork::Spawn: Target thread exited\n");
+      //pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
+      //DEBUG_PRINT("Fork::Spawn: Waiting for target thread\n");
+      //pthread_join(thread, NULL);
+      SpawnThreadTarget((void*)&args);
+
 
       _exit(0);
     }
@@ -132,11 +139,11 @@ namespace trace_targets {
     return fork_pid;
   }
 
-  ATTRIBUTE_NO_SANITIZE_ADDRESS
-  ATTRIBUTE_NO_SANITIZE_THREAD
+  __attribute__((noinline))
   void* Fork::SpawnThreadTarget(void* spawn_thread_args) {
     DEBUG_PRINT("SpawnThreadTarget: Start\n");
-    //ignore SIGINT on this thread!
+
+    //ignore SIGINT on this thread! we want the parent process 
     sigset_t signal_mask;
     sigemptyset(&signal_mask);
     sigaddset(&signal_mask, SIGINT);

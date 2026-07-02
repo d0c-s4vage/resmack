@@ -6,6 +6,12 @@ include(cmake/compiler_options.cmake)
 include(cmake/debug.cmake)
 
 set(CMAKE_INSTALL_PREFIX "/usr")
+set(ENV{ASAN_OPTIONS} "detect_leaks=0")
+
+if(DEFINED ENV{DEBUG_MESSAGES})
+  message(STATUS "Overriding DEBUG_MESSAGES: ${DEBUG_MESSAGES} -> $ENV{DEBUG_MESSAGES}")
+  set(DEBUG_MESSAGES $ENV{DEBUG_MESSAGES})
+endif()
 
 include(CTest)
 enable_testing()

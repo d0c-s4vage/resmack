@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+#include "resmack/debug.hpp"
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
@@ -9,7 +11,8 @@ namespace resmack {
 namespace fuzz {
 
   ATTRIBUTE_NO_SANITIZING
-  TEST(Fuzz, CoverageHitTwice) {
+  __attribute__((no_sanitize("coverage")))
+  void _TestCoverageHitsTwice() {
     uint32_t vars[3] = {0, 0, 0};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
@@ -21,16 +24,24 @@ namespace fuzz {
 
     cov.Stop();
 
-    EXPECT_NE(cov.GetStats().key, 0u);
+    EXPECT_EQ(cov.GetStats().key, 0);
+  }
+
+  TEST(Fuzz, CoverageHitTwice) {
+    _TestCoverageHitsTwice();
   }
 
   ATTRIBUTE_NO_SANITIZING
-  TEST(Fuzz, CoverageNotHit) {
+  void _TestCoverageNotHit() {
     Coverage cov;
     cov.Start();
     cov.Stop();
 
-    EXPECT_EQ(cov.GetStats().key, 0u);
+    EXPECT_EQ(cov.GetStats().new_coverage, false);
+  }
+
+  TEST(Fuzz, CoverageNotHit) {
+    _TestCoverageNotHit();
   }
 
 }
