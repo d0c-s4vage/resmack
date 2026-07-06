@@ -16,10 +16,7 @@ namespace fuzz {
   TEST(Trace, CatchesCrashes) {
     bool mute_target = false;
     trace_targets::Fork fork_target(mute_target, [](Tracee* tracee) {
-      DEBUG_PRINT("TARGET::: in crashing code\n");
-      DEBUG_PRINT("TARGET::: Saving corpus\n");
       tracee->SaveLastCorpusInfo(true, 1337, 1338, 1339);
-      DEBUG_PRINT("TARGET::: DONE saving corpusi, crashing....\n");
 
       //raise(SIGSEGV);
       ((void(*)())(0))();

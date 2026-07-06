@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <csignal>
+#include <cstring>
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -13,11 +15,26 @@ namespace process_utils {
 #if DEBUG_MESSAGES
     DEBUG_PRINT("SIGNAL_INFO: %d\n", status);
     DEBUG_PRINT("    WIFEXITED(status): %d\n", WIFEXITED(status));
+    DEBUG_PRINT( \
+        "    WEXITSTATUS(status): %d %s %s\n",
+        WEXITSTATUS(status),
+        sigabbrev_np(WEXITSTATUS(status)),
+        strsignal(WEXITSTATUS(status))
+    );
     DEBUG_PRINT("    WIFSTOPPED(status): %d\n", WIFSTOPPED(status));
+    DEBUG_PRINT(\
+        "    WSTOPSIG(status): %d %s %s\n",
+        WSTOPSIG(status),
+        sigabbrev_np(WSTOPSIG(status)),
+        strsignal(WSTOPSIG(status))
+    );
     DEBUG_PRINT("    WIFSIGNALED(status): %d\n", WIFSIGNALED(status));
-    DEBUG_PRINT("    WEXITSTATUS(status): %d\n", WEXITSTATUS(status));
-    DEBUG_PRINT("    WSTOPSIG(status): %d\n", WSTOPSIG(status));
-    DEBUG_PRINT("    WTERMSIG(status): %d\n", WTERMSIG(status));
+    DEBUG_PRINT(
+        "    WTERMSIG(status): %d %s %s\n",
+        WTERMSIG(status),
+        sigabbrev_np(WTERMSIG(status)),
+        strsignal(WTERMSIG(status))
+    );
     DEBUG_PRINT("    WCOREDUMP(status): %d\n", WCOREDUMP(status));
 #endif
     out->exited = WIFEXITED(status);

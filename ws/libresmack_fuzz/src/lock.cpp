@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "resmack/debug.hpp"
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/utils.hpp"
 
@@ -20,17 +21,18 @@ namespace fuzz {
     this->lock_path.assign(lock_path, strlen(lock_path));
 
     if ((this->_lock = sem_open(lock_path, O_CREAT, 0600, 1)) == SEM_FAILED) {
-      perror("Could not create semaphore");
-      std::exit(1);
+      throw std::runtime_error("Could not create new semaphore: " + std::string(std::strerror(errno)));
     }
 
     this->anonymous = false;
+    this->Init();
   }
 
   Lock::Lock(std::string name, bool shared) : name(name) {
     this->_lock = (sem_t*)malloc(sizeof(sem_t));
     sem_init(this->_lock, shared, 1);
     this->anonymous = true;
+    this->Init();
   }
 
   Lock::Lock() : Lock("AnonymousLock", true) {}
@@ -44,44 +46,30 @@ namespace fuzz {
     }
   }
 
-  bool Lock::Acquire() {
-    if (sem_wait(this->_lock) == -1) {
-      if (errno == EINTR) {
-        return false;
-      }
-      perror("Could not sem_wait on semaphore");
-      std::exit(1);
-    }
-
-    return true;
-  }
-
-  bool Lock::Release() {
-    if (sem_post(this->_lock) == -1) {
-      if (errno == EINTR) {
-        return false;
-      }
-      perror("Could not sem_post on semaphore");
-      std::exit(1);
-    }
-
-    return true;
-  }
-
   void Lock::lock() {
-    if (!this->Acquire()) {
-      throw std::runtime_error("Could not acquire lock");
+    if (sem_wait(this->_lock) != 0) {
+      // when errno is EINTR, it means it was interrupted by a signal handler
+      throw std::runtime_error("Could not acquire lock: " + std::string(std::strerror(errno)));
     }
   }
 
   void Lock::unlock() {
-    if (!this->Release()) {
-      throw std::runtime_error("Could not release lock");
+    if (sem_post(this->_lock) != 0) {
+      // when errno is EINTR, it means it was interrupted by a signal handler
+      throw std::runtime_error("Could not unlock lock: " + std::string(std::strerror(errno)));
     }
   }
 
   bool Lock::try_lock() {
-    return this->Acquire();
+    if (sem_trywait(this->_lock) == 0) {
+      return true;
+    }
+
+    if (errno == EAGAIN) {
+        return false;
+    } else {
+      throw std::runtime_error("Could not acquire lock: " + std::string(std::strerror(errno)));
+    }
   }
 
   int Lock::GetValue() {
@@ -93,6 +81,11 @@ namespace fuzz {
     return sem_val;
   }
 
-  void Lock::Init() {}
+  void Lock::Init() {
+    // just in case a previous process used a named lock and didn't leave it in a good state...
+    while (this->GetValue() == 0) {
+      this->unlock();
+    }
+  }
 }
 }

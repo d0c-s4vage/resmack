@@ -765,7 +765,7 @@ int main(int argc, char** argv) {
   STATUS_ARGS.feedback = &cov;
 
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
-  signal(SIGINT, sigint_handler);
+  //signal(SIGINT, sigint_handler);
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
@@ -773,7 +773,9 @@ int main(int argc, char** argv) {
 
   SHUTTING_DOWN = true;
 
-  resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
+  // WHY?????
+  //resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.lock();
+  //
   STATUS_ARGS.should_run = false;
   pthread_kill(STATUS_THREAD, SIGKILL);
 }

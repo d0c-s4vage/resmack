@@ -23,23 +23,12 @@ namespace fuzz {
 namespace trace_targets {
 
   // install signal handler here to catch SIGINT --> set SHUTTING_DOWN = true
-
   void sigint_handler([[maybe_unused]] int signum) {
-    DEBUG_PRINT("%d:%lu: >>Handling signal handler\n", getpid(), pthread_self());
-
     [[maybe_unused]]
     int sem_val = resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.GetValue();
-    DEBUG_PRINT(
-      "%d:%lu: >>Waiting to acquire sig lock, curr val: %d\n",
-      getpid(),
-      pthread_self(),
-      sem_val
-    );
     if (sem_val == 1) {
-      DEBUG_PRINT("SIGNAL_HANDLER_LOCK was 1, releasing it\n");
-      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();
+      resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.unlock();
     }
-    DEBUG_PRINT("%d:%lu: >>Acquired lock, exiting without cleanup\n", getpid(), pthread_self());
     _exit(0); // no cleanup!
   }
 
@@ -47,7 +36,6 @@ namespace trace_targets {
   Fork::~Fork() {}
 
   pid_t Fork::Spawn(Tracee* tracee) {
-    DEBUG_PRINT("Fork::Spawn\n");
     pid_t fork_pid;
 
     /* The parent process will block on a read() of these pipes to continue -
@@ -61,9 +49,7 @@ namespace trace_targets {
      */
     if ((fork_pid = fork()) == 0) {
 
-      DEBUG_PRINT("Fork::Spawn: In forked subprocess\n");
       if (this->mute_io) {
-        DEBUG_PRINT("Fork::Spawn: Muting I/O and opening /dev/null\n");
         int fd = open("/dev/null", O_WRONLY);
         fflush(stdout);
         dup2(fd, 1);
@@ -72,32 +58,23 @@ namespace trace_targets {
         close(fd);
       }
 
-      DEBUG_PRINT("Fork::Spawn: Installing signal handler\n");
       if (signal(SIGINT, sigint_handler) == SIG_ERR) {
         perror("  >Forkee: Could not install sig handler in forked process");
         std::cout << std::flush;
         std::cerr << std::flush;
       }
-      DEBUG_PRINT("Fork::Spawn: Done installing signal handler\n");
 
-      DEBUG_PRINT("Fork::Spawn: Setting the ASAN callback\n");
       resmack::fuzz::asan::SetAsanCallback([tracee](const char* report) {
-        DEBUG_PRINT("Fork::Spawn: ASAN callback was called!\n");
         std::cout << std::flush;
         if (tracee == NULL) { return; }
         tracee->SaveAsanInfo(report);
-        DEBUG_PRINT("Fork::Spawn: Done with ASAN handling\n");
         // let it die, the tracer knows to look for the ASAN_EXIT_CODE
       });
 
-      DEBUG_PRINT("Fork::Spawn: Setting PTRACE_TRACEME\n");
       if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
         perror("Forked process could not call PTRACE_TRACEME");
-        DEBUG_PRINT("Forked process could not call PTRACE_TRACEME\n");
       }
-      DEBUG_PRINT("TARGET:: RAISING SIGSTOP, signalling to parent proc\n");
       raise(SIGSTOP);
-      DEBUG_PRINT("TARGET:: Yay, continuing\n");
 
       /* We need the actual execution to occur *NOT* on the main thread
        * so that we can gracefully handle signals. Without this, the timeout
@@ -109,14 +86,11 @@ namespace trace_targets {
         .tracee = tracee,
       };
 
-      DEBUG_PRINT("Fork::Spawn: Creating separate thread for target\n");
 
-      //pthread_t thread;
-      //DEBUG_PRINT("Fork::Spawn: Target thread exited\n");
-      //pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
-      //DEBUG_PRINT("Fork::Spawn: Waiting for target thread\n");
-      //pthread_join(thread, NULL);
-      SpawnThreadTarget((void*)&args);
+      pthread_t thread;
+      pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
+      pthread_join(thread, NULL);
+      //SpawnThreadTarget((void*)&args);
 
 
       _exit(0);
@@ -128,7 +102,6 @@ namespace trace_targets {
         && WIFSTOPPED(tracee_status)
         && WSTOPSIG(tracee_status) == SIGSTOP
     ) {
-      DEBUG_PRINT("Observed the stopped child process, telling it to continue\n");
       if (ptrace(PTRACE_CONT, fork_pid, NULL, NULL) == -1) {
         perror("Could not tell forked process to continue");
       }
@@ -141,9 +114,9 @@ namespace trace_targets {
 
   __attribute__((noinline))
   void* Fork::SpawnThreadTarget(void* spawn_thread_args) {
-    DEBUG_PRINT("SpawnThreadTarget: Start\n");
 
-    //ignore SIGINT on this thread! we want the parent process 
+    //ignore SIGINT on this thread! we want the main thread to
+    //handle it
     sigset_t signal_mask;
     sigemptyset(&signal_mask);
     sigaddset(&signal_mask, SIGINT);
@@ -152,7 +125,6 @@ namespace trace_targets {
     }
 
     SpawnThreadArgs* args = (SpawnThreadArgs*)spawn_thread_args;
-    DEBUG_PRINT("SpawnThreadTarget: ABOUT TO CALL THE CALLBACK\n");
     args->this_->cb(args->tracee);
     return NULL;
   }

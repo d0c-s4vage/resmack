@@ -25,13 +25,12 @@ namespace fuzz {
     // Create an unnamed, shared semaphore
     Lock();
     ~Lock();
-    bool Acquire();
-    bool Release();
-    int GetValue();
 
     void lock();
     void unlock();
     bool try_lock();
+
+    int GetValue();
 
    private:
     void Init();

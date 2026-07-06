@@ -122,7 +122,6 @@ namespace fuzz {
   }
 
   void Tracee::SaveAsanInfo(const char* report) {
-    DEBUG_PRINT("Tracee: Saving asan info\n");
     this->asan_info->exists = true;
     size_t report_size = strlen(report);
     size_t size_to_copy = report_size < this->asan_shared_max_size ? report_size: this->asan_shared_max_size;
@@ -182,7 +181,6 @@ namespace fuzz {
 
     utils::sha1_hex(major_stack.data(), major_stack.size(), this->asan_info->major_hash);
     utils::sha1_hex(minor_stack.data(), minor_stack.size(), this->asan_info->minor_hash);
-    DEBUG_PRINT("Tracee: Done Saving asan info\n");
   }
 
   void Tracee::IterStart() {
@@ -196,7 +194,6 @@ namespace fuzz {
   }
 
   void Tracee::Reset() {
-    DEBUG_PRINT("Tracee: Reset\n");
     this->asan_info->exists = false;
     *this->iter_start = -1.0f;
   }

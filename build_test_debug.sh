@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export LD_LIBRARY_PATH=build/debug
+export LD_LIBRARY_PATH=build/debug.verbose
 
 CMD=(
 clang++
@@ -21,7 +21,7 @@ clang++
     -std=c++20
     test.cpp
     run_on_grammar.cpp
-    -Lbuild/debug
+    -Lbuild/debug.verbose
     -fsanitize=address
 )
 "${CMD[@]}"

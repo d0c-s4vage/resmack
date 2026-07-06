@@ -1,6 +1,6 @@
-// #ifndef RESMACK_FUZZ_ASAN_UTIL_H
-// #define RESMACK_FUZZ_ASAN_UTIL_H
-#pragma once
+#ifndef RESMACK_FUZZ_ASAN_UTIL_H
+#define RESMACK_FUZZ_ASAN_UTIL_H
+//#pragma once
 
 #include <functional>
 #include <sanitizer/asan_interface.h>
@@ -88,15 +88,7 @@
   extern "C" { \
   };
 
-extern "C" {
-  static const char *ASAN_DEFAULT_OPTIONS = "halt_on_error=1:exitcode=199:detect_leaks=0:verbose=2";
-
-  __attribute__((__weak__, __visibility__("default")))
-  const char *__asan_default_options() {
-    return ASAN_DEFAULT_OPTIONS;
-  }
-}
-
+extern "C"
 __attribute__((weak, visibility("default")))
 void __asan_set_error_report_callback(void(*)(const char*));
 
@@ -104,6 +96,10 @@ namespace resmack {
 namespace fuzz {
 namespace asan {
   static const int ASAN_EXIT_CODE = 199;
+
+  static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:allocator_may_return_null=1:debug=1:halt_on_error=1";
+  extern "C"
+  const char* __asan_default_options();
 
   using AsanCb = std::function<void(const char*)>;
   static AsanCb ASAN_CB = NULL;
@@ -115,4 +111,4 @@ namespace asan {
 }
 }
 
-//#endif
+#endif

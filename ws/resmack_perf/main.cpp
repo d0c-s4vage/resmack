@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
   uint64_t count = 0;
   float start = static_cast<float>(clock()) / (float)CLOCKS_PER_SEC;
 
-  uint32_t rule_idx = 0;
+  size_t rule_idx = 0;
   if (!rules.rule_man_.IndexOf("TestRule2", &rule_idx)) {
     return 0;
   }

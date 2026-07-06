@@ -96,20 +96,18 @@ namespace fuzz {
   bool Coverage::Sync() {
     bool was_new = false;
     {
-      std::scoped_lock lock(NEW_COV_MUTEX);
-      this->shared_cov_lock.Acquire();
-        if (IS_NEW) {
-          // copy our changes to the shared coverage flags
-          for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
-            this->shared_cov_flags[i] |= this->cov_flags[i];
-          }
-          // now pull in any coverage flags that were seen by
-          // others
-          memcpy(this->cov_flags, this->shared_cov_flags, sizeof(uint32_t) * NUM_COV_FLAGS);
+      std::scoped_lock lock(NEW_COV_MUTEX, this->shared_cov_lock);
+      if (IS_NEW) {
+        // copy our changes to the shared coverage flags
+        for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
+          this->shared_cov_flags[i] |= this->cov_flags[i];
         }
-        was_new = IS_NEW;
-        IS_NEW = false;
-      this->shared_cov_lock.Release();
+        // now pull in any coverage flags that were seen by
+        // others
+        memcpy(this->cov_flags, this->shared_cov_flags, sizeof(uint32_t) * NUM_COV_FLAGS);
+      }
+      was_new = IS_NEW;
+      IS_NEW = false;
     }
     return was_new;
   }

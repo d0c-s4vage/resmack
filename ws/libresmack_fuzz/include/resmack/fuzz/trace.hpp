@@ -18,8 +18,8 @@ namespace fuzz {
     pid_t pid;
     float timeout;
     Tracee* tracee;
-    bool should_monitor_tracee;
-    bool* should_run;
+    std::atomic<bool>* should_monitor_tracee;
+    std::atomic<bool>* should_run;
     bool timedout;
     uint32_t idx;
     Lock* timeout_lock;
@@ -63,7 +63,7 @@ namespace fuzz {
     Tracee tracee;
     TraceTarget* target;
     pid_t traced_pid;
-    bool should_run;
+    std::atomic<bool> should_run;
     float timeout;
     TraceExceptionCb exception_cb;
     TraceTimeoutCb timeout_cb;

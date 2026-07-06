@@ -96,22 +96,23 @@ namespace states {
   void MmapState::SyncStats(TargetStats* stats) {
     this->corpus.SyncCounters();
 
-    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Acquire();
-    if (sem_wait(this->state_lock) == -1) {
-      perror("SyncStats (sem_wait)");
-      std::exit(1);
-    }
+    {
+      std::scoped_lock __l(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK);
+      if (sem_wait(this->state_lock) == -1) {
+        perror("SyncStats (sem_wait)");
+        std::exit(1);
+      }
 
 #define STAT(NAME) \
-    this->metadata->stats.duration_##NAME += stats->duration_##NAME;
+      this->metadata->stats.duration_##NAME += stats->duration_##NAME;
 #include "resmack/fuzz/stats.def"
 #undef STAT
 
-    if (sem_post(this->state_lock) == -1) {
-      perror("SyncStats (sem_post)");
-      std::exit(1);
+      if (sem_post(this->state_lock) == -1) {
+        perror("SyncStats (sem_post)");
+        std::exit(1);
+      }
     }
-    resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.Release();
   }
 
   size_t MmapState::GetNumIterations() {
