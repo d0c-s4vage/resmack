@@ -1,9 +1,16 @@
 #ifndef RESMACK_DEBUG_H
 #define RESMACK_DEBUG_H
 
+#include <iostream>
+
 #cmakedefine DEBUG_MESSAGES @DEBUG_MESSAGES@
 
-#define _DEBUG_PRINT(...) printf(__VA_ARGS__); std::cout << std::flush;
+#define _DEBUG_PRINT(...) \
+  do { \
+    printf("[[DEBUG]] "); \
+    printf(__VA_ARGS__); \
+    std::cout << std::flush; \
+  } while(0);
 
 #if DEBUG_MESSAGES
 #define DEBUG_PRINT(...) _DEBUG_PRINT(__VA_ARGS__)

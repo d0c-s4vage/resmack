@@ -64,7 +64,7 @@ target_link_libraries(
 
 add_library("${LIBRESMACK_FUZZ_STATIC}" STATIC $<TARGET_OBJECTS:${LIBRESMACK_FUZZ_OBJ}>)
 set_target_properties(${LIBRESMACK_FUZZ_STATIC} PROPERTIES
-    OUTPUT_NAME "resmack_fuzz"
+    OUTPUT_NAME "resmack_fuzz-static"
 )
 target_link_libraries(
     "${LIBRESMACK_FUZZ_STATIC}"

@@ -24,13 +24,16 @@ namespace corpora {
   }
 
   MmapCorpus::~MmapCorpus() {
+    if (NULL != this->corpus_lock) {
+      delete this->corpus_lock;
+    }
   }
 
   void MmapCorpus::Init(
     const char* state_path,
     void* corpus_map,
     size_t max_corpus_size
-  ) {
+  )  {
     this->corpus_map = corpus_map;
     this->max_corpus_size = max_corpus_size;
     this->next_item_index = 0;
@@ -38,31 +41,13 @@ namespace corpora {
     this->next_item = NULL;
     this->last_item1_one_based_idx = 0;
     this->last_item2_one_based_idx = 0;
+    this->corpus_lock = new Lock(std::string(state_path) + "-corpus"); 
 
     this->meta = (ser::CorpusMetadata*)this->corpus_map;
 
-    const char* suffix = "-corpus";
-    size_t suffix_len = strlen(suffix);
-    size_t state_len = strlen(state_path);
-    char* with_sem = (char*)malloc(state_len + suffix_len + 1);
-    memcpy(with_sem, state_path, state_len);
-    // keep the null terminator
-    memcpy(with_sem + state_len, suffix, suffix_len + 1);
-
-    char sem_path[2 + (SHA_DIGEST_LENGTH * 2)]; // leading '/' + SHA_DIGEST_LENGTH + NULL
-    utils::sha1_hex(with_sem, strlen(with_sem), sem_path+1);
-    sem_path[0] = '/';
-
-    free(with_sem);
-
-    if ((this->corpus_lock = sem_open(sem_path, O_CREAT, 0660, 1)) == SEM_FAILED) {
-      perror("Could not create semaphore");
-      std::exit(1);
-    }
-
     // *ALWAYS* sync when in Init (don't use Sync())
-    WITH_LOCK(this->corpus_lock, Syncing corpus, {
-      this->SyncInner();
+    WITH_LOCK(*this->corpus_lock, Syncing corpus, {
+      this->Sync();
     });
   }
 
@@ -76,18 +61,14 @@ namespace corpora {
       return false;
     }
 
-    WITH_LOCK(this->corpus_lock, Maybe adding snapshot, {
-      DEBUG_PRINT("%d: SyncInner()\n", getpid());
+    WITH_LOCK(*this->corpus_lock, Maybe adding snapshot, {
       this->SyncInner();
-      DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
 
       if (this->SeenFeedback(stats.key)) {
-        DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
         res = false;
         break;
       }
 
-      DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
     });
 
@@ -99,7 +80,7 @@ namespace corpora {
     FeedbackStats stats,
     bool descendant_of_last
   ) {
-    WITH_LOCK(this->corpus_lock, Adding snapshot, {
+    WITH_LOCK(*this->corpus_lock, Adding snapshot, {
       this->SyncInner();
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
     });
@@ -179,7 +160,7 @@ namespace corpora {
       return;
     }
 
-    WITH_LOCK(this->corpus_lock, Syncing corpus, {
+    WITH_LOCK(*this->corpus_lock, Syncing corpus, {
       this->SyncInner();
     });
   }
@@ -263,7 +244,7 @@ namespace corpora {
       return;
     }
 
-    WITH_LOCK(this->corpus_lock, Syncing Counters, {
+    WITH_LOCK(*this->corpus_lock, Syncing Counters, {
       this->SyncCountersInner();
     });
     this->SortedsResort();
@@ -458,7 +439,7 @@ namespace corpora {
   }
 
   void MmapCorpus::IncLastItemCrashes() {
-    WITH_LOCK(this->corpus_lock, Incrementing Last Item Crashes, {
+    WITH_LOCK(*this->corpus_lock, Incrementing Last Item Crashes, {
       this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
       this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
 
@@ -473,7 +454,7 @@ namespace corpora {
     if (one_based_idx == 0) { return; }
 
     DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
-    WITH_LOCK(this->corpus_lock, Incrementing Unwanted Idx, {
+    WITH_LOCK(*this->corpus_lock, Incrementing Unwanted Idx, {
       DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
       ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
 

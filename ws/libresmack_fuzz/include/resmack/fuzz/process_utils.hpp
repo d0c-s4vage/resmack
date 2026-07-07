@@ -9,9 +9,11 @@ namespace process_utils {
     bool stopped;
     bool exited;
     bool signaled;
-    bool exit_status;
+    int exit_status;
     int stop_signal;
-    bool term_signal;
+    int term_signal;
+
+    int final_signal;
   };
 
   void LoadSignalInfo(int status, SignalInfo* out);

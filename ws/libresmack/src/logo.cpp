@@ -14,7 +14,7 @@ namespace resmack {
       "   ▒    ┗━━━┛└───╯│   │└───┤└───╯█  ╲ \n"
       "   ░              │   │              ╲\n"
       "\n"
-      "      by James 'd0c-s4vage' Johnson   \n";
+      "      by Jess 'd0c-s4vage' Johnson   \n";
     return banner;
   }
 

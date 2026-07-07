@@ -19,7 +19,7 @@ namespace fuzz {
    public:
     virtual void Start() = 0;
     virtual void Stop() = 0;
-    virtual void Sync() = 0;
+    virtual bool Sync() = 0;
     virtual std::string GetSummary() = 0;
     virtual FeedbackStats GetStats() = 0;
   };

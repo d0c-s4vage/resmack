@@ -21,15 +21,8 @@
 #include "resmack/fuzz/process_utils.hpp"
 
 
-#include "resmack/fuzz/asan_util.hpp"
-
-
 namespace resmack {
 namespace fuzz {
-  const char *__asan_default_options() {
-    return resmack::fuzz::asan::__asan_default_options();
-  }
-
   Tracer::Tracer(
     TraceTarget* target,
     TraceExceptionCb cb,
@@ -48,14 +41,12 @@ namespace fuzz {
   Tracer::~Tracer() {}
 
   void Tracer::Trace() {
-    DEBUG_PRINT("Tracer::Trace\n");
-    this->should_run = true;
+    this->should_run.store(true);
     pthread_create(&this->monitor_thread, NULL, &MonitorTracee, (void*)this);
   }
 
   void Tracer::Stop() {
-    DEBUG_PRINT("Tracer::Stop\n");
-    this->should_run = false;
+    this->should_run.store(false);
     pid_t pid = this->traced_pid;
     if (pid <= 0) {
       return;
@@ -63,19 +54,16 @@ namespace fuzz {
 
     ptrace(PTRACE_DETACH, pid, NULL, NULL);
 
-    this->timeout_lock.Acquire();
+    // WHY WHY WHY WHY???
+    // 
+    //this->timeout_lock.lock();
     pthread_join(this->monitor_timeout_thread, NULL);
-
-    kill(pid, SIGINT);
-    waitpid(pid, NULL, 0);
 
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
   }
 
   void Tracer::Join() {
-    DEBUG_PRINT("Tracer::Join\n");
-    DEBUG_PRINT("Tracer::Join - monitor_thread status: %i\n", pthread_kill(this->monitor_thread, 0));
     pthread_join(this->monitor_thread, NULL);
   }
 
@@ -91,24 +79,21 @@ namespace fuzz {
     timespec tmp;
     clock_gettime(CLOCK_MONOTONIC, &tmp);
     float pid_alive_start = tmp.tv_sec + 1e-9 * tmp.tv_nsec;
-
     float alive_max = 600.0f;
 
-    while (*args->should_run) {
-      args->timeout_lock->Acquire();
-        pid_t pid = args->pid;
-        //float sleep_ms = args->timeout * 1000.0f;
-        float sleep_ms = 10.0f;
-        float curr_iter_start = args->tracee->GetIterStart();
-        bool should_monitor = args->should_monitor_tracee;
-        bool timedout = args->timedout;
-        float timeout = args->timeout;
-      args->timeout_lock->Release();
-
+    pid_t pid;
+    float curr_iter_start;
+    while (args->should_run->load()) {
+      {
+        std::scoped_lock _lock(*args->timeout_lock);
+        pid = args->pid;
+        curr_iter_start = args->tracee->GetIterStart();
+      }
+      float sleep_ms = 1000.0f;
 
       if (pid == killed_pid) {
         ; // noop
-      } else if (pid > 0 && should_monitor && curr_iter_start != -1.0f) {
+      } else if (pid > 0 && args->should_monitor_tracee->load() && curr_iter_start != -1.0f) {
         if (last_pid != pid) {
           last_pid = pid;
           clock_gettime(CLOCK_MONOTONIC, &tmp);
@@ -122,12 +107,13 @@ namespace fuzz {
         float alive_span = end_f - pid_alive_start;
 
         // we may have already signaled that it has been timedout
-        if (!timedout && (iter_span > timeout || alive_span > alive_max)) {
-          args->timeout_lock->Acquire();
-          args->timedout = true;
-          args->timeout_lock->Release();
-          kill(pid, SIGINT);
-          killed_pid = pid;
+        if (!args->timedout && (iter_span > args->timeout || alive_span > alive_max)) {
+          {
+            std::scoped_lock _lock(*args->timeout_lock);
+            args->timedout = true;
+            kill(pid, SIGKILL);
+            killed_pid = pid;
+          }
         }
       }
 
@@ -139,64 +125,68 @@ namespace fuzz {
   }
 
   void* Tracer::MonitorTracee(void* this_arg) {
-    DEBUG_PRINT("MonitorTracee: start\n");
     Tracer* this_ = (Tracer*)this_arg;
 
     int status;
     process_utils::SignalInfo sig_info;
 
+    std::atomic<bool> should_monitor_tracee(false);
     MonitorTimeoutArgs timeout_args {
       .pid = -1,
       .timeout = this_->timeout,
       .tracee = &this_->tracee,
-      .should_monitor_tracee = true,
+      .should_monitor_tracee = &should_monitor_tracee,
       .should_run = &this_->should_run,
       .timedout = false,
       .idx = this_->idx,
       .timeout_lock = &this_->timeout_lock,
     };
 
-    DEBUG_PRINT("MonitorTracee: creating monitor timeout thread\n");
-    pthread_create(
-      &this_->monitor_timeout_thread,
-      NULL,
-      &MonitorTraceeTimeout,
-      (void*)&timeout_args
-    );
-
-    DEBUG_PRINT("MonitorTracee: Entering run loop\n");
-    while (this_->should_run) {
-      DEBUG_PRINT("MonitorTracee: Loop start\n");
+    DEBUG_PRINT("Monitoring tracee\n");
+    while (this_->should_run.load()) {
+      DEBUG_PRINT("Loop\n");
       this_->traced_pid = -1;
       this_->tracee.Reset();
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
       pid_t curr_pid = this_->traced_pid;
+      DEBUG_PRINT("curr_pid: %d\n", curr_pid);
 
-//       DEBUG_PRINT("MonitorTracee: Acquiring timeout lock\n");
-//       this_->timeout_lock.Acquire();
-//         pid_t curr_pid = this_->traced_pid;
-//         timeout_args.pid = this_->traced_pid;
-//         timeout_args.timedout = false;
-//         timeout_args.should_monitor_tracee = true;
-//       this_->timeout_lock.Release();
+      {
+        DEBUG_PRINT("Waiting for the timeout lock\n");
+        std::scoped_lock _l(this_->timeout_lock);
+        DEBUG_PRINT("Got the timeout lock\n");
+        timeout_args.pid = this_->traced_pid;
+        timeout_args.timedout = false;
+        should_monitor_tracee.store(true);
 
-      DEBUG_PRINT("MonitorTracee: waiting for the child\n");
-      if (waitpid(curr_pid, &status, 0) == -1) {
-        perror("Error waiting for child");
+        DEBUG_PRINT("Creating timeout thread\n");
+        pthread_create(
+          &this_->monitor_timeout_thread,
+          NULL,
+          &MonitorTraceeTimeout,
+          (void*)&timeout_args
+        );
+        DEBUG_PRINT("Done creating timeout thread\n");
       }
 
-      DEBUG_PRINT("MonitorTracee: Acquiring timeout lock again\n");
-      this_->timeout_lock.Acquire();
-        timeout_args.should_monitor_tracee = false;
-        bool timedout = timeout_args.timedout;
-      this_->timeout_lock.Release();
+      DEBUG_PRINT("Waiting for thread to stop\n");
+      if (waitpid(curr_pid, &status, 0) == -1) {
+        DEBUG_PRINT("Error waiting for spawned target\n");
+        throw std::runtime_error("Error waiting for child: " + std::string(std::strerror(errno)));
+      }
+      DEBUG_PRINT("Target stopped\n");
 
-      DEBUG_PRINT("MonitorTracee: Loading signal info\n");
+      bool timedout;
+      {
+        std::scoped_lock _l(this_->timeout_lock);
+        should_monitor_tracee.store(false);
+        timedout = timeout_args.timedout;
+      }
+
       process_utils::LoadSignalInfo(status, &sig_info);
 
       if (sig_info.stopped && sig_info.stop_signal == SIGWINCH) {
-        DEBUG_PRINT("MonitorTracee: PTRACE_CONT\n");
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGWINCH);
         continue;
       }
@@ -204,29 +194,28 @@ namespace fuzz {
       this_->last_crash.crashed = false;
       ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
 
-      bool should_continue;
+      bool should_continue = true;
       if (timedout) {
         // need to wait one more time since the first signal sent to the process
         // SIGINT is used to help the child proc cleanup before being completely
         // killed. Specifically used to make sure no semaphores are still held
         // before exiting
+        DEBUG_PRINT("SENDING SIGINT to the process\n");
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGINT);
         if (waitpid(curr_pid, &status, 0) == -1) {
+          DEBUG_PRINT("Waiting on the process again\n");
           perror("Error waiting for child");
         }
         should_continue = this_->timeout_cb(curr_pid, this_, &this_->tracee);
+      } else if (sig_info.exited && sig_info.exit_status == 0) {
+        DEBUG_PRINT("Nah, it didn't crash\n");
+        should_continue = true;
       } else {
+        DEBUG_PRINT("Definitely crashed\n");
         this_->last_crash.crashed = true;
-        if (sig_info.exited) {
-          this_->last_crash.exit_status = sig_info.exit_status;
-          this_->last_crash.signal = 0;
-        } else if (sig_info.stopped) {
-          this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = sig_info.stop_signal;
-        } else if (sig_info.signaled) {
-          this_->last_crash.exit_status = 0;
-          this_->last_crash.signal = sig_info.term_signal;
-        }
+
+        this_->last_crash.exit_status = sig_info.final_signal;
+        this_->last_crash.signal = sig_info.final_signal;
 
         if (asan_info != NULL) {
           this_->last_crash.major_stack.clear();

@@ -25,9 +25,9 @@
             }
         },
         {
-            "name": "debug-verbose",
+            "name": "debug.verbose",
             "inherits": "debug",
-            "binaryDir": "${sourceDir}/build/debug-verbose",
+            "binaryDir": "${sourceDir}/build/debug.verbose",
             "cacheVariables": {
                 "DEBUG_MESSAGES": "1"
             }
@@ -45,9 +45,9 @@
             }
         },
         {
-            "name": "release-syms",
+            "name": "release.syms",
             "inherits": "release",
-            "binaryDir": "${sourceDir}/build/release-syms",
+            "binaryDir": "${sourceDir}/build/release.syms",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
@@ -60,8 +60,18 @@
             "jobs": 0
         },
         {
-            "name": "debug-verbose",
-            "configurePreset": "debug-verbose",
+            "name": "debug.verbose",
+            "configurePreset": "debug.verbose",
+            "jobs": 0
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "jobs": 0
+        },
+        {
+            "name": "release.syms",
+            "configurePreset": "release.syms",
             "jobs": 0
         }
     ],
@@ -69,26 +79,91 @@
         {
             "name": "debug",
             "configurePreset": "debug",
-            "environment": {
-                "LD_LIBRARY_PATH": "${sourceDirName}"
-            },
             "output": {
               "outputOnFailure": true
             },
             "execution": {
-              "noTestsAction": "error",
-              "stopOnFailure": true
+              "noTestsAction": "error"
             }
         },
         {
-            "name": "debug-verbose",
+            "name": "debug.verbose",
             "inherits": "debug",
-            "configurePreset": "debug-verbose"
+            "configurePreset": "debug.verbose"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "output": {
+              "outputOnFailure": true
+            },
+            "execution": {
+              "noTestsAction": "error"
+            }
+        },
+        {
+            "name": "release.syms",
+            "inherits": "release",
+            "configurePreset": "release.syms"
         }
     ],
     "workflowPresets": [
         {
-            "name": "debug",
+            "name": "build.debug",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "debug"
+                },
+                {
+                    "type": "build",
+                    "name": "debug"
+                }
+            ]
+        },
+        {
+            "name": "build.debug.verbose",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "debug.verbose"
+                },
+                {
+                    "type": "build",
+                    "name": "debug.verbose"
+                }
+            ]
+        },
+        {
+            "name": "build.release",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                }
+            ]
+        },
+        {
+            "name": "build.release.syms",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release.syms"
+                },
+                {
+                    "type": "build",
+                    "name": "release.syms"
+                }
+            ]
+        },
+
+
+        {
+            "name": "full.debug",
             "steps": [
                 {
                     "type": "configure",
@@ -105,19 +180,53 @@
             ]
         },
         {
-            "name": "debug-verbose",
+            "name": "full.debug.verbose",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "debug-verbose"
+                    "name": "debug.verbose"
                 },
                 {
                     "type": "build",
-                    "name": "debug-verbose"
+                    "name": "debug.verbose"
                 },
                 {
                     "type": "test",
-                    "name": "debug-verbose"
+                    "name": "debug.verbose"
+                }
+            ]
+        },
+        {
+            "name": "full.release",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                },
+                {
+                    "type": "test",
+                    "name": "release"
+                }
+            ]
+        },
+        {
+            "name": "full.release.syms",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release.syms"
+                },
+                {
+                    "type": "build",
+                    "name": "release.syms"
+                },
+                {
+                    "type": "test",
+                    "name": "release.syms"
                 }
             ]
         }

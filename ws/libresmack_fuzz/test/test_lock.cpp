@@ -23,13 +23,13 @@ namespace fuzz {
     uint32_t* counter = (uint32_t*)shared;
 
     Lock lock("test-lock");
-    lock.Acquire();
+    lock.lock();
 
     pid_t forked;
     if ((forked = fork()) == 0) {
-      lock.Acquire();
+      lock.lock();
       *counter += 1;
-      lock.Release();
+      lock.unlock();
       std::exit(0);
     }
 
@@ -37,7 +37,7 @@ namespace fuzz {
     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
     // the increment shouldn't be happening until after the release
     *counter = 1;
-    lock.Release();
+    lock.unlock();
 
     waitpid(forked, NULL, 0);
     EXPECT_EQ(*counter, 2);

@@ -88,7 +88,7 @@ namespace resmack {
     double mean = ((double)max_val + (double)min_val) / 2.0;
     double standard_dev = double(max_val - min_val) / 8.0;
 
-    float tmp;
+    double tmp;
     if (this->use_last_gaussian) {
       tmp = this->last_gaussian;
       this->use_last_gaussian = !this->use_last_gaussian;
@@ -112,7 +112,7 @@ namespace resmack {
     if (res < min_val || res > max_val) {
       return this->NextInRangeGaussian(min_val, max_val);
     }
-    return res;
+    return static_cast<uint32_t>(res);
   }
 
   void Rand::SnapshotState(
@@ -143,10 +143,10 @@ namespace resmack {
     std::mt19937 gen;
     gen.seed(seed);
 
-    s_[0] = gen();
-    s_[1] = gen();
-    s_[2] = gen();
-    s_[3] = gen();
+    s_[0] = static_cast<uint32_t>(gen());
+    s_[1] = static_cast<uint32_t>(gen());
+    s_[2] = static_cast<uint32_t>(gen());
+    s_[3] = static_cast<uint32_t>(gen());
   }
 
   void Rand::SetState(const uint32_t state[]) {

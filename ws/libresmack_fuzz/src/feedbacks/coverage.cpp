@@ -3,6 +3,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <semaphore.h>
+#include <mutex>
+#include <thread>
 #include <sys/mman.h>
 
 #include "resmack/fuzz/feedbacks/coverage.hpp"
@@ -10,13 +12,6 @@
 
 namespace resmack {
 namespace fuzz {
-
-  static size_t GUARD_COUNTER = 0;
-  static uint32_t* COV_FLAGS = NULL;
-  static uint32_t* SHARED_COV_FLAGS = NULL;
-  static size_t NUM_COV_FLAGS;
-  static bool IS_NEW = false;
-
   void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
     if (start == stop || *start) return;  // Initialize only once.
     for (uint32_t *x = start; x < stop; x++) {
@@ -28,31 +23,45 @@ namespace fuzz {
     }
   }
 
+  /*
+  void _sanitizer_print_guard_source(uint32_t* guard) {
+       void *pc = __builtin_return_address(0);
+       char pc_desc[1024];
+       __sanitizer_symbolize_pc(pc, "%p %F %L", pc_desc, sizeof(pc_desc));
+       printf("guard: %p %x PC %s\n", guard, *guard, pc_desc);
+  }
+  */
+
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
-    if (COV_FLAGS == NULL) { return; }
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      uint32_t* flags;
+      if (NULL == COV_FLAGS || NULL == (flags = *COV_FLAGS)) {
+        return;
+      }
 
-    size_t uint_no = (*guard - 1) / 32;
-    size_t bit_no = (*guard - 1) % 32;
-    size_t bit = (1 << bit_no);
+      size_t uint_no = (*guard - 1) / 32;
+      size_t bit_no = (*guard - 1) % 32;
+      size_t bit = (1 << bit_no);
 
-    if (COV_FLAGS[uint_no] & bit) { return; }
-    COV_FLAGS[uint_no] |= bit;
+      // we've seen this edge before
+      if (flags[uint_no] & bit) {
+        return;
+      }
 
-    IS_NEW = true;
+      flags[uint_no] |= bit;
+    }
   }
 
-  size_t _NumBits(uint32_t val) {
-     val = val - ((val >> 1) & 0x55555555);
-     val = (val & 0x33333333) + ((val >> 2) & 0x33333333);
-     return (((val + (val >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-  }
+
 
   // --------------------------------------------------------------------------
 
-  Coverage::Coverage() : cov_lock("coverage-lock") {
+  Coverage::Coverage() : shared_cov_lock("coverage-lock") {
+    size_t num_flags_to_alloc = NUM_COV_FLAGS ? NUM_COV_FLAGS : 1; 
     this->shared = mmap(
       NULL,
-      NUM_COV_FLAGS * sizeof(uint32_t),
+      num_flags_to_alloc * sizeof(uint32_t),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
@@ -60,40 +69,58 @@ namespace fuzz {
     );
 
     if (this->shared == MAP_FAILED) {
-      DEBUG_PRINT("Could not create coverage mmap: NUM_COV_FLAGS: %zu", NUM_COV_FLAGS);
-      perror("Could not create coverage mmap");
-      std::exit(1);
+      throw std::runtime_error("Could not create coverage mmap: " + std::string(std::strerror(errno)));
     }
 
-    SHARED_COV_FLAGS = (uint32_t*)this->shared;
-    COV_FLAGS = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(SHARED_COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
-    memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    this->cov_flags = (uint32_t*)malloc(sizeof(uint32_t) * NUM_COV_FLAGS);
+    memset(this->cov_flags, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    COV_FLAGS = &this->cov_flags;
+
+    this->shared_cov_flags = (uint32_t*)this->shared;
+    memset(this->shared_cov_flags, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
   }
 
   Coverage::~Coverage() {
     munmap(this->shared, NUM_COV_FLAGS * sizeof(uint32_t));
-    free(COV_FLAGS);
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      free(this->cov_flags);
+      this->cov_flags = NULL;
+      COV_FLAGS = NULL;
+    }
   }
 
   std::string Coverage::GetSummary() {
-    size_t total_bits = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      total_bits += _NumBits(COV_FLAGS[idx]);
+    if (this->cov_flags != NULL) {
+      size_t total_bits = 0;
+      for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+        total_bits += std::popcount(this->cov_flags[idx]);
+      }
+      return std::to_string(total_bits) + " edges";
     }
 
-    return std::to_string(total_bits) + " edges";
+    return "? edges";
   }
 
   void Coverage::Start() {
-    IS_NEW = false;
-    //memset(COV_FLAGS, 0, sizeof(uint32_t) * NUM_COV_FLAGS);
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      COV_FLAGS = &this->cov_flags;
+    }
   }
 
   void Coverage::Stop() {
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      COV_FLAGS = NULL;
+      this->CalcHash();
+    }
+  }
+
+  void Coverage::CalcHash() {
     this->hash = 0;
     for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      uint32_t x = COV_FLAGS[idx];
+      uint32_t x = this->cov_flags[idx];
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = ((x >> 16) ^ x) * 0x45d9f3b;
       x = (x >> 16) ^ x;
@@ -105,27 +132,37 @@ namespace fuzz {
     }
   }
 
-  void Coverage::Sync() {
-    this->cov_lock.Acquire();
-    for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
-      SHARED_COV_FLAGS[i] |= COV_FLAGS[i];
+  bool Coverage::Sync() {
+    bool was_new = false;
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX, this->shared_cov_lock);
+      // copy our changes to the shared coverage flags
+      for (size_t i = 0; i < NUM_COV_FLAGS; i++) {
+        if (std::popcount(~this->shared_cov_flags[i] & this->cov_flags[i]) > 0) {
+          was_new = true;
+        }
+        this->shared_cov_flags[i] |= this->cov_flags[i];
+      }
+      // now pull in any coverage flags that were seen by
+      // others
+      memcpy(this->cov_flags, this->shared_cov_flags, sizeof(uint32_t) * NUM_COV_FLAGS);
     }
-    memcpy(COV_FLAGS, SHARED_COV_FLAGS, sizeof(uint32_t) * NUM_COV_FLAGS);
-    this->cov_lock.Release();
+    return was_new;
   }
 
   FeedbackStats Coverage::GetStats() {
     size_t num_bits = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      num_bits += _NumBits(COV_FLAGS[idx]);
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX, this->shared_cov_lock);
+      for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+        num_bits += std::popcount(this->cov_flags[idx]);
+      }
     }
 
-    if (IS_NEW) {
-      this->Sync();
-    }
+    bool had_new = this->Sync();
 
     return {
-      .new_coverage = IS_NEW,
+      .new_coverage = had_new,
       .key = this->hash,
       .num = num_bits,
     };

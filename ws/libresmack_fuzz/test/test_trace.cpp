@@ -13,11 +13,12 @@ namespace resmack {
 namespace fuzz {
 
   TEST(Trace, CatchesCrashes) {
-    trace_targets::Fork fork_target(true, [](Tracee* tracee) {
-      DEBUG_PRINT("CatchesCrashes: in crashing code\n");
+    bool mute_target = false;
+    trace_targets::Fork fork_target(mute_target, [](Tracee* tracee) {
       tracee->SaveLastCorpusInfo(true, 1337, 1338, 1339);
-      raise(SIGSEGV);
-      //((void(*)())(0))();
+
+      //raise(SIGSEGV);
+      ((void(*)())(0))();
     });
 
     Tracer t(
@@ -32,8 +33,9 @@ namespace fuzz {
     t.Trace();
     t.Join();
 
-    EXPECT_EQ(t.GetCrashInfo()->crashed, true);
-    EXPECT_EQ(t.GetCrashInfo()->exit_status, 1);
+    const CrashInfo* info = t.GetCrashInfo();
+    EXPECT_EQ(info->crashed, true);
+    EXPECT_EQ(info->exit_status, 199);
   }
 
 }

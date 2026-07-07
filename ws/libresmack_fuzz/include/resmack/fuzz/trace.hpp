@@ -6,23 +6,19 @@
 #include <pthread.h>
 #include <sys/ptrace.h>
 
-#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_target.hpp"
 
 namespace resmack {
 namespace fuzz {
-  extern "C"
-  ATTRIBUTE_NO_SANITIZING
-  const char *__asan_default_options();
 
   struct MonitorTimeoutArgs {
     pid_t pid;
     float timeout;
     Tracee* tracee;
-    bool should_monitor_tracee;
-    bool* should_run;
+    std::atomic<bool>* should_monitor_tracee;
+    std::atomic<bool>* should_run;
     bool timedout;
     uint32_t idx;
     Lock* timeout_lock;
@@ -66,7 +62,7 @@ namespace fuzz {
     Tracee tracee;
     TraceTarget* target;
     pid_t traced_pid;
-    bool should_run;
+    std::atomic<bool> should_run;
     float timeout;
     TraceExceptionCb exception_cb;
     TraceTimeoutCb timeout_cb;
@@ -87,21 +83,11 @@ namespace fuzz {
 
     uint32_t GetIdx() { return this->idx; }
 
-    ATTRIBUTE_NO_SANITIZING
     void Trace();
-
-    ATTRIBUTE_NO_SANITIZING
     void Stop();
-
-    ATTRIBUTE_NO_SANITIZING
     void Join();
-
-    CrashInfo* GetCrashInfo() { return &this->last_crash; }
-   
-    ATTRIBUTE_NO_SANITIZING
+    const CrashInfo* GetCrashInfo() { return &this->last_crash; }
     static void* MonitorTracee(void* this_arg);
-
-    ATTRIBUTE_NO_SANITIZING
     static void* MonitorTraceeTimeout(void* this_arg);
    
    private:

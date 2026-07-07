@@ -2,14 +2,15 @@
 
 #include "gtest/gtest.h"
 
+#include "resmack/debug.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
 namespace resmack {
 namespace fuzz {
 
-  ATTRIBUTE_NO_SANITIZING
-  TEST(Fuzz, CoverageHitTwice) {
+  __attribute__((no_sanitize("coverage")))
+  void _TestCoverageHitsTwice() {
     uint32_t vars[3] = {0, 0, 0};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
@@ -21,16 +22,27 @@ namespace fuzz {
 
     cov.Stop();
 
-    EXPECT_NE(cov.GetStats().key, 0u);
+    FeedbackStats stats = cov.GetStats();
+    EXPECT_EQ(stats.new_coverage, true);
+    EXPECT_EQ(stats.num, 2);
+    EXPECT_NE(stats.key, 1);
   }
 
-  ATTRIBUTE_NO_SANITIZING
-  TEST(Fuzz, CoverageNotHit) {
+  TEST(Fuzz, CoverageHitTwice) {
+    _TestCoverageHitsTwice();
+  }
+
+  __attribute__((no_sanitize("coverage")))
+  void _TestCoverageNotHit() {
     Coverage cov;
     cov.Start();
     cov.Stop();
 
-    EXPECT_EQ(cov.GetStats().key, 0u);
+    EXPECT_EQ(cov.GetStats().new_coverage, false);
+  }
+
+  TEST(Fuzz, CoverageNotHit) {
+    _TestCoverageNotHit();
   }
 
 }

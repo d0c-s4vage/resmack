@@ -13,14 +13,20 @@ foreach(TEST_FILE IN LISTS TEST_SOURCES)
   )
 
   target_link_libraries("${CURR_TEST_NAME}"
+    # the release libraries aren't built with asan, so we need
+    # to explicitly add it for the tests
+    $<$<CONFIG:Release>:asan>
+    $<$<CONFIG:RelWithDebInfo>:asan>
     GTest::gtest_main
-    ${LIBRESMACK_FUZZ_SHARED}
+    ${LIBRESMACK_FUZZ_STATIC}
   )
   target_compile_options(
     "${CURR_TEST_NAME}"
       PRIVATE
-        -fno-omit-frame-pointer
-        # -fsanitize-coverage=trace-pc-guard
+        -O0
+        -g
+        SHELL:${ASAN_FLAGS}
+        SHELL:${COVERAGE_FLAGS}
   )
 
   gtest_discover_tests(

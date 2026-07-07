@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
   output.reserve(0x1000);
   uint64_t total_bytes = 0;
   uint64_t count = 0;
-  float start = clock() / (float)CLOCKS_PER_SEC;
+  float start = static_cast<float>(clock()) / (float)CLOCKS_PER_SEC;
 
   size_t rule_idx = 0;
   if (!rules.rule_man_.IndexOf("TestRule2", &rule_idx)) {
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
     total_bytes += output.size();
 
     if (count % 0x40000 == 0) {
-      float curr = clock() / (float)CLOCKS_PER_SEC;
+      float curr = static_cast<float>(clock()) / (float)CLOCKS_PER_SEC;
       float totalMibs = (float)total_bytes / (1024.0f * 1024.0f);
       printf("%08lx | %0.2f iters/s | %0.2f MiB/s\n",
              count,
