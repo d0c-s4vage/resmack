@@ -62,17 +62,13 @@ namespace corpora {
     }
 
     WITH_LOCK(*this->corpus_lock, Maybe adding snapshot, {
-      DEBUG_PRINT("%d: SyncInner()\n", getpid());
       this->SyncInner();
-      DEBUG_PRINT("%d: Done SyncInner()\n", getpid());
 
       if (this->SeenFeedback(stats.key)) {
-        DEBUG_PRINT("%d: Already saw this feedback\n", getpid());
         res = false;
         break;
       }
 
-      DEBUG_PRINT("%d: AddRandSnapshotInner()\n", getpid());
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
     });
 

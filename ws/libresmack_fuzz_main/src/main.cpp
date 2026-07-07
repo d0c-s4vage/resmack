@@ -483,18 +483,18 @@ void FuzzLoop(
       tracee->IterStart();
     }
 
-    uint64_t num_crashes = state->GetNumCrashes();
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
     });
-    if (state->GetNumCrashes() > num_crashes) {
-      printf("NEW CRASH WITH: %s\n", output.c_str());
-    }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
     });
+
     resmack::fuzz::FeedbackStats feedback_stats = feedback->GetStats();
+    if (feedback_stats.new_coverage) {
+      std::cout << "NEW COVERAGE: " << output << std::endl;
+    }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
       if (stats.valid && feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {

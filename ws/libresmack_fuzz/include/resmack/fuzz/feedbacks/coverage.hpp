@@ -33,14 +33,22 @@ namespace fuzz {
     uint32_t *cov_flags;
     uint32_t *shared_cov_flags;
 
+    void CalcHash();
+
    public:
+    ATTRIBUTE_NO_SANITIZING
     Coverage();
+    ATTRIBUTE_NO_SANITIZING
     ~Coverage();
 
     std::string GetSummary();
+    ATTRIBUTE_NO_SANITIZING
     void Start();
+    ATTRIBUTE_NO_SANITIZING
     void Stop();
+    ATTRIBUTE_NO_SANITIZING
     bool Sync();
+    ATTRIBUTE_NO_SANITIZING
     FeedbackStats GetStats();
   };
 

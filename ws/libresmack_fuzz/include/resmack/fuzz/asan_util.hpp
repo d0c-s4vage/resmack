@@ -95,7 +95,9 @@ namespace fuzz {
 namespace asan {
 
   static const int ASAN_EXIT_CODE = 199;
-  static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:allocator_may_return_null=1:debug=1:halt_on_error=1";
+  static const char *ASAN_DEFAULT_OPTIONS = "log_path=/dev/null:exitcode=199:detect_leaks=0:allocator_may_return_null=1:debug=1:halt_on_error=1";
+  // symbolize=0
+  // log_path=/dev/null
   //static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:halt_on_error=1";
 
   using AsanCb = std::function<void(const char*)>;

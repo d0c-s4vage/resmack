@@ -22,7 +22,10 @@ namespace fuzz {
 
     cov.Stop();
 
-    EXPECT_NE(cov.GetStats().key, 0);
+    FeedbackStats stats = cov.GetStats();
+    EXPECT_EQ(stats.new_coverage, true);
+    EXPECT_EQ(stats.num, 2);
+    EXPECT_NE(stats.key, 1);
   }
 
   TEST(Fuzz, CoverageHitTwice) {

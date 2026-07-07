@@ -93,16 +93,25 @@ bool parseSentence(const uint8_t* data, size_t size) {
   }
 
   size_t start_idx = curr_idx;
-  if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "pears") {
+  if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "peaches") {
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
+    std::cout << "HELLO CLAIRE!!!" << std::endl;
     ((void(*)())(0))();
     //raise(SIGSEGV);
   }
+  /*
   curr_idx = start_idx;
   if (parts[curr_idx++] == "or" && parts[curr_idx++] == "we" && parts[curr_idx++] == "mock" && parts[curr_idx++] == "apples") {
     char* test = (char*)malloc(0x10);
     char to_copy[] = "HELLO THIS IS LONGER THAN 16 BYTES I THINK YOYOYOYOYOY\n";
     memcpy(test, to_copy, sizeof(to_copy));
   }
+  */
 
   return false;
 }
