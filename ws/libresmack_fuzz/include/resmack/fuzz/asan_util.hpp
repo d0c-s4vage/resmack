@@ -84,26 +84,24 @@
 # define ATTRIBUTE_NO_SANITIZE_THREAD
 #endif  // __clang__
 
-#define INIT_ASAN_OPTS \
-  extern "C" { \
-  };
+extern "C" {
+  __attribute__((weak, visibility("default")))
+  void __asan_set_error_report_callback(void(*)(const char*));
 
-extern "C"
-__attribute__((weak, visibility("default")))
-void __asan_set_error_report_callback(void(*)(const char*));
+}
 
 namespace resmack {
 namespace fuzz {
 namespace asan {
-  static const int ASAN_EXIT_CODE = 199;
 
+  static const int ASAN_EXIT_CODE = 199;
   static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:allocator_may_return_null=1:debug=1:halt_on_error=1";
-  extern "C"
-  const char* __asan_default_options();
+  //static const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:halt_on_error=1";
 
   using AsanCb = std::function<void(const char*)>;
   static AsanCb ASAN_CB = NULL;
 
+  void InitAsanOptions();
   void HandleAsan(const char* report);
   void SetAsanCallback(AsanCb cb);
 

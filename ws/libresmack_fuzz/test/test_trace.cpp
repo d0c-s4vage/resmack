@@ -5,7 +5,6 @@
 #include "gtest/gtest.h"
 
 #include "resmack/debug.hpp"
-#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/trace.hpp"
 #include "resmack/fuzz/tracee.hpp"
@@ -36,7 +35,7 @@ namespace fuzz {
 
     const CrashInfo* info = t.GetCrashInfo();
     EXPECT_EQ(info->crashed, true);
-    EXPECT_EQ(info->exit_status, resmack::fuzz::asan::ASAN_EXIT_CODE);
+    EXPECT_EQ(info->exit_status, 199);
   }
 
 }

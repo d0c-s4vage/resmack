@@ -1,14 +1,17 @@
 #ifndef RESMACK_FUZZ_IPC_UTIL_H
 #define RESMACK_FUZZ_IPC_UTIL_H
 
+#include <atomic>
 #include <unistd.h>
 #include <mutex>
 
+#include "resmack/debug.hpp"
 #include "resmack/fuzz/lock.hpp"
 
 namespace resmack {
   namespace fuzz {
     namespace ipc_util {
+      static std::atomic<bool> SHUTTING_DOWN(false);
       static Lock SIGNAL_HANDLER_LOCK;
     }
   }
@@ -16,7 +19,7 @@ namespace resmack {
 
 #define _WITH_LOCK(LOCK, MSG, STATEMENTS) { \
   { \
-    std::scoped_lock __l(resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK); \
+    std::scoped_lock __l(LOCK); \
     while (1) { \
       STATEMENTS \
       break; \

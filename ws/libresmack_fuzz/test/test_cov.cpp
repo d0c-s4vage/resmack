@@ -3,14 +3,12 @@
 #include "gtest/gtest.h"
 
 #include "resmack/debug.hpp"
-#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
 namespace resmack {
 namespace fuzz {
 
-  ATTRIBUTE_NO_SANITIZING
   __attribute__((no_sanitize("coverage")))
   void _TestCoverageHitsTwice() {
     uint32_t vars[3] = {0, 0, 0};
@@ -24,14 +22,14 @@ namespace fuzz {
 
     cov.Stop();
 
-    EXPECT_EQ(cov.GetStats().key, 0);
+    EXPECT_NE(cov.GetStats().key, 0);
   }
 
   TEST(Fuzz, CoverageHitTwice) {
     _TestCoverageHitsTwice();
   }
 
-  ATTRIBUTE_NO_SANITIZING
+  __attribute__((no_sanitize("coverage")))
   void _TestCoverageNotHit() {
     Coverage cov;
     cov.Start();

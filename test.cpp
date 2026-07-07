@@ -88,7 +88,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
   if (curr_idx >= parts.size() || !parseFruitList(&parts, &curr_idx)) {
     return false;
   }
-
   if (parts.size() - curr_idx != 4) {
     return false;
   }

@@ -7,6 +7,7 @@
 
 #include "resmack/types.hpp"
 #include "resmack/fuzz/corpus.hpp"
+#include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/serialized.hpp"
 
@@ -34,7 +35,7 @@ namespace corpora {
     size_t max_corpus_size;
     uint32_t strats;
     Vector<size_t(*)(MmapCorpus*, Rand*, size_t)> strat_handlers;
-    sem_t* corpus_lock;
+    Lock *corpus_lock = NULL;
     Set<size_t> seen_keys;
     Vector<CorpusEntry> snapshots;
     Vector<size_t> most_direct_descendants_desc;

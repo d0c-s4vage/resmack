@@ -2,14 +2,15 @@
 #define RESMACK_DEBUG_H
 
 #include <iostream>
-#include <source_location>
 
 #cmakedefine DEBUG_MESSAGES @DEBUG_MESSAGES@
 
 #define _DEBUG_PRINT(...) \
-  printf("[[DEBUG]] [%s] ", std::source_location::current().function_name()); \
-  printf(__VA_ARGS__); \
-  std::cout << std::flush;
+  do { \
+    printf("[[DEBUG]] "); \
+    printf(__VA_ARGS__); \
+    std::cout << std::flush; \
+  } while(0);
 
 #if DEBUG_MESSAGES
 #define DEBUG_PRINT(...) _DEBUG_PRINT(__VA_ARGS__)

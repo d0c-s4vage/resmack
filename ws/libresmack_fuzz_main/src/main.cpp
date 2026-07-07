@@ -35,21 +35,11 @@
 #include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/sanitizer_init.hpp"
 
-static bool SHUTTING_DOWN = false;
+#include "resmack/fuzz/asan_util.hpp"
 
-extern "C" {
-  int __lsan_is_turned_off() { return 1; }
-
-  void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var) {
-    if (SHUTTING_DOWN) { return; }
-    resmack::fuzz::HandleSanitizerCovTracePcGuard(guard_var);
-  }
-
-  void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* end) {
-    resmack::fuzz::HandleSanitizerCovTracePcGuardInit(start, end);
-  }
-};
+INIT_SANITIZER_GUARDS;
 
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
@@ -105,8 +95,8 @@ static FuzzOptions OPTS {
 void sigint_handler([[maybe_unused]] int signum) {
   if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
 
-  SHUTTING_DOWN = true;
-
+  DEBUG_PRINT("SIGINT handler from main process\n");
+  resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Stop();
   }
@@ -299,9 +289,7 @@ void PrintStatus(
   bool show_stats = args->show_stats;
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
-  printf("%d:%zu: Syncing feedback\n", getpid(), pthread_self());
   args->feedback->Sync();
-  printf("%d:%zu: Done syncing feedback\n", getpid(), pthread_self());
   /*
   corpus->Sync();
   */
@@ -423,6 +411,7 @@ void FuzzLoop(
   resmack::fuzz::TargetStats stats(OPTS.stats_interval);
   resmack::BuildContext ctx(&output, &build_rand, OPTS.max_depth);
 
+  // prevent a thundering herd
   std::this_thread::sleep_for(std::chrono::milliseconds(meta_rand.Next() & 0xfff));
 
   resmack::Vector<resmack::RandSnapshot> mutated_replay;
@@ -494,9 +483,13 @@ void FuzzLoop(
       tracee->IterStart();
     }
 
+    uint64_t num_crashes = state->GetNumCrashes();
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
     });
+    if (state->GetNumCrashes() > num_crashes) {
+      printf("NEW CRASH WITH: %s\n", output.c_str());
+    }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET_RESET, {
       target.Reset();
@@ -520,7 +513,7 @@ bool HandleTimeout(
   [[maybe_unused]] resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
-  if (SHUTTING_DOWN) {
+  if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
     return false;
   }
 
@@ -554,18 +547,18 @@ bool HandleException(
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
-  if (SHUTTING_DOWN) {
+  if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
     return false;
   }
 
   state->IncNumIterations(1);
-  DEBUG_PRINT("%d: [[Handling timeout, getting corpus\n", pid);
+  DEBUG_PRINT("%d: [[Handling exception, getting corpus\n", pid);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  DEBUG_PRINT("%d: [[Handling timeout, syncing corpus\n", pid);
+  DEBUG_PRINT("%d: [[Handling exception, syncing corpus\n", pid);
   corpus->Sync();
-  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
+  DEBUG_PRINT("%d: [[Handling exception, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
-  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
+  DEBUG_PRINT("%d: [[Handling exception, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
 
   std::string output;
@@ -589,7 +582,7 @@ bool HandleException(
   out_path += info->minor_hash;
 
   state->IncNumCrashesIfTrue([out_path, output, tracee, info]() -> bool {
-    if (SHUTTING_DOWN) {
+    if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
       return false;
     }
     if (!std::filesystem::exists(out_path)) {
@@ -628,7 +621,7 @@ bool HandleException(
   if (OPTS.max_crashes != 0 && state->GetNumCrashes() >= OPTS.max_crashes) {
     // this only applies to *THIS* forked process - we need to stop
     // capturing coverage data
-    SHUTTING_DOWN = true;
+    resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
     return false;
   }
   return true;
@@ -668,6 +661,10 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
   std::cout << std::endl;
 
   std::cout << "Wrote " << i << " corpus entries to " << OPTS.dump_corpus_path << std::endl;
+}
+
+const char* __asan_default_options() {
+  return resmack::fuzz::asan::ASAN_DEFAULT_OPTIONS;
 }
 
 __attribute__((visibility("default")))
@@ -729,7 +726,7 @@ int main(int argc, char** argv) {
       }
 
       FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, tracee);
-      SHUTTING_DOWN = true;
+      resmack::fuzz::ipc_util::SHUTTING_DOWN = true;
     }
   );
 
@@ -765,17 +762,14 @@ int main(int argc, char** argv) {
   STATUS_ARGS.feedback = &cov;
 
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
-  //signal(SIGINT, sigint_handler);
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
   }
 
-  SHUTTING_DOWN = true;
+  DEBUG_PRINT("KILLING THINGS NOW\n");
 
-  // WHY?????
-  //resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.lock();
-  //
+  resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
   STATUS_ARGS.should_run = false;
   pthread_kill(STATUS_THREAD, SIGKILL);
 }

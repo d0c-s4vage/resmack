@@ -1,4 +1,6 @@
+#include <limits.h>
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <iostream>
 #include <unistd.h>
@@ -7,6 +9,7 @@
 #include <vector>
 
 #include "resmack/logo.hpp"
+#include "resmack/debug.hpp"
 
 namespace resmack {
 namespace cli {
@@ -78,6 +81,12 @@ namespace compile {
   }
   */
 
+  std::string GetExePath() {
+    char result[ PATH_MAX ];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    return std::string(result, (count > 0) ? count : 0);
+  }
+
   int Run(int argc, char** argv) {
     CompileOpts opts {
       .help = false,
@@ -94,15 +103,21 @@ namespace compile {
       "clang++",
       "-fno-omit-frame-pointer",
       "-Iws/libresmack/include",
+      "-Wl,--whole-archive",
+      "-lresmack_fuzz_main-static", // static lib
+      "-Wl,--no-whole-archive",
+      "-lresmack_fuzz",
+      "-lresmack",
       "-lpthread",
       "-lcrypto",
       "-lunwind",
       "-lunwind-ptrace",
       "-lunwind-generic",
-      "-lresmack_fuzz_main", // static lib
-      "-lresmack_fuzz",
-      "-lresmack",
     });
+
+    std::string parent_path = std::filesystem::path(GetExePath()).parent_path();
+    options.emplace_back("-L");
+    options.emplace_back(parent_path.c_str());
 
     if (opts.use_asan) {
       options.emplace_back("-O0");
@@ -113,16 +128,19 @@ namespace compile {
       options.emplace_back("-march=native");
     }
     options.emplace_back("-fsanitize-coverage=trace-pc-guard");
-    options.emplace_back("-mllvm");
-    options.emplace_back("-sanitizer-coverage-gated-trace-callbacks");
 
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);
     }
     // these go last and are ordered!
-    // options.emplace_back("build/release/ws/libresmack_fuzz_main/libresmack_fuzz_main.a");
-    // options.emplace_back("build/release/ws/libresmack_fuzz/libresmack_fuzz.a");
-    // options.emplace_back("build/release/ws/libresmack/libresmack.a");
+    //
+
+    //options.emplace_back("build/release.syms/libresmack_fuzz_main.a");
+    //options.emplace_back("build/release.syms/libresmack_fuzz.a");
+    //options.emplace_back("build/release.syms/libresmack.a");
+
+    //options.emplace_back("-mllvm");
+    //options.emplace_back("-sanitizer-coverage-gated-trace-callbacks");
     options.emplace_back((const char*)NULL);
 
     std::cout << "Executing: " << std::endl << std::endl;

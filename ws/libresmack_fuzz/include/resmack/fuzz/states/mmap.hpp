@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <bits/stdint-uintn.h>
 
+#include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/target.hpp"
 #include "resmack/fuzz/state.hpp"
@@ -40,7 +41,7 @@ class MmapState : public State {
   FILE* state_file;
   size_t state_max_size;
 
-  sem_t* state_lock;
+  Lock state_lock;
 
   void* state_map;
   StateMetadata* metadata;

@@ -6,7 +6,6 @@
 #include <pthread.h>
 #include <sys/ptrace.h>
 
-#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/trace_target.hpp"
@@ -84,21 +83,11 @@ namespace fuzz {
 
     uint32_t GetIdx() { return this->idx; }
 
-    ATTRIBUTE_NO_SANITIZING
     void Trace();
-
-    ATTRIBUTE_NO_SANITIZING
     void Stop();
-
-    ATTRIBUTE_NO_SANITIZING
     void Join();
-
     const CrashInfo* GetCrashInfo() { return &this->last_crash; }
-   
-    ATTRIBUTE_NO_SANITIZING
     static void* MonitorTracee(void* this_arg);
-
-    ATTRIBUTE_NO_SANITIZING
     static void* MonitorTraceeTimeout(void* this_arg);
    
    private:

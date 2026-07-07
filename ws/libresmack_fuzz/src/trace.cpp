@@ -21,9 +21,6 @@
 #include "resmack/fuzz/process_utils.hpp"
 
 
-#include "resmack/fuzz/asan_util.hpp"
-
-
 namespace resmack {
 namespace fuzz {
   Tracer::Tracer(
@@ -92,7 +89,7 @@ namespace fuzz {
         pid = args->pid;
         curr_iter_start = args->tracee->GetIterStart();
       }
-      float sleep_ms = 50.0f;
+      float sleep_ms = 1000.0f;
 
       if (pid == killed_pid) {
         ; // noop
@@ -122,7 +119,6 @@ namespace fuzz {
 
       auto ms = std::chrono::milliseconds((int)sleep_ms);
       std::this_thread::sleep_for(ms);
-
     }
 
     return NULL;
@@ -146,30 +142,40 @@ namespace fuzz {
       .timeout_lock = &this_->timeout_lock,
     };
 
+    DEBUG_PRINT("Monitoring tracee\n");
     while (this_->should_run.load()) {
+      DEBUG_PRINT("Loop\n");
       this_->traced_pid = -1;
       this_->tracee.Reset();
       this_->traced_pid = this_->target->Spawn(&this_->tracee);
 
       pid_t curr_pid = this_->traced_pid;
+      DEBUG_PRINT("curr_pid: %d\n", curr_pid);
 
       {
+        DEBUG_PRINT("Waiting for the timeout lock\n");
         std::scoped_lock _l(this_->timeout_lock);
+        DEBUG_PRINT("Got the timeout lock\n");
         timeout_args.pid = this_->traced_pid;
         timeout_args.timedout = false;
         should_monitor_tracee.store(true);
 
+        DEBUG_PRINT("Creating timeout thread\n");
         pthread_create(
           &this_->monitor_timeout_thread,
           NULL,
           &MonitorTraceeTimeout,
           (void*)&timeout_args
         );
+        DEBUG_PRINT("Done creating timeout thread\n");
       }
 
+      DEBUG_PRINT("Waiting for thread to stop\n");
       if (waitpid(curr_pid, &status, 0) == -1) {
+        DEBUG_PRINT("Error waiting for spawned target\n");
         throw std::runtime_error("Error waiting for child: " + std::string(std::strerror(errno)));
       }
+      DEBUG_PRINT("Target stopped\n");
 
       bool timedout;
       {
@@ -188,19 +194,26 @@ namespace fuzz {
       this_->last_crash.crashed = false;
       ser::AsanInfo* asan_info = this_->tracee.GetAsanInfo();
 
-      bool should_continue;
+      bool should_continue = true;
       if (timedout) {
         // need to wait one more time since the first signal sent to the process
         // SIGINT is used to help the child proc cleanup before being completely
         // killed. Specifically used to make sure no semaphores are still held
         // before exiting
+        DEBUG_PRINT("SENDING SIGINT to the process\n");
         ptrace(PTRACE_CONT, curr_pid, NULL, SIGINT);
         if (waitpid(curr_pid, &status, 0) == -1) {
+          DEBUG_PRINT("Waiting on the process again\n");
           perror("Error waiting for child");
         }
         should_continue = this_->timeout_cb(curr_pid, this_, &this_->tracee);
+      } else if (sig_info.exited && sig_info.exit_status == 0) {
+        DEBUG_PRINT("Nah, it didn't crash\n");
+        should_continue = true;
       } else {
+        DEBUG_PRINT("Definitely crashed\n");
         this_->last_crash.crashed = true;
+
         this_->last_crash.exit_status = sig_info.final_signal;
         this_->last_crash.signal = sig_info.final_signal;
 

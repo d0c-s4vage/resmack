@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <pthread.h>
@@ -13,10 +14,10 @@
 #include "resmack/debug.hpp"
 
 #include "resmack/fuzz/asan_util.hpp"
-#include "resmack/fuzz/tracee.hpp"
-#include "resmack/fuzz/lock.hpp"
-#include "resmack/fuzz/trace_targets/fork.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
+#include "resmack/fuzz/lock.hpp"
+#include "resmack/fuzz/tracee.hpp"
+#include "resmack/fuzz/trace_targets/fork.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -24,11 +25,13 @@ namespace trace_targets {
 
   // install signal handler here to catch SIGINT --> set SHUTTING_DOWN = true
   void sigint_handler([[maybe_unused]] int signum) {
+    DEBUG_PRINT("IN SIGINT HANDLER FORK.CPP\n");
     [[maybe_unused]]
     int sem_val = resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.GetValue();
     if (sem_val == 1) {
       resmack::fuzz::ipc_util::SIGNAL_HANDLER_LOCK.unlock();
     }
+    //resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
     _exit(0); // no cleanup!
   }
 
@@ -38,18 +41,10 @@ namespace trace_targets {
   pid_t Fork::Spawn(Tracee* tracee) {
     pid_t fork_pid;
 
-    /* The parent process will block on a read() of these pipes to continue -
-     * this will give the forked process a chance to start up.
-     *
-     * This is an attempt to deal with a race condition involving
-     * pthreads, ptrace (and maybe ASAN), and __futex_abstimed_wait_common64
-     * blocking everything. When the race condition / deadlock occurs,
-     * the child process is created, never runs, and externally it will look
-     * like the Tracer::Join() call blocks infinitely.
-     */
+    DEBUG_PRINT("SPAWNING\n");
     if ((fork_pid = fork()) == 0) {
-
       if (this->mute_io) {
+        DEBUG_PRINT("Fork child: Muting IO\n");
         int fd = open("/dev/null", O_WRONLY);
         fflush(stdout);
         dup2(fd, 1);
@@ -59,21 +54,24 @@ namespace trace_targets {
       }
 
       if (signal(SIGINT, sigint_handler) == SIG_ERR) {
-        perror("  >Forkee: Could not install sig handler in forked process");
-        std::cout << std::flush;
-        std::cerr << std::flush;
+        DEBUG_PRINT("Fork child: error installing sigint handler\n");
+        throw std::runtime_error("Could not install sig handler in forked process: " + std::string(std::strerror(errno)));
       }
 
       resmack::fuzz::asan::SetAsanCallback([tracee](const char* report) {
-        std::cout << std::flush;
+        DEBUG_PRINT("Fork child: In SetAsanCallback!\n");
         if (tracee == NULL) { return; }
         tracee->SaveAsanInfo(report);
-        // let it die, the tracer knows to look for the ASAN_EXIT_CODE
       });
 
       if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
-        perror("Forked process could not call PTRACE_TRACEME");
+        throw std::runtime_error("Forked process could not call PTRACE_TRACEME: " + std::string(std::strerror(errno)));
       }
+
+      DEBUG_PRINT("Fork child: Signalling to parent that we're ready (with a sigstop)\n");
+
+      // this gives the parent process a chance to catch up. It will tell
+      // us to continue once it has attached w/ ptrace
       raise(SIGSTOP);
 
       /* We need the actual execution to occur *NOT* on the main thread
@@ -85,34 +83,38 @@ namespace trace_targets {
         .this_ = this,
         .tracee = tracee,
       };
-
-
       pthread_t thread;
-      pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
-      pthread_join(thread, NULL);
-      //SpawnThreadTarget((void*)&args);
 
+      DEBUG_PRINT("Fork child: creating spawn target thread\n");
+      pthread_create(&thread, NULL, &SpawnThreadTarget, (void*)&args);
+
+      DEBUG_PRINT("Fork child: Waiting for spawn target thread to finish\n");
+      pthread_join(thread, NULL);
+      DEBUG_PRINT("Fork child: Done, exiting spawn thread\n");
 
       _exit(0);
     }
 
+    DEBUG_PRINT("Fork parent: Forked, waiting for SIGSTOP from child\n");
     int tracee_status = 0;
     if (
         waitpid(fork_pid, &tracee_status, 0) != -1
         && WIFSTOPPED(tracee_status)
         && WSTOPSIG(tracee_status) == SIGSTOP
     ) {
+      DEBUG_PRINT("Fork parent: Saw the SIGSTOP, sending PTRACE_CONT\n");
       if (ptrace(PTRACE_CONT, fork_pid, NULL, NULL) == -1) {
-        perror("Could not tell forked process to continue");
+        throw std::runtime_error("Could not tell forked process to continue: " + std::string(std::strerror(errno)));
       }
     } else {
-      perror("Could not wait for forked pid to stop");
+      throw std::runtime_error("Could not wait for forked pid to stop: " + std::string(std::strerror(errno)));
     }
+
+    DEBUG_PRINT("Fork parent: Done spawning, child pid: %d\n", fork_pid);
 
     return fork_pid;
   }
 
-  __attribute__((noinline))
   void* Fork::SpawnThreadTarget(void* spawn_thread_args) {
 
     //ignore SIGINT on this thread! we want the main thread to
@@ -121,8 +123,10 @@ namespace trace_targets {
     sigemptyset(&signal_mask);
     sigaddset(&signal_mask, SIGINT);
     if (pthread_sigmask(SIG_BLOCK, &signal_mask, NULL) != 0) {
-      perror("Error ignoring SIGINT in worker thread");
+      DEBUG_PRINT("ERROR ignoring sigint\n");
+      throw std::runtime_error("Error ignoring SIGINT in worker thread: " + std::string(std::strerror(errno)));
     }
+    DEBUG_PRINT("Calling the main code\n");
 
     SpawnThreadArgs* args = (SpawnThreadArgs*)spawn_thread_args;
     args->this_->cb(args->tracee);

@@ -18,9 +18,49 @@ namespace fuzz {
      return (((val + (val >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
   }
 
+  void HandleSanitizerCovTracePcGuardInit(uint32_t* start, uint32_t* stop) {
+    if (start == stop || *start) return;  // Initialize only once.
+    for (uint32_t *x = start; x < stop; x++) {
+      *x = ++GUARD_COUNTER;  // Guards should start from 1.
+    }
+    NUM_COV_FLAGS = (GUARD_COUNTER - 1) / 32;
+    if ((GUARD_COUNTER - 1) % 32 != 0) {
+      NUM_COV_FLAGS++;
+    }
+  }
+
+  /*
+  void _sanitizer_print_guard_source(uint32_t* guard) {
+       void *pc = __builtin_return_address(0);
+       char pc_desc[1024];
+       __sanitizer_symbolize_pc(pc, "%p %F %L", pc_desc, sizeof(pc_desc));
+       printf("guard: %p %x PC %s\n", guard, *guard, pc_desc);
+  }
+  */
+
+  void HandleSanitizerCovTracePcGuard(uint32_t* guard) {
+    {
+      std::scoped_lock lock(NEW_COV_MUTEX);
+      uint32_t* flags;
+      if (NULL == COV_FLAGS || NULL == (flags = *COV_FLAGS)) { return; }
+
+      size_t uint_no = (*guard - 1) / 32;
+      size_t bit_no = (*guard - 1) % 32;
+      size_t bit = (1 << bit_no);
+
+      if (flags[uint_no] & bit) { return; }
+
+      flags[uint_no] |= bit;
+      IS_NEW = true;
+    }
+  }
+
+
+
   // --------------------------------------------------------------------------
 
   Coverage::Coverage() : shared_cov_lock("coverage-lock") {
+    DEBUG_PRINT("NUM_COV_FLAGS: %zu\n", NUM_COV_FLAGS);
     size_t num_flags_to_alloc = NUM_COV_FLAGS ? NUM_COV_FLAGS : 1; 
     this->shared = mmap(
       NULL,
@@ -32,9 +72,7 @@ namespace fuzz {
     );
 
     if (this->shared == MAP_FAILED) {
-      DEBUG_PRINT("Could not create coverage mmap: NUM_COV_FLAGS: %zu", NUM_COV_FLAGS);
-      perror("Could not create coverage mmap");
-      std::exit(1);
+      throw std::runtime_error("Could not create coverage mmap: " + std::string(std::strerror(errno)));
     }
 
     this->cov_flags = NULL;
@@ -58,12 +96,15 @@ namespace fuzz {
   }
 
   std::string Coverage::GetSummary() {
-    size_t total_bits = 0;
-    for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
-      total_bits += _NumBits(this->cov_flags[idx]);
+    if (this->cov_flags != NULL) {
+      size_t total_bits = 0;
+      for (size_t idx = 0; idx < NUM_COV_FLAGS; idx++) {
+        total_bits += _NumBits(this->cov_flags[idx]);
+      }
+      return std::to_string(total_bits) + " edges";
     }
 
-    return std::to_string(total_bits) + " edges";
+    return "? edges";
   }
 
   void Coverage::Start() {
