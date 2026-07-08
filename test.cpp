@@ -92,15 +92,10 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
+  return false;
+
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "peaches") {
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
-    std::cout << "HELLO CLAIRE!!!" << std::endl;
     ((void(*)())(0))();
     //raise(SIGSEGV);
   }
@@ -117,7 +112,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  parseSentence(data, size);
+  //parseSentence(data, size);
   return true;
 }
 

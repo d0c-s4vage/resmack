@@ -10,7 +10,7 @@ namespace resmack {
 namespace fuzz {
 
   __attribute__((no_sanitize("coverage")))
-  void _TestCoverageHitsTwice() {
+  void TestCoverageHitsTwice() {
     uint32_t vars[3] = {0, 0, 0};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
@@ -29,11 +29,11 @@ namespace fuzz {
   }
 
   TEST(Fuzz, CoverageHitTwice) {
-    _TestCoverageHitsTwice();
+    TestCoverageHitsTwice();
   }
 
   __attribute__((no_sanitize("coverage")))
-  void _TestCoverageNotHit() {
+  void TestCoverageNotHit() {
     Coverage cov;
     cov.Start();
     cov.Stop();
@@ -42,7 +42,7 @@ namespace fuzz {
   }
 
   TEST(Fuzz, CoverageNotHit) {
-    _TestCoverageNotHit();
+    TestCoverageNotHit();
   }
 
 }

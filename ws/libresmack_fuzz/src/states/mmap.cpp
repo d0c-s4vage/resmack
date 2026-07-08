@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <cstddef>
 #include <iostream>
 #include <semaphore.h>
 #include <sys/mman.h>
@@ -16,7 +17,7 @@ namespace fuzz {
 namespace states {
 
   MmapState::MmapState(const char* state_path) : state_path(state_path), state_lock(state_path) {
-    this->state_max_size = 0x400 * 0x400 * 200; // 100 MB
+    this->state_max_size = static_cast<size_t>(0x400 * 0x400 * 200); // 100 MB
     struct stat info;
     bool is_new = false;
 
@@ -82,7 +83,7 @@ namespace states {
     this->corpus.SyncCounters();
 
     {
-      std::scoped_lock __l(this->state_lock);
+      std::scoped_lock _l(this->state_lock);
 
 #define STAT(NAME) \
       this->metadata->stats.duration_##NAME += stats->duration_##NAME;
@@ -98,9 +99,10 @@ namespace states {
     this->IncNumIterations(1);
   }
   void MmapState::IncNumIterations(uint64_t amt) {
-    WITH_LOCK(this->state_lock, IncNumIterations, { 
+    {
+      std::scoped_lock _lock(this->state_lock);
       this->metadata->iterations += amt;
-    });
+    }
   }
 
   size_t MmapState::GetNumCrashes() {
@@ -111,16 +113,18 @@ namespace states {
   }
   void MmapState::IncNumCrashes(uint64_t amt) {
     DEBUG_PRINT("INCREMENTING CRASHES\n");
-    WITH_LOCK(this->state_lock, IncNumCrashes, {
+    {
+      std::scoped_lock _lock(this->state_lock);
       this->metadata->crashes += amt;
-    });
+    }
   }
   void MmapState::IncNumCrashesIfTrue(UniqueCrashCb cb) {
-    WITH_LOCK(this->state_lock, IncNumCrashesIfTrue, {
+    {
+      std::scoped_lock _lock(this->state_lock);
       if (cb()) {
         this->metadata->crashes += 1;
       }
-    });
+    }
   }
 
   Corpus* MmapState::GetCorpus() {

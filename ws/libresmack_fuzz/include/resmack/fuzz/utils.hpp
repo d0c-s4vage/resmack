@@ -1,7 +1,8 @@
 #ifndef RESMACK_FUZZ_UTILS_H
 #define RESMACK_FUZZ_UTILS_H
 
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <openssl/sha.h>
 #include <unistd.h>
