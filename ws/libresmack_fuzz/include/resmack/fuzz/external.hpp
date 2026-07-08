@@ -12,10 +12,13 @@ namespace fuzz {
     // entered.
     ExternalFunctions();
 
+#define UNPAREN(...) __VA_ARGS__
+
 #define EXT_FUNC(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
-  RETURN_TYPE(*NAME) FUNC_SIG = nullptr
+  RETURN_TYPE(*(NAME)) UNPAREN(FUNC_SIG) = nullptr
+
 #define EXT_FUNC_CPP(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
-  RETURN_TYPE(*NAME) FUNC_SIG = nullptr
+  RETURN_TYPE(*(NAME)) UNPAREN(FUNC_SIG) = nullptr
 
 #include "external_fns.def"
 

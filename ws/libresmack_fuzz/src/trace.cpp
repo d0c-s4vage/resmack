@@ -57,10 +57,9 @@ namespace fuzz {
     // WHY WHY WHY WHY???
     // 
     //this->timeout_lock.lock();
-    pthread_join(this->monitor_timeout_thread, NULL);
-
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
+    //pthread_join(this->monitor_timeout_thread, NULL);
   }
 
   void Tracer::Join() {
@@ -83,17 +82,17 @@ namespace fuzz {
 
     pid_t pid;
     float curr_iter_start;
-    while (args->should_run->load()) {
+    while (args->should_monitor_tracee->load()) {
       {
         std::scoped_lock _lock(*args->timeout_lock);
         pid = args->pid;
         curr_iter_start = args->tracee->GetIterStart();
       }
-      float sleep_ms = 1000.0f;
+      float sleep_ms = 10.0f;
 
       if (pid == killed_pid) {
         ; // noop
-      } else if (pid > 0 && args->should_monitor_tracee->load() && curr_iter_start != -1.0f) {
+      } else if (pid > 0 && curr_iter_start != -1.0f) {
         if (last_pid != pid) {
           last_pid = pid;
           clock_gettime(CLOCK_MONOTONIC, &tmp);
@@ -113,6 +112,7 @@ namespace fuzz {
             args->timedout = true;
             kill(pid, SIGKILL);
             killed_pid = pid;
+            break;
           }
         }
       }
@@ -120,6 +120,8 @@ namespace fuzz {
       auto ms = std::chrono::milliseconds((int)sleep_ms);
       std::this_thread::sleep_for(ms);
     }
+
+    DEBUG_PRINT("Exiting Monitor Trace Timeout thread\n");
 
     return NULL;
   }
@@ -173,6 +175,10 @@ namespace fuzz {
       DEBUG_PRINT("Waiting for thread to stop\n");
       if (waitpid(curr_pid, &status, 0) == -1) {
         DEBUG_PRINT("Error waiting for spawned target\n");
+        if (errno == ECHILD) {
+          DEBUG_PRINT("There aren't any children left to wait for\n");
+          break;
+        }
         throw std::runtime_error("Error waiting for child: " + std::string(std::strerror(errno)));
       }
       DEBUG_PRINT("Target stopped\n");
@@ -256,7 +262,6 @@ namespace fuzz {
         kill(curr_pid, SIGKILL);
         waitpid(curr_pid, &status, 0);
       }
-      //printf("[[[%d:Traced(%d) NEW CHILD\n", this_->idx, this_->traced_pid);
     }
 
     this_->Stop();

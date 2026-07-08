@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
-#include <signal.h>
+#include <csignal>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -37,9 +37,10 @@
 #include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/sanitizer_init.hpp"
 
-#include "resmack/fuzz/asan_util.hpp"
-
 INIT_SANITIZER_GUARDS;
+
+
+namespace  {
 
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
@@ -48,8 +49,8 @@ struct LoopPrintStatusArgs {
   bool should_run;
 };
 
-static resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
-pthread_t STATUS_THREAD;
+resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
+pthread_t STATUS_THREAD = 0;
 LoopPrintStatusArgs STATUS_ARGS;
 
 struct FuzzOptions {
@@ -349,7 +350,7 @@ void* LoopPrintStatus(void* args_ptr) {
   if (OPTS.print_interval != 0.0f) {
     sleep_amt = (size_t)(OPTS.print_interval * 1000);
   } else {
-    sleep_amt  = 1 * 1000; // ms
+    sleep_amt  = static_cast<size_t>(1 * 1000); // ms
   }
 
   while (args->should_run) {
@@ -663,6 +664,8 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
   std::cout << "Wrote " << i << " corpus entries to " << OPTS.dump_corpus_path << std::endl;
 }
 
+} // namespace resmack::main
+
 const char* __asan_default_options() {
   return resmack::fuzz::asan::ASAN_DEFAULT_OPTIONS;
 }
@@ -762,6 +765,7 @@ int main(int argc, char** argv) {
   STATUS_ARGS.feedback = &cov;
 
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
+  signal(SIGINT, sigint_handler);
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();

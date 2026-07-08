@@ -35,7 +35,7 @@ namespace items {
       this->item_->Build(ctx);
 
       len = ctx->output->size() - len_pos - sizeof(len);
-      ctx->output->data()[len_pos] = len;
+      ctx->output->data()[len_pos] = static_cast<char>(len);
     }
   };
 

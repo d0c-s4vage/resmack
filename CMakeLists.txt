@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(resmack-main)
 
+include(cmake/clang_tidy.cmake)
 include(cmake/compiler_options.cmake)
 include(cmake/debug.cmake)
 

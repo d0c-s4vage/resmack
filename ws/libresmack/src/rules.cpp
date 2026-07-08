@@ -83,11 +83,6 @@ namespace resmack {
       ctx->rules = this;
     }
 
-    std::string tmp_pre_output;
-    if (ctx->pre_output == NULL) {
-      ctx->pre_output = &tmp_pre_output;
-    }
-
     items::Or* rule;
     if (unshadowed) {
       rule = this->rule_man_.GetUnshadowedRule(rule_idx);
@@ -96,6 +91,11 @@ namespace resmack {
     }
 
     if (NULL == rule) { return false; }
+
+    std::string tmp_pre_output;
+    if (ctx->pre_output == NULL) {
+      ctx->pre_output = &tmp_pre_output;
+    }
 
     uint32_t tmp_rand_state[4] = { 0, 0, 0, 0 };
     uint32_t tmp_max_depth = ctx->max_depth;
@@ -111,6 +111,7 @@ namespace resmack {
     // flush all pre/post output
     if (ctx->ref_depth == 0) {
       ctx->FlushPrePost();
+      ctx->pre_output = NULL;
     }
 
     return true;

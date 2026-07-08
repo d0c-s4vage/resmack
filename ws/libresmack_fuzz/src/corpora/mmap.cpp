@@ -46,9 +46,10 @@ namespace corpora {
     this->meta = (ser::CorpusMetadata*)this->corpus_map;
 
     // *ALWAYS* sync when in Init (don't use Sync())
-    WITH_LOCK(*this->corpus_lock, Syncing corpus, {
+    {
+      std::scoped_lock __l(*this->corpus_lock);
       this->Sync();
-    });
+    }
   }
 
   bool MmapCorpus::AddRandSnapshotIfNotSeen(
@@ -56,21 +57,22 @@ namespace corpora {
     FeedbackStats stats,
     bool descendant_of_last
   ) {
-    bool res = true;
     if (this->SeenFeedback(stats.key)) {
       return false;
     }
 
-    WITH_LOCK(*this->corpus_lock, Maybe adding snapshot, {
+    bool res = true;
+    {
+      std::scoped_lock __l(*this->corpus_lock);
       this->SyncInner();
 
       if (this->SeenFeedback(stats.key)) {
         res = false;
-        break;
+      } else {
+        this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
+        res = true;
       }
-
-      this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
-    });
+    }
 
     return res;
   }
@@ -80,10 +82,11 @@ namespace corpora {
     FeedbackStats stats,
     bool descendant_of_last
   ) {
-    WITH_LOCK(*this->corpus_lock, Adding snapshot, {
+    {
+      std::scoped_lock __l(*this->corpus_lock);
       this->SyncInner();
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
-    });
+    }
   }
 
   void MmapCorpus::AddRandSnapshotInner(
@@ -160,9 +163,10 @@ namespace corpora {
       return;
     }
 
-    WITH_LOCK(*this->corpus_lock, Syncing corpus, {
+    {
+      std::scoped_lock _l(*this->corpus_lock);
       this->SyncInner();
-    });
+    }
   }
 
   void MmapCorpus::SyncInner() {
@@ -236,17 +240,16 @@ namespace corpora {
     this->SortedsResort();
   }
 
-  // Update all mutations_since_offspring counters. Assumed to be only called
-  // from within an IPC-safe context (from within a WITH_LOCK block)
   void MmapCorpus::SyncCounters() {
     if (this->NumItems() != this->meta->num_entries) {
       this->Sync();
       return;
     }
 
-    WITH_LOCK(*this->corpus_lock, Syncing Counters, {
+    {
+      std::scoped_lock _lock(*this->corpus_lock);
       this->SyncCountersInner();
-    });
+    }
     this->SortedsResort();
   }
 
@@ -439,7 +442,8 @@ namespace corpora {
   }
 
   void MmapCorpus::IncLastItemCrashes() {
-    WITH_LOCK(*this->corpus_lock, Incrementing Last Item Crashes, {
+    {
+      std::scoped_lock _lock(*this->corpus_lock);
       this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
       this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
 
@@ -447,14 +451,15 @@ namespace corpora {
         this->snapshots[this->last_item2_one_based_idx - 1].num_crashes++;
         this->GetItemHeader(this->last_item2_one_based_idx - 1)->num_crashes++;
       }
-    });
+    }
   }
 
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
     DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
-    WITH_LOCK(*this->corpus_lock, Incrementing Unwanted Idx, {
+    {
+      std::scoped_lock _lock(*this->corpus_lock);
       DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
       ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
 
@@ -466,7 +471,7 @@ namespace corpora {
 
       DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
       this->last_updated_seq = ++this->meta->updated_seq;
-    });
+    }
   }
 
   ser::CorpusItemHeader* MmapCorpus::GetItemHeader(size_t index) {

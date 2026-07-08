@@ -1,13 +1,11 @@
 #include <iostream>
-#include <stdio.h>
 
-#include "resmack/rules.hpp"
 #include "resmack/fuzz/external.hpp"
 
 extern "C" {
 // Declare these symbols as weak to allow them to be optionally defined.
 #define EXT_FUNC(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
-  __attribute__((weak, visibility("default"))) RETURN_TYPE NAME FUNC_SIG
+  __attribute__((weak, visibility("default"))) RETURN_TYPE NAME UNPAREN(FUNC_SIG)
 
 #define EXT_FUNC_CPP(NAME, RETURN_TYPE, FUNC_SIG, WARN)
 
@@ -23,7 +21,7 @@ extern "C++" {
 
 // Declare these symbols as weak to allow them to be optionally defined.
 #define EXT_FUNC_CPP(NAME, RETURN_TYPE, FUNC_SIG, WARN)                            \
-  __attribute__((weak, visibility("default"))) RETURN_TYPE NAME FUNC_SIG
+  __attribute__((weak, visibility("default"))) RETURN_TYPE NAME UNPAREN(FUNC_SIG)
 
 #include "resmack/fuzz/external_fns.def"
 

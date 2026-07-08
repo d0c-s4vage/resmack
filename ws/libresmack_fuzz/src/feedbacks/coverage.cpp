@@ -36,9 +36,10 @@ namespace fuzz {
     {
       std::scoped_lock lock(NEW_COV_MUTEX);
       uint32_t* flags;
-      if (NULL == COV_FLAGS || NULL == (flags = *COV_FLAGS)) {
-        return;
-      }
+      if (NULL == COV_FLAGS) { return; }
+
+      flags = *COV_FLAGS;
+      if (NULL == flags) { return; }
 
       size_t uint_no = (*guard - 1) / 32;
       size_t bit_no = (*guard - 1) % 32;

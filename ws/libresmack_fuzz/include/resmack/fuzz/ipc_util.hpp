@@ -17,16 +17,4 @@ namespace resmack {
   }
 }
 
-#define _WITH_LOCK(LOCK, MSG, STATEMENTS) { \
-  { \
-    std::scoped_lock __l(LOCK); \
-    while (1) { \
-      STATEMENTS \
-      break; \
-    } \
-  } \
-}
-
-#define WITH_LOCK(...) _WITH_LOCK(__VA_ARGS__)
-
 #endif
