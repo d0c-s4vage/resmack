@@ -4,7 +4,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <openssl/sha.h>
+#include <stdexcept>
+#include <string>
 #include <unistd.h>
 
 namespace resmack {
@@ -14,8 +17,15 @@ namespace utils {
   [[maybe_unused]]
   static pid_t MAIN_PID;
 
-  [[maybe_unused]]
-  static bool KEEP_RUNNING;
+  static void throw_runtime_error(std::string msg) {
+    throw std::runtime_error(msg + ": " + std::string(strerror(errno)));
+  }
+
+  inline float GetTimeNow() {
+    timespec tmp;
+    clock_gettime(CLOCK_MONOTONIC, &tmp);
+    return tmp.tv_sec + 1e-9 * tmp.tv_nsec;
+  }
 
   // Caller is responsible for freeing the returned (malloc'd) hex digest
   inline char* sha1_hex(const char* data, size_t data_size, char* out_buffer) {

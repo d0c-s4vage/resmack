@@ -21,6 +21,7 @@ namespace fuzz {
     HandleSanitizerCovTracePcGuard(&vars[1]);
 
     cov.Stop();
+    cov.Sync();
 
     FeedbackStats stats = cov.GetStats();
     EXPECT_EQ(stats.new_coverage, true);

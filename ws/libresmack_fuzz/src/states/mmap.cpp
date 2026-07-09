@@ -1,7 +1,9 @@
 #include <errno.h>
+#include <filesystem>
 #include <cstddef>
 #include <iostream>
 #include <semaphore.h>
+#include <mutex>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -12,56 +14,59 @@
 #include "resmack/fuzz/corpora/mmap.hpp"
 #include "resmack/fuzz/utils.hpp"
 
+namespace fs = std::filesystem;
+
+#ifndef RESMACK_MAX_STATE_SIZE_MB
+#define RESMACK_MAX_STATE_SIZE_MB 200
+#endif
+
 namespace resmack {
 namespace fuzz {
 namespace states {
 
-  MmapState::MmapState(const char* state_path) : state_path(state_path), state_lock(state_path) {
-    this->state_max_size = static_cast<size_t>(0x400 * 0x400 * 200); // 100 MB
-    struct stat info;
-    bool is_new = false;
+  MmapState::MmapState(fs::path state_path) :
+    state_path(state_path),
+    state_lock(state_path),
+    corpus(state_path)
+  {
+    this->state_max_size = static_cast<size_t>(0x400 * 0x400 * RESMACK_MAX_STATE_SIZE_MB);
+    bool is_new = !fs::exists(this->state_path);
+    const char* open_flags = is_new ? "w+b" : "r+b";
 
-    if (stat(this->state_path, &info) == 0) {
-      this->state_file = fopen(this->state_path, "r+b");
-      if (this->state_file == NULL) {
-        perror("Could not create new state file");
-        std::exit(1);
-      }
-    } else {
-      this->state_file = fopen(this->state_path, "w+b");
-      if (this->state_file == NULL) {
-        perror("Could not open existing state file");
-        std::exit(1);
-      }
-      if (ftruncate(fileno(this->state_file), this->state_max_size) != 0) {
-        perror("Could not create resmack state mmap");
-        std::exit(1);
-      }
-      is_new = true;
+    this->state_file = std::fopen(this->state_path.c_str(), open_flags);
+    if (this->state_file == NULL) {
+      utils::throw_runtime_error(std::format("Could not open state file at {}", this->state_path.string()));
+    }
+
+    struct stat st;
+    fstat(fileno(this->state_file), &st);
+    bool should_init = is_new || (size_t)st.st_size != this->state_max_size;
+
+    if (ftruncate(fileno(this->state_file), this->state_max_size) != 0) {
+      utils::throw_runtime_error(std::format("Could not initialize state size for {}", this->state_path.string()));
     }
 
     this->state_map = mmap(
       NULL,
-      state_max_size,
+      this->state_max_size,
       PROT_READ | PROT_WRITE,
       MAP_SHARED_VALIDATE, // | MAP_ANONYMOUS // with no file?
       fileno(this->state_file), // FD
       0   // offset
     );
-
     if (this->state_map == MAP_FAILED) {
-      perror("Could not create state map");
-      std::exit(1);
+      utils::throw_runtime_error("Could not create state map");
     }
 
+    madvise(this->state_map, this->state_max_size, MADV_RANDOM);
+
     this->metadata = (StateMetadata*)this->state_map;
-    if (is_new) {
+    if (should_init) {
       this->InitNewStats();
     }
 
     size_t meta_size = sizeof(StateMetadata);
     this->corpus.Init(
-      this->state_path,
       (void*)((char*)this->state_map + meta_size),
       state_max_size - meta_size
     );
@@ -70,7 +75,7 @@ namespace states {
 
   MmapState::~MmapState() {
     munmap(this->state_map, this->state_max_size);
-    fclose(this->state_file);
+    std::fclose(this->state_file);
   }
 
   void MmapState::InitNewStats() {
@@ -92,35 +97,27 @@ namespace states {
     }
   }
 
-  size_t MmapState::GetNumIterations() {
+  uint64_t MmapState::GetNumIterations() {
     return this->metadata->iterations;
   }
   void MmapState::IncNumIterations() {
     this->IncNumIterations(1);
   }
   void MmapState::IncNumIterations(uint64_t amt) {
-    {
-      std::scoped_lock _lock(this->state_lock);
-      this->metadata->iterations += amt;
-    }
+    this->metadata->iterations += amt;
   }
 
-  size_t MmapState::GetNumCrashes() {
+  uint64_t MmapState::GetNumCrashes() {
     return this->metadata->crashes;
   }
   void MmapState::IncNumCrashes() {
     this->IncNumCrashes(1);
   }
   void MmapState::IncNumCrashes(uint64_t amt) {
-    DEBUG_PRINT("INCREMENTING CRASHES\n");
-    {
-      std::scoped_lock _lock(this->state_lock);
       this->metadata->crashes += amt;
-    }
   }
   void MmapState::IncNumCrashesIfTrue(UniqueCrashCb cb) {
     {
-      std::scoped_lock _lock(this->state_lock);
       if (cb()) {
         this->metadata->crashes += 1;
       }

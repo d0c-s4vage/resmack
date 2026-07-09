@@ -5,11 +5,27 @@
 #include <sys/wait.h>
 
 #include "resmack/debug.hpp"
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/process_utils.hpp"
 
 namespace resmack {
 namespace fuzz {
 namespace process_utils {
+
+  static inline bool IsCrashSignal(int signal) {
+    switch (signal) {
+        case SIGTRAP:
+          // a trace event
+          return false;
+        case SIGSEGV:  // segfault
+        case SIGABRT:  // abort() / assert / ASAN
+        case SIGBUS:   // misaligned memory access
+        case SIGFPE:   // divide by zero / float exception
+        case SIGILL:   // illegal instruction
+        default:
+            return true;
+    }
+  }
 
   void LoadSignalInfo(int status, SignalInfo* out) {
 #if DEBUG_MESSAGES
@@ -39,20 +55,21 @@ namespace process_utils {
 #endif
     out->exited = WIFEXITED(status);
     out->exit_status = WEXITSTATUS(status);
-    if (out->exited) {
-      out->final_signal = out->exit_status;
-    }
 
     out->signaled = WIFSIGNALED(status);
     out->term_signal = WTERMSIG(status);
-    if (out->signaled) {
-      out->final_signal = out->term_signal;
-    }
 
     out->stopped = WIFSTOPPED(status);
     out->stop_signal = WSTOPSIG(status);
-    if (out->stopped) {
-      out->final_signal = out->stop_signal;
+
+    if(
+      (out->exited && out->exit_status == asan::ASAN_EXIT_CODE)
+      || (out->stopped && IsCrashSignal(out->stop_signal))
+      || (out->signaled && out->term_signal == SIGABRT)
+    ) {
+      out->exit_reason = ExitReason::Crash;
+    } else {
+      out->exit_reason = ExitReason::Normal;
     }
   }
 

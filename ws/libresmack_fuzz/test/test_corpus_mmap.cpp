@@ -20,7 +20,7 @@ namespace fuzz {
     rand.Next();
     rand.SnapshotState(2, 5, 200);
 
-    size_t curr_iter_count = 0;
+    std::atomic<uint64_t> curr_iter_count = 0;
     size_t map_size = 0x1000;
     void* map;
 
@@ -29,9 +29,9 @@ namespace fuzz {
     }
     memset(map, 0, map_size);
 
-    corpora::MmapCorpus corpus;
+    corpora::MmapCorpus corpus("resmack-test");
     corpus.SetCurrIterPtr(&curr_iter_count);
-    corpus.Init("resmack-test", map, map_size);
+    corpus.Init(map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
@@ -105,7 +105,7 @@ namespace fuzz {
     rand.Next();
     rand.SnapshotState(2, 5, 200);
 
-    size_t iteration_count = 0;
+    std::atomic<uint64_t> iteration_count = 0;
 
     size_t map_size = 0x1000;
     void* map;
@@ -115,9 +115,9 @@ namespace fuzz {
     }
     memset(map, 0, map_size);
 
-    corpora::MmapCorpus corpus;
+    corpora::MmapCorpus corpus("resmack-test-2");
     corpus.SetCurrIterPtr(&iteration_count);
-    corpus.Init("resmack-test-2", map, map_size);
+    corpus.Init(map, map_size);
     EXPECT_EQ(corpus.NumItems(), 0u);
 
     Vector<RandSnapshot> snapshots(*rand.GetSnapshots());
@@ -161,7 +161,7 @@ namespace fuzz {
     rand.SnapshotState(2, 5, 200);
 
     size_t map_size = 0x1000;
-    size_t total_count_ptr = 0;
+    std::atomic<uint64_t> total_count_ptr = 0;
     void* map;
 
     if((map = mmap(NULL, map_size, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0)) == MAP_FAILED) {
@@ -169,8 +169,8 @@ namespace fuzz {
     }
     memset(map, 0, map_size);
 
-    corpora::MmapCorpus corpus;
-    corpus.Init("resmack-test-3", map, map_size);
+    corpora::MmapCorpus corpus("resmack-test-3");
+    corpus.Init(map, map_size);
     corpus.SetCurrIterPtr(&total_count_ptr);
     EXPECT_EQ(corpus.NumItems(), 0u);
 

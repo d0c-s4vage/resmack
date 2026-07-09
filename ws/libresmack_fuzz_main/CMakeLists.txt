@@ -22,7 +22,7 @@ target_sources(
 target_link_libraries(
     ${LIBRESMACK_FUZZ_MAIN_OBJ}
     PUBLIC ${LIBRESMACK_SHARED}
-    PUBLIC ${LIBRESMACK_FUZZ_STATIC}
+    PUBLIC ${LIBRESMACK_FUZZ_SHARED}
 )
 
 # -------------------------------------------

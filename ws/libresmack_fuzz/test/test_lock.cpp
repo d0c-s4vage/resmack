@@ -33,7 +33,7 @@ namespace fuzz {
       std::exit(0);
     }
 
-    int sleep_ms = 500;
+    int sleep_ms = 10;
     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
     // the increment shouldn't be happening until after the release
     *counter = 1;

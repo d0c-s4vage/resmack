@@ -38,6 +38,9 @@ target_sources(
     PRIVATE
         ${LIBRESMACK_FUZZ_PRIVATE_SRC}
 )
+set_target_properties(${LIBRESMACK_FUZZ_OBJ} PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+)
 
 target_link_libraries(
     ${LIBRESMACK_FUZZ_OBJ}

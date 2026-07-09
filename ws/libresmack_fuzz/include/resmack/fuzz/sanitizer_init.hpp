@@ -1,6 +1,7 @@
 
 #define INIT_SANITIZER_GUARDS \
   extern "C" { \
+    __attribute__((used)) \
     int __lsan_is_turned_off() { return 1; } \
     void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var) { \
       resmack::fuzz::HandleSanitizerCovTracePcGuard(guard_var); \

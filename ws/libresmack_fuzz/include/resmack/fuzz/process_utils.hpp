@@ -4,16 +4,22 @@
 namespace resmack {
 namespace fuzz {
 namespace process_utils {
+  enum class ExitReason {
+    // the program exited by itself
+    Normal,
+    Crash,
+    Timeout,
+  };
+  ExitReason GetExitReason(int status);
 
   struct SignalInfo {
+    ExitReason exit_reason;
     bool stopped;
     bool exited;
     bool signaled;
     int exit_status;
     int stop_signal;
     int term_signal;
-
-    int final_signal;
   };
 
   void LoadSignalInfo(int status, SignalInfo* out);

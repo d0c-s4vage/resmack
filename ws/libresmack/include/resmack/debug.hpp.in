@@ -1,14 +1,31 @@
 #ifndef RESMACK_DEBUG_H
 #define RESMACK_DEBUG_H
 
+#include <cstdarg>
+#include <cstring>
 #include <iostream>
 
 #cmakedefine DEBUG_MESSAGES @DEBUG_MESSAGES@
 
+#define LOG(fmt, ...) \
+    log_impl(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__)
+
+inline void log_impl(const char* file, int line, const char* func, const char* fmt, ...) {
+    const char* base = strrchr(file, '/');
+    base = base ? base + 1 : file;
+
+    fprintf(stdout, "%s:%d:%s: ", base, line, func);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+}
+
 #define RESMACK_DEBUG_PRINT(...) \
   do { \
     printf("[[DEBUG]] "); \
-    printf(__VA_ARGS__); \
+    LOG(__VA_ARGS__); \
     std::cout << std::flush; \
   } while(0);
 

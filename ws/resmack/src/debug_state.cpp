@@ -109,8 +109,8 @@ namespace debug_state {
   void DebugState(char* state_data) {
     fuzz::states::StateMetadata* meta = (fuzz::states::StateMetadata*)state_data;
     printf("State Metadata:\n");
-    printf("  iterations: %lu\n", meta->iterations);
-    printf("  crashes:    %lu\n", meta->crashes);
+    printf("  iterations: %lu\n", meta->iterations.load());
+    printf("  crashes:    %lu\n", meta->crashes.load());
     printf("  stats:\n");
 #define STAT(NAME) printf("    %-14s%-15f\n", #NAME":", meta->stats.duration_##NAME);
 #include "resmack/fuzz/stats.def"
