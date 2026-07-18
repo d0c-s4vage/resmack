@@ -21,6 +21,52 @@ Additionally, the following must be installed on the system:
 
 * libssl, libssl-dev (`openssh/sha.h`, links against `-lcrypto`)
 * libunwind, libunwind-dev (usually already exists)
+* cmake
+* clang-20
+
+## Example
+
+The `test.cpp` and `run_on_grammar.cpp` files can be compiled with the resmack binary to produce
+a simple fuzzer.
+
+For example, if all dependencies are met, you should be able to do this:
+
+```
+# build the project and run the tests
+cmake --workflow --preset full.release
+
+# make sure we're using the just-built libraries
+export LD_LIBRARY_PATH=build/release
+
+# use the resmack binary to compile test.cpp and run_on_grammar.cpp into
+# a fuzzer binary (a.out in your cwd)
+build/release/resmack cc --asan -- test.cpp run_on_grammar.cpp -o a.out
+
+# now run the fuzzer binary
+./a.out -n $(nproc) --max-crashes 1
+```
+
+You can see the other CMake presets with:
+
+```
+cmake --workflow --list-presets
+```
+
+which should show:
+
+```
+$> cmake --workflow --list-presets
+Available workflow presets:
+
+  "build.debug"
+  "build.debug.verbose"
+  "build.release"
+  "build.release.syms"
+  "full.debug"
+  "full.debug.verbose"
+  "full.release"
+  "full.release.syms"
+```
 
 ## Structure
 
@@ -33,7 +79,7 @@ functionality. Each project
 | `libresmack_fuzz`      | Fuzzing-specific functionality (corpus, coverage, grammar mutation)  |
 | `libresmack_fuzz_main` | Fuzzing-specific functionality (corpus, coverage, grammar mutation)  |
 | `resmack-perf`         | A sample program to test performance of generating data with resmack |
-| `resmack`              | UNFINISHED - The main CLI for resmack that uses `libresmack_fuzz`    |
+| `resmack`              | The main CLI for resmack that uses `libresmack_fuzz`                 |
 
 
 ## Architecture
