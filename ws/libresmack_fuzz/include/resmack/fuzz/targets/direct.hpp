@@ -15,9 +15,6 @@ namespace fuzz {
                 TargetSettings* settings,
                 TargetStats* stats);
     void Reset();
-
-   private:
-    void PtraceSelfIfNotAlready();
   };
 
 }

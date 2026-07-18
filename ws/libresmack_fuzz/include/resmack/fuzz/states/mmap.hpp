@@ -1,14 +1,16 @@
 #ifndef RESMACK_FUZZ_MMAP_STATE_H
 #define RESMACK_FUZZ_MMAP_STATE_H
 
+#include <atomic>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <filesystem>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include <bits/stdint-uintn.h>
+#include <cstdint>
 
 #include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/state.hpp"
@@ -17,13 +19,15 @@
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
 
+namespace fs = std::filesystem;
+
 namespace resmack {
 namespace fuzz {
 namespace states {
 
 struct StateMetadata {
-  uint64_t iterations;
-  uint64_t crashes;
+  std::atomic<uint64_t> iterations;
+  std::atomic<uint64_t> crashes;
   StateStats stats;
   uint64_t reserved1;
   uint64_t reserved2;
@@ -37,7 +41,7 @@ struct StateMetadata {
 
 class MmapState : public State {
  private:
-  const char* state_path;
+  fs::path state_path;
   FILE* state_file;
   size_t state_max_size;
 
@@ -49,7 +53,7 @@ class MmapState : public State {
   corpora::MmapCorpus corpus;
 
  public:
-  MmapState(const char* statePath);
+  MmapState(fs::path statePath);
   ~MmapState();
 
   StateStats* GetStats() { return &this->metadata->stats; };
@@ -67,9 +71,6 @@ class MmapState : public State {
 
   Corpus* GetCorpus();
   corpora::MmapCorpus* GetMmapCorpus();
-
-  void SyncLockAcquire();
-  void SyncLockRelease();
 };
 
 }

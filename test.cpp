@@ -69,6 +69,15 @@ bool parseSubject(std::vector<std::string>* parts, size_t* curr_idx) {
   return false;
 }
 
+// don't optimize this!
+__attribute__((optnone))
+void intentionally_crash(int n) {
+    int i = 0 / n;
+    // Your crashing code here
+    int *ptr = NULL;
+    *ptr = 42; 
+}
+
 bool parseSentence(const uint8_t* data, size_t size) {
   std::string input;
   input.assign((const char*)data, size);
@@ -92,8 +101,6 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
-  return false;
-
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "peaches") {
     ((void(*)())(0))();
@@ -112,7 +119,7 @@ bool parseSentence(const uint8_t* data, size_t size) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  //parseSentence(data, size);
+  parseSentence(data, size);
   return true;
 }
 

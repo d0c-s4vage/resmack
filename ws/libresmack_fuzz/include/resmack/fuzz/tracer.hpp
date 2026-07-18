@@ -1,6 +1,7 @@
 #ifndef RESMACK_FUZZ_TRACE_H
 #define RESMACK_FUZZ_TRACE_H
 
+#include <atomic>
 #include <string>
 #include <functional>
 #include <pthread.h>
@@ -8,8 +9,9 @@
 
 #include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/lock.hpp"
+#include "resmack/fuzz/process_utils.hpp"
 #include "resmack/fuzz/tracee.hpp"
-#include "resmack/fuzz/trace_target.hpp"
+#include "resmack/fuzz/process_launcher.hpp"
 
 namespace resmack {
 namespace fuzz {
@@ -40,14 +42,13 @@ namespace fuzz {
   //   status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8))
   //
   using TraceExceptionCb =
-    std::function<bool(pid_t pid, int status, Tracer*, Tracee*)>;
+    std::function<void(pid_t pid, Tracer* tracer, Tracee* tracee)>;
   using TraceTimeoutCb =
-    std::function<bool(pid_t pid, Tracer*, Tracee*)>;
+    std::function<void(pid_t pid, Tracer* tracer, Tracee* tracee)>;
 
   struct CrashInfo {
     bool crashed;
-    int exit_status;
-    int signal;
+    process_utils::SignalInfo signal_info;
     std::string major_stack;
     std::string minor_stack;
     // last 5 frames
@@ -61,22 +62,22 @@ namespace fuzz {
    private:
     uint32_t idx;
     Tracee tracee;
-    TraceTarget* target;
-    pid_t traced_pid;
+    ProcessLauncher* proc_launcher;
+    std::atomic<pid_t> traced_pid;
     std::atomic<bool> should_run;
     float timeout;
     TraceExceptionCb exception_cb;
     TraceTimeoutCb timeout_cb;
     CrashInfo last_crash;
-    Lock timeout_lock;
+    Lock trace_lock;
 
     pthread_t monitor_thread;
     pthread_t monitor_timeout_thread;
 
    public:
     Tracer(
-      TraceTarget* target,
-      TraceExceptionCb cb,
+      ProcessLauncher* proc_launcher,
+      TraceExceptionCb exception_cb,
       TraceTimeoutCb timeout_cb,
       uint32_t idx
     );
@@ -85,20 +86,26 @@ namespace fuzz {
     uint32_t GetIdx() { return this->idx; }
 
     ATTRIBUTE_NO_SANITIZING
-    void Trace();
+    void Start();
     ATTRIBUTE_NO_SANITIZING
-    void Stop();
+    void Stop(bool hard_stop);
     ATTRIBUTE_NO_SANITIZING
     void Join();
     ATTRIBUTE_NO_SANITIZING
     const CrashInfo* GetCrashInfo() { return &this->last_crash; }
     ATTRIBUTE_NO_SANITIZING
-    static void* MonitorTracee(void* this_arg);
+    void MonitorTracee();
     ATTRIBUTE_NO_SANITIZING
-    static void* MonitorTraceeTimeout(void* this_arg);
+    void MonitorTraceeTimeout();
    
    private:
+    static void* DoMonitorTracee(void* this_arg);
+    static void* DoMonitorTraceeTimeout(void* this_arg);
     void CalcHashes();
+    void InitTimeoutMonitor();
+    process_utils::SignalInfo WaitForExit();
+    pid_t LaunchTargetProcess();
+    void ProcessCrash(process_utils::SignalInfo sig_info);
   };
 
 }

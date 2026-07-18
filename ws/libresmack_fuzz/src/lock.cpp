@@ -1,11 +1,13 @@
-#include <cstdio>
 #include <fcntl.h>
+#include <stdexcept>
 #include <stdio.h>
-#include <string>
+#include <sys/stat.h>
+#include <string.h>
+#include <semaphore.h>
 #include <sys/file.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <signal.h>
+#include <sys/mman.h>
 
 #include "resmack/debug.hpp"
 #include "resmack/fuzz/lock.hpp"
@@ -14,24 +16,37 @@
 namespace resmack {
 namespace fuzz {
 
-  Lock::Lock(std::string name) : name(name) {
-    char lock_path[1 + (SHA_DIGEST_LENGTH * 2) + 1]; // SHA_DIGEST_LENGTH + NULL
-    lock_path[0] = '/';
-    utils::sha1_hex(name.c_str(), name.size(), lock_path);
-    this->lock_path.assign(lock_path, strlen(lock_path));
+  Lock::Lock(std::string name) : anonymous(false), shared_between_procs(true), name(name) {
+    char sem_name[1 + (SHA_DIGEST_LENGTH * 2) + 1]; // SHA_DIGEST_LENGTH + NULL
+    sem_name[0] = '/';
+    utils::sha1_hex(name.c_str(), name.size(), sem_name);
+    this->sem_name.assign(sem_name, strlen(sem_name));
 
-    if ((this->_lock = sem_open(lock_path, O_CREAT, 0600, 1)) == SEM_FAILED) {
-      throw std::runtime_error("Could not create new semaphore: " + std::string(std::strerror(errno)));
+    sem_unlink(this->sem_name.c_str());
+    this->_lock = sem_open(this->sem_name.c_str(), O_CREAT | O_EXCL, S_IREAD | S_IWRITE, 1);
+    if (this->_lock == SEM_FAILED) {
+      throw std::runtime_error(std::string("Could not create new semaphore: ") + std::string(std::strerror(errno)));
     }
 
     this->anonymous = false;
     this->Init();
   }
 
-  Lock::Lock(std::string name, bool shared) : name(name) {
-    this->_lock = (sem_t*)malloc(sizeof(sem_t));
-    sem_init(this->_lock, shared, 1);
-    this->anonymous = true;
+  Lock::Lock(std::string name, bool shared_between_procs) : anonymous(true), shared_between_procs(shared_between_procs), name(name) {
+    if (shared_between_procs) {
+      this->_lock = static_cast<sem_t*>(mmap(
+        NULL,
+        sizeof(sem_t),
+        PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS,
+        -1,
+        0
+      ));
+    } else {
+      this->_lock = new sem_t();
+    }
+
+    sem_init(this->_lock, shared_between_procs, 1);
     this->Init();
   }
 
@@ -39,10 +54,13 @@ namespace fuzz {
 
   Lock::~Lock() {
     if (this->anonymous) {
-      free(this->_lock);
+      sem_destroy(this->_lock);
+      munmap(this->_lock, sizeof(sem_t));
       this->_lock = NULL;
     } else {
+      sem_unlink(this->sem_name.c_str());
       sem_close(this->_lock);
+      this->_lock = NULL;
     }
   }
 
@@ -83,7 +101,7 @@ namespace fuzz {
 
   void Lock::Init() {
     // just in case a previous process used a named lock and didn't leave it in a good state...
-    while (this->GetValue() == 0) {
+    if (this->GetValue() == 0) {
       this->unlock();
     }
   }

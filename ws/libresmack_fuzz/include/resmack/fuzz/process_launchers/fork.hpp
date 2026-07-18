@@ -3,29 +3,29 @@
 
 #include <functional>
 
-#include "resmack/fuzz/trace_target.hpp"
+#include "resmack/fuzz/process_launcher.hpp"
 
 namespace resmack {
 namespace fuzz {
-namespace trace_targets {
+namespace process_launchers {
 
   using TraceSpawnCb = std::function<void(Tracee*)>;
 
-  class Fork : public TraceTarget {
+  class ForkLauncher : public ProcessLauncher {
    private:
     TraceSpawnCb cb;
     bool mute_io;
 
    public:
-    Fork(bool mute_io, TraceSpawnCb spawn_cb);
-    ~Fork();
+    ForkLauncher(bool mute_io, TraceSpawnCb spawn_cb);
+    ~ForkLauncher();
 
     static void* SpawnThreadTarget(void* tracee_arg);
     pid_t Spawn(Tracee* tracee);
   };
 
   struct SpawnThreadArgs {
-    Fork* this_;
+    ForkLauncher* this_;
     Tracee* tracee;
   };
 }

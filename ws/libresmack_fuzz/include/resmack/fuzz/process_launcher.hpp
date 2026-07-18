@@ -6,7 +6,7 @@
 namespace resmack {
 namespace fuzz {
 
-class TraceTarget {
+class ProcessLauncher {
  public:
   virtual pid_t Spawn(Tracee* tracee) = 0;
 };

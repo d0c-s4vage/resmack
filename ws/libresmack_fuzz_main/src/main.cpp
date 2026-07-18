@@ -8,6 +8,7 @@
 #include <iostream>
 #include <openssl/sha.h>
 #include <pthread.h>
+#include <filesystem>
 #include <sched.h>
 #include <semaphore.h>
 #include <csignal>
@@ -15,6 +16,7 @@
 #include <thread>
 #include <unistd.h>
 
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/logo.hpp"
 #include "resmack/build_context.hpp"
 #include "resmack/rand.hpp"
@@ -30,12 +32,14 @@
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
 #include "resmack/fuzz/targets/direct.hpp"
-#include "resmack/fuzz/trace.hpp"
+#include "resmack/fuzz/tracer.hpp"
 #include "resmack/fuzz/tracee.hpp"
-#include "resmack/fuzz/trace_targets/fork.hpp"
+#include "resmack/fuzz/process_launchers/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
 #include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/sanitizer_init.hpp"
+
+namespace fs = std::filesystem;
 
 INIT_SANITIZER_GUARDS;
 
@@ -63,12 +67,13 @@ struct FuzzOptions {
   int mute_stdio;
   float print_interval;
   size_t stats_interval;
-  char* crash_output;
+  fs::path crash_output;
   size_t create_threshhold;
-  char* dump_corpus_path;
+  fs::path dump_corpus_path;
+  bool do_corpus_dump;
   uint32_t corpus_strats;
   int run_direct;
-  char* state_path;
+  fs::path state_path;
   bool pin_cpus;
   size_t corpus_decay;
 };
@@ -83,42 +88,23 @@ static FuzzOptions OPTS {
   .mute_stdio = true,
   .print_interval = 0.0f,
   .stats_interval = 100,
-  .crash_output = (char*)"crashes",
+  .crash_output = fs::absolute(fs::path("crashes")),
   .create_threshhold = 100000,
-  .dump_corpus_path = NULL,
+  // is ignored until set by the user
+  .dump_corpus_path = fs::absolute(fs::path("/dev/null")),
+  .do_corpus_dump = false,
   .corpus_strats = 0,
   .run_direct = 0,
-  .state_path = (char*)"",
+  // is set explicitly in ParseOptions
+  .state_path = fs::absolute(fs::path(".resmack-state")),
   .pin_cpus = true,
   .corpus_decay = 1000000, // 100,000 default decay
 };
 
 void sigint_handler([[maybe_unused]] int signum) {
   if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
-
   DEBUG_PRINT("SIGINT handler from main process\n");
   resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
-  for (resmack::fuzz::Tracer* tracer: TRACERS) {
-    tracer->Stop();
-  }
-  
-  char sem_path[2 + (SHA_DIGEST_LENGTH * 2)];
-
-  resmack::fuzz::utils::sha1_hex(OPTS.state_path, strlen(OPTS.state_path), sem_path+1);
-  sem_path[0] = '/';
-  if(sem_unlink(sem_path) != 0) {
-    // doesn't exist, so no problem!
-  }
-
-  char corpus_path[4096];
-  snprintf(corpus_path, sizeof(corpus_path), "%s-corpus", OPTS.state_path);
-  resmack::fuzz::utils::sha1_hex(corpus_path, strlen(corpus_path), sem_path+1);
-  sem_path[0] = '/';
-  if(sem_unlink(sem_path) != 0) {
-    // doesn't exist, so no problem!
-  }
-
-  STATUS_ARGS.should_run = false;
 }
 
 void PrintHelp(char* prog_name) {
@@ -183,9 +169,7 @@ bool ParseOptions(int argc, char**argv) {
     };
     int opt_index = 0;
 
-    static char state_path[4096];
-    snprintf(state_path, sizeof(state_path), "%s.resmack-state", argv[0]);
-    OPTS.state_path = state_path;
+    OPTS.state_path = fs::absolute(fs::path(std::string(argv[0]) + ".resmack-state"));
 
     while (true) {
       int c = getopt_long(argc, argv, "hsd:n:i:m:c:t:D:S:p:M:C:", long_options, &opt_index);
@@ -218,13 +202,14 @@ bool ParseOptions(int argc, char**argv) {
           OPTS.stats_interval = strtoull(optarg, NULL, 10);
           break;
         case 'c':
-          OPTS.crash_output = optarg;
+          OPTS.crash_output = fs::absolute(fs::path(optarg));
           break;
         case 't':
           OPTS.create_threshhold = strtoull(optarg, NULL, 10);
           break;
         case 'D':
-          OPTS.dump_corpus_path = optarg;
+          OPTS.dump_corpus_path = fs::absolute(fs::path(optarg));
+          OPTS.do_corpus_dump = true;
           break;
         case OPT_NO_MUTE:
           OPTS.mute_stdio = false;
@@ -233,7 +218,7 @@ bool ParseOptions(int argc, char**argv) {
           OPTS.run_direct = true;
           break;
         case 'S':
-          OPTS.state_path = optarg;
+          OPTS.state_path = fs::absolute(fs::path(optarg));
           break;
         case 'C':
           if (strcmp(optarg, "MOST_FEEDBACK") == 0) {
@@ -291,9 +276,8 @@ void PrintStatus(
 
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
   args->feedback->Sync();
-  /*
   corpus->Sync();
-  */
+
   resmack::fuzz::StateStats* stats = state->GetStats();
 
   end = std::chrono::high_resolution_clock::now();
@@ -395,7 +379,6 @@ void FuzzLoop(
   resmack::fuzz::Tracee* tracee
 ) {
   resmack::fuzz::ExternalFunctions EF;
-  resmack::fuzz::utils::KEEP_RUNNING = true;
 
   if (EF.ResmackInit != NULL) {
     EF.ResmackInit();
@@ -422,11 +405,15 @@ void FuzzLoop(
 
   size_t counts = 0;
   bool past_create_threshhold = true;
-  while (
-      resmack::fuzz::utils::KEEP_RUNNING &&
-      (OPTS.max_iters == 0 || state->GetNumIterations() < OPTS.max_iters) &&
-      (OPTS.max_crashes == 0 || state->GetNumCrashes() < OPTS.max_crashes)
-  ) {
+  while (!resmack::fuzz::ipc_util::SHUTTING_DOWN.load(std::memory_order_relaxed)) {
+    if (
+        (OPTS.max_iters > 0 && state->GetNumIterations() >= OPTS.max_iters) ||
+        (OPTS.max_crashes > 0 && state->GetNumCrashes() >= OPTS.max_crashes)
+    ) {
+      resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true, std::memory_order_relaxed);
+      break;
+    }
+
     counts++;
     if ((counts % OPTS.stats_interval) == 0) {
       state->IncNumIterations(OPTS.stats_interval);
@@ -506,7 +493,7 @@ void FuzzLoop(
   std::cout << std::flush;
 }
 
-bool HandleTimeout(
+void HandleTimeout(
   [[maybe_unused]] resmack::Rules* rules,
   resmack::fuzz::State* state,
   [[maybe_unused]] size_t rule_idx,
@@ -515,51 +502,39 @@ bool HandleTimeout(
   resmack::fuzz::Tracee* tracee
 ) {
   if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
-    return false;
+    return;
   }
 
   // nothing to do here
   if (!tracee->GetLastUsedCorpus()) {
-    return true;
+    return;
   }
-
-  DEBUG_PRINT("%d: [[Handling timeout, incrementing iterations\n", pid);
   state->IncNumIterations(1);
 
-  DEBUG_PRINT("%d: [[Handling timeout, getting corpus\n", pid);
+  // save the current state that generated the timeout
+  // so that we don't do it again
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  DEBUG_PRINT("%d: [[Handling timeout, syncing corpus\n", pid);
-  //corpus->Sync();
-  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
+  corpus->Sync();
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
-  DEBUG_PRINT("%d: [[Handling timeout, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
-  DEBUG_PRINT("%d: [[Handling timeout, done\n", pid);
-
-  return true;
 }
 
-bool HandleException(
+void HandleException(
   resmack::Rules* rules,
   resmack::fuzz::State* state,
   size_t rule_idx,
   [[maybe_unused]] pid_t pid, // pid
-  int, // status
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
   if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
-    return false;
+    return;
   }
 
   state->IncNumIterations(1);
-  DEBUG_PRINT("%d: [[Handling exception, getting corpus\n", pid);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  DEBUG_PRINT("%d: [[Handling exception, syncing corpus\n", pid);
   corpus->Sync();
-  DEBUG_PRINT("%d: [[Handling exception, incrementing unwanted 1, index1: %lu\n", pid, tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
-  DEBUG_PRINT("%d: [[Handling exception, incrementing unwanted 2, index2: %lu\n", pid, tracee->GetLastCorpusIndex2());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
 
   std::string output;
@@ -573,6 +548,7 @@ bool HandleException(
   ctx.SetReplay(&snapshot);
 
   rules->Build(rule_idx, &ctx);
+  std::cout << "NEW COVERAGE (CRASH): " << output << std::endl;
 
   const resmack::fuzz::CrashInfo* info = tracer->GetCrashInfo();
   std::string out_path = std::string(OPTS.crash_output) + "/" + info->major_hash;
@@ -592,7 +568,7 @@ bool HandleException(
       file.write(output.data(), output.size());
       file.close();
 
-      resmack::fuzz::ser::AsanInfo* asan_info = tracee->GetAsanInfo();
+      const resmack::fuzz::ser::AsanInfo* asan_info = tracee->GetAsanInfo();
       if (asan_info != NULL) {
         std::string asan_path = out_path + ".asan.txt";
         file.open(asan_path.c_str(), std::ofstream::out | std::ofstream::binary);
@@ -603,7 +579,7 @@ bool HandleException(
       std::string stack_path = out_path + ".stack.txt";
 
       std::string stack_data;
-      stack_data += strsignal(info->signal);
+      stack_data += strsignal(info->signal_info.term_signal ? info->signal_info.term_signal : info->signal_info.stop_signal);
       stack_data += "\n";
       stack_data += info->minor_stack;
       stack_data += "\n";
@@ -611,7 +587,6 @@ bool HandleException(
       file.open(stack_path, std::ofstream::out | std::ofstream::binary);
       file.write(stack_data.data(), stack_data.size());
       file.close();
-
       return true;
     } else {
       return false;
@@ -623,9 +598,8 @@ bool HandleException(
     // this only applies to *THIS* forked process - we need to stop
     // capturing coverage data
     resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
-    return false;
+    return;
   }
-  return true;
 }
 
 void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rule_idx) {
@@ -701,7 +675,7 @@ int main(int argc, char** argv) {
     reinterpret_cast<resmack::fuzz::corpora::MmapCorpus*>(corpus)->SetStrats(OPTS.corpus_strats);
   }
 
-  if (OPTS.dump_corpus_path) {
+  if (OPTS.do_corpus_dump) {
     DumpCorpus(&rules, corpus, rule_idx);
     return 0;
   }
@@ -714,7 +688,7 @@ int main(int argc, char** argv) {
   //may return 0 when not able to detect
   const auto nproc = std::thread::hardware_concurrency();
 
-  resmack::fuzz::trace_targets::Fork trace_target(
+  resmack::fuzz::process_launchers::ForkLauncher launcher(
     OPTS.mute_stdio,
     [nproc, rule_idx, &rules, &cov, &mmap_state, corpus](resmack::fuzz::Tracee* tracee) {
       uint32_t idx = tracee->GetIdx();
@@ -729,7 +703,6 @@ int main(int argc, char** argv) {
       }
 
       FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, tracee);
-      resmack::fuzz::ipc_util::SHUTTING_DOWN = true;
     }
   );
 
@@ -737,25 +710,24 @@ int main(int argc, char** argv) {
   std::cout << "Creating " << OPTS.nprocs << " processes for fuzzing" << std::endl;
   for (child_num = 0; child_num < OPTS.nprocs; child_num++ ) {
     resmack::fuzz::Tracer* tracer = new resmack::fuzz::Tracer(
-      &trace_target,
+      &launcher,
       [&rules, rule_idx, &mmap_state](
         pid_t pid,
-        int status,
         resmack::fuzz::Tracer* tracer,
         resmack::fuzz::Tracee* tracee
-      ) -> bool {
-        return HandleException(&rules, &mmap_state, rule_idx, pid, status, tracer, tracee);
+      ) -> void {
+        return HandleException(&rules, &mmap_state, rule_idx, pid, tracer, tracee);
       },
       [&rules, rule_idx, &mmap_state](
         pid_t pid,
         resmack::fuzz::Tracer* tracer,
         resmack::fuzz::Tracee* tracee
-      ) -> bool {
+      ) -> void {
         return HandleTimeout(&rules, &mmap_state, rule_idx, pid, tracer, tracee);
       },
       child_num
     );
-    tracer->Trace();
+    tracer->Start();
     TRACERS.push_back(tracer);
   }
 
@@ -763,17 +735,35 @@ int main(int argc, char** argv) {
   STATUS_ARGS.show_stats = OPTS.show_stats;
   STATUS_ARGS.should_run = true;
   STATUS_ARGS.feedback = &cov;
-
   pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
+
   signal(SIGINT, sigint_handler);
+
+    while (true) {
+      if (
+          (OPTS.max_crashes > 0 && mmap_state.GetNumCrashes() >= OPTS.max_crashes) ||
+          (OPTS.max_iters > 0 && mmap_state.GetNumIterations() >= OPTS.max_iters) ||
+          resmack::fuzz::ipc_util::SHUTTING_DOWN.load()
+      ) {
+          resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
+          for (auto* tracer : TRACERS) {
+              tracer->Stop(true);
+          }
+          break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 
   for (resmack::fuzz::Tracer* tracer: TRACERS) {
     tracer->Join();
+    delete tracer;
   }
 
   DEBUG_PRINT("KILLING THINGS NOW\n");
 
   resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
   STATUS_ARGS.should_run = false;
-  pthread_kill(STATUS_THREAD, SIGKILL);
+
+  pthread_cancel(STATUS_THREAD);
+  pthread_join(STATUS_THREAD, NULL);
 }

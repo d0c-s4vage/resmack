@@ -3,7 +3,6 @@
 
 #include <atomic>
 #include <unistd.h>
-#include <mutex>
 
 #include "resmack/debug.hpp"
 #include "resmack/fuzz/lock.hpp"

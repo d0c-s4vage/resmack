@@ -10,13 +10,18 @@ namespace fuzz {
 
   class Lock {
    private:
-    std::string name;
     sem_t* _lock;
     pid_t creator;
     bool anonymous;
-    std::string lock_path;
+    bool shared_between_procs;
+
+    // the name (in sem_open / sem_unlink / sem_* API terms) that was
+    // used to create the semaphore
+    std::string sem_name;
 
    public:
+    std::string name;
+
     // Create a named semaphore
     Lock(std::string name);
     // Create an anonymous semaphore, with bool specifying if it should be
@@ -34,8 +39,6 @@ namespace fuzz {
 
    private:
     void Init();
-    void IgnoreSignals();
-    void ObserveSignals();
   };
 
 }

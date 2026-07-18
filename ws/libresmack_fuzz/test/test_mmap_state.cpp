@@ -4,17 +4,19 @@
 #include <unistd.h>
 #include "sys/types.h"
 #include "sys/stat.h"
+#include <filesystem>
 
 #include "resmack/fuzz/states/mmap.hpp"
+
+namespace fs = std::filesystem;
 
 namespace resmack {
 namespace fuzz {
 
-  TEST(MMapState, SharableBetweenForks) {
-    const char* test_state = "/tmp/test.state";
-    struct stat info;
-    if (stat(test_state, &info) == 0) {
-      remove(test_state);
+  TEST(MMapState, ShareableBetweenForks) {
+    fs::path test_state = fs::path("/tmp/test.state");
+    if (fs::exists(test_state)) {
+      fs::remove(test_state);
     }
 
     resmack::fuzz::states::MmapState state(test_state);

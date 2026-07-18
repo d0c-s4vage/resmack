@@ -5,15 +5,15 @@
 #include "gtest/gtest.h"
 
 #include "resmack/fuzz/tracee.hpp"
-#include "resmack/fuzz/trace_target.hpp"
-#include "resmack/fuzz/trace_targets/fork.hpp"
+#include "resmack/fuzz/process_launcher.hpp"
+#include "resmack/fuzz/process_launchers/fork.hpp"
 
 namespace resmack {
 namespace fuzz {
 
-  TEST(TraceTargetFork, ForksCorrectly) {
+  TEST(ProcessLauncherFork, ForksCorrectly) {
     Tracee t(0);
-    trace_targets::Fork fork_target(true, [](Tracee* tracee) {
+    process_launchers::ForkLauncher fork_target(true, [](Tracee* tracee) {
       tracee->SaveLastCorpusInfo(true, 99999, 88888, 77777);
     });
 

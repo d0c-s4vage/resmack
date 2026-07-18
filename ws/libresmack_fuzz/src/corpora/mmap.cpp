@@ -2,7 +2,9 @@
 #include <cstring>
 #include <cstddef>
 #include <fcntl.h>
+#include <mutex>
 #include <semaphore.h>
+#include <filesystem>
 
 #include "resmack/debug.hpp"
 
@@ -11,11 +13,16 @@
 #include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/utils.hpp"
 
+namespace fs = std::filesystem;
+
 namespace resmack {
 namespace fuzz {
 namespace corpora {
 
-  MmapCorpus::MmapCorpus() :
+  MmapCorpus::MmapCorpus(fs::path state_path) :
+    corpus_lock(
+      fs::absolute(state_path).string() + "-corpus"
+    ),
     next_item_index(0),
     first_item(NULL),
     next_item(NULL),
@@ -24,13 +31,9 @@ namespace corpora {
   }
 
   MmapCorpus::~MmapCorpus() {
-    if (NULL != this->corpus_lock) {
-      delete this->corpus_lock;
-    }
   }
 
   void MmapCorpus::Init(
-    const char* state_path,
     void* corpus_map,
     size_t max_corpus_size
   )  {
@@ -41,15 +44,10 @@ namespace corpora {
     this->next_item = NULL;
     this->last_item1_one_based_idx = 0;
     this->last_item2_one_based_idx = 0;
-    this->corpus_lock = new Lock(std::string(state_path) + "-corpus"); 
 
     this->meta = (ser::CorpusMetadata*)this->corpus_map;
 
-    // *ALWAYS* sync when in Init (don't use Sync())
-    {
-      std::scoped_lock __l(*this->corpus_lock);
-      this->Sync();
-    }
+    this->Sync();
   }
 
   bool MmapCorpus::AddRandSnapshotIfNotSeen(
@@ -63,7 +61,7 @@ namespace corpora {
 
     bool res = true;
     {
-      std::scoped_lock __l(*this->corpus_lock);
+      std::scoped_lock __l(this->corpus_lock);
       this->SyncInner();
 
       if (this->SeenFeedback(stats.key)) {
@@ -83,7 +81,7 @@ namespace corpora {
     bool descendant_of_last
   ) {
     {
-      std::scoped_lock __l(*this->corpus_lock);
+      std::scoped_lock __l(this->corpus_lock);
       this->SyncInner();
       this->AddRandSnapshotInner(snapshot, stats, descendant_of_last);
     }
@@ -164,14 +162,14 @@ namespace corpora {
     }
 
     {
-      std::scoped_lock _l(*this->corpus_lock);
+      std::scoped_lock _l(this->corpus_lock);
       this->SyncInner();
     }
   }
 
   void MmapCorpus::SyncInner() {
     if (this->next_item == NULL || this->meta->reorg_seq != this->last_reorg_seq) {
-      for (auto entry : this->snapshots) {
+      for (auto& entry : this->snapshots) {
         entry.snapshot.clear();
       }
       this->SortedsClear();
@@ -247,7 +245,7 @@ namespace corpora {
     }
 
     {
-      std::scoped_lock _lock(*this->corpus_lock);
+      std::scoped_lock _lock(this->corpus_lock);
       this->SyncCountersInner();
     }
     this->SortedsResort();
@@ -417,7 +415,6 @@ namespace corpora {
 
       CorpusEntry* parent = &this->snapshots[parent_idx];
       if (parent == entry) {
-        DEBUG_PRINT("%d: PARENT WAS ENTRY! idx: %zu\n", getpid(), parent_idx);
         break;
       }
       ser::CorpusItemHeader* parent_header = this->GetItemHeader(parent_idx);
@@ -443,7 +440,7 @@ namespace corpora {
 
   void MmapCorpus::IncLastItemCrashes() {
     {
-      std::scoped_lock _lock(*this->corpus_lock);
+      std::scoped_lock _lock(this->corpus_lock);
       this->snapshots[this->last_item1_one_based_idx - 1].num_crashes++;
       this->GetItemHeader(this->last_item1_one_based_idx - 1)->num_crashes++;
 
@@ -457,19 +454,14 @@ namespace corpora {
   void MmapCorpus::IncUnwanted(size_t one_based_idx) {
     if (one_based_idx == 0) { return; }
 
-    DEBUG_PRINT("   idx: %lu - Incrementing unwanted\n", one_based_idx);
     {
-      std::scoped_lock _lock(*this->corpus_lock);
-      DEBUG_PRINT("   idx: %lu - Getting item header\n", one_based_idx);
+      std::scoped_lock _lock(this->corpus_lock);
       ser::CorpusItemHeader* header = this->GetItemHeader(one_based_idx - 1);
 
       //DEBUG_PRINT("   idx: %lu - Incrementing snapshot\n", one_based_idx);
       //this->snapshots[one_based_idx - 1].mutations_since_offspring += 5000;
 
-      DEBUG_PRINT("   idx: %lu - bumping mutations since offspring\n", one_based_idx);
-      header->mutations_since_offspring += 5000;
-
-      DEBUG_PRINT("   idx: %lu - Incrementing last_updated_seq\n", one_based_idx);
+      header->mutations_since_offspring += 1;
       this->last_updated_seq = ++this->meta->updated_seq;
     }
   }

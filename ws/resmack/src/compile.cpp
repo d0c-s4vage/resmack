@@ -102,10 +102,9 @@ namespace compile {
     std::vector<const char *> options({
       "clang++",
       "-fno-omit-frame-pointer",
+      "-fno-sanitize=all",
       "-Iws/libresmack/include",
-      "-Wl,--whole-archive",
-      "-lresmack_fuzz_main-static", // static lib
-      "-Wl,--no-whole-archive",
+      "-lresmack_fuzz_main-static",
       "-lresmack_fuzz",
       "-lresmack",
       "-lpthread",
@@ -123,6 +122,7 @@ namespace compile {
       options.emplace_back("-O0");
       options.emplace_back("-fsanitize=address");
     } else {
+      options.emplace_back("-fno-sanitize=address");
       options.emplace_back("-O3");
       options.emplace_back("-ffast-math");
       options.emplace_back("-march=native");

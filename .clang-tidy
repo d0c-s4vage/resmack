@@ -1,0 +1,30 @@
+---
+# Checks: "*,
+#         -abseil-*,
+#         -altera-*,
+#         -android-*,
+#         -fuchsia-*,
+#         -google-*,
+#         -llvm*,
+#         -modernize-use-trailing-return-type,
+#         -zircon-*,
+#         -readability-else-after-return,
+#         -readability-static-accessed-through-instance,
+#         -readability-avoid-const-params-in-decls,
+#         -cppcoreguidelines-non-private-member-variables-in-classes,
+#         -misc-non-private-member-variables-in-classes,
+# "
+Checks:
+  - -*
+  - clang-analyzer-core*
+  - clang-analyzer-cplusplus*
+  - clang-analyzer-unix*
+  - clang-analyzer-security*
+  - bugprone-*
+ImplementationFileExtensions: ['cpp']
+HeaderFileExtensions:         ['hpp']
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: '.*/build/.*/_deps/.*'
+FormatStyle:     none
+UseColor: true
