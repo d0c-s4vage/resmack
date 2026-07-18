@@ -4,7 +4,6 @@
 
 ```
 echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
-# 
 ```
 
 ## Dependencies
@@ -45,6 +44,25 @@ build/release/resmack cc --asan -- test.cpp run_on_grammar.cpp -o a.out
 # now run the fuzzer binary
 ./a.out -n $(nproc) --max-crashes 1
 ```
+
+You should see something like this:
+
+```
+WARNING: Failed to find function "ResmackGrammarInit"
+Executing:
+
+clang++ -fno-omit-frame-pointer -fno-sanitize=all -Iws/libresmack/include -lresmack_fuzz_main-static -lresmack_fuzz -lresmack -lpthread -lcrypto -lunwind -lunwind-ptrace -lunwind-generic -L /home/saitama/ws/dev/resmack/build/release -O0 -fsanitize=address -fsanitize-coverage=trace-pc-guard test.cpp run_on_grammar.cpp -o a.out
+
+Done!
+Creating 32 processes for fuzzing
+Iters: 3100 | 30855.37 iters/s | Crashes: 0 | Corpus: 9 | Feedback: 112 edges | 0.10 s
+Iters: 674200 | 708328.51 iters/s | Crashes: 0 | Corpus: 10 | Feedback: 114 edges | 0.95 s
+Iters: 891700 | 809132.64 iters/s | Crashes: 0 | Corpus: 11 | Feedback: 116 edges | 1.10 s
+NEW COVERAGE (CRASH): I throw apples or grapes or apples or peaches and we devour peaches
+Iters: 1261401 | 932746.92 iters/s | Crashes: 1 | Corpus: 11 | Feedback: 116 edges | 1.35 s
+```
+
+## CMake Presets
 
 You can see the other CMake presets with:
 
