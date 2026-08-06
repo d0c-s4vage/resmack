@@ -39,7 +39,7 @@ namespace items {
         new Raw("hello"),
         new Raw("world"),
         new Raw("test"),
-        NULL);
+        nullptr);
 
     EXPECT_EQ(or_->NumItems(), 3u);
 
@@ -63,7 +63,7 @@ namespace items {
         new Raw("hello"),
         new Raw("world"),
         new Raw("test"),
-        NULL);
+        nullptr);
 
     RuleManager rule_man;
     rule_man.Init();

@@ -10,7 +10,6 @@
 
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
-#include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/utils.hpp"
 
 namespace fs = std::filesystem;
@@ -298,73 +297,110 @@ namespace corpora {
     this->strats = strats;
 
     if (STRAT_RAND & strats) {
-      this->strat_handlers.push_back(this->HandleRandStrat);
+      this->strat_handlers.push_back(STRAT_RAND);
     }
     if (STRAT_MOST_FEEDBACK & strats) {
-      this->strat_handlers.push_back(this->HandleMostFeedbackStrat);
+      this->strat_handlers.push_back(STRAT_MOST_FEEDBACK);
     }
     if (STRAT_LEAST_FEEDBACK & strats) {
-      this->strat_handlers.push_back(this->HandleLeastFeedbackStrat);
+      this->strat_handlers.push_back(STRAT_LEAST_FEEDBACK);
     }
     if (STRAT_MOST_RECENT & strats) {
-      this->strat_handlers.push_back(this->HandleMostRecentStrat);
+      this->strat_handlers.push_back(STRAT_MOST_RECENT);
     }
     if (STRAT_LEAST_RECENT & strats) {
-      this->strat_handlers.push_back(this->HandleLeastRecentStrat);
+      this->strat_handlers.push_back(STRAT_LEAST_RECENT);
     }
     if (STRAT_MOST_ANCESTORS & strats) {
-      this->strat_handlers.push_back(this->HandleMostAncestorsStrat);
+      this->strat_handlers.push_back(STRAT_MOST_ANCESTORS);
     }
     if (STRAT_LEAST_ANCESTORS & strats) {
-      this->strat_handlers.push_back(this->HandleLeastAncestorsStrat);
+      this->strat_handlers.push_back(STRAT_LEAST_ANCESTORS);
     }
     if (STRAT_MOST_DIRECT_DESCENDANTS & strats) {
-      this->strat_handlers.push_back(this->HandleMostDirectDescendantsStrat);
+      this->strat_handlers.push_back(STRAT_MOST_DIRECT_DESCENDANTS);
     }
     if (STRAT_LEAST_DIRECT_DESCENDANTS & strats) {
-      this->strat_handlers.push_back(this->HandleLeastDirectDescendantsStrat);
+      this->strat_handlers.push_back(STRAT_LEAST_DIRECT_DESCENDANTS);
     }
     if (STRAT_MOST_DESCENDANTS & strats) {
-      this->strat_handlers.push_back(this->HandleMostDescendantsStrat);
+      this->strat_handlers.push_back(STRAT_MOST_DESCENDANTS);
     }
     if (STRAT_LEAST_DESCENDANTS & strats) {
-      this->strat_handlers.push_back(this->HandleLeastDescendantsStrat);
+      this->strat_handlers.push_back(STRAT_LEAST_DESCENDANTS);
     }
   }
 
-  size_t MmapCorpus::HandleRandStrat(MmapCorpus* this_, Rand* rand, size_t) {
-    size_t corpus_len = this_->snapshots.size();
+  size_t MmapCorpus::GetRandIdxFromStrats(Rand* rand) {
+    uint32_t choice_val = rand->Next();
+    uint32_t rand_val = rand->Next();
+    size_t corpus_len = this->snapshots.size();
+    size_t top_ten = corpus_len >= 10 ? 10 : corpus_len;
+    size_t rand_top_ten = rand_val % top_ten;
+
+    CorpusStrat strat = this->strat_handlers[choice_val % this->strat_handlers.size()];
+
+    switch (strat) {
+      case STRAT_RAND:
+        return this->HandleRandStrat(rand, rand_top_ten);
+      case STRAT_MOST_FEEDBACK:
+        return this->HandleMostFeedbackStrat(rand, rand_top_ten);
+      case STRAT_LEAST_FEEDBACK:
+        return this->HandleLeastFeedbackStrat(rand, rand_top_ten);
+      case STRAT_MOST_RECENT:
+        return this->HandleMostRecentStrat(rand, rand_top_ten);
+      case STRAT_LEAST_RECENT:
+        return this->HandleLeastRecentStrat(rand, rand_top_ten);
+      case STRAT_MOST_ANCESTORS:
+        return this->HandleMostAncestorsStrat(rand, rand_top_ten);
+      case STRAT_LEAST_ANCESTORS:
+        return this->HandleLeastAncestorsStrat(rand, rand_top_ten);
+      case STRAT_MOST_DIRECT_DESCENDANTS:
+        return this->HandleMostDirectDescendantsStrat(rand, rand_top_ten);
+      case STRAT_LEAST_DIRECT_DESCENDANTS:
+        return this->HandleLeastDirectDescendantsStrat(rand, rand_top_ten);
+      case STRAT_MOST_DESCENDANTS:
+        return this->HandleMostDescendantsStrat(rand, rand_top_ten);
+      case STRAT_LEAST_DESCENDANTS:
+        return this->HandleLeastDescendantsStrat(rand, rand_top_ten);
+      default:
+        utils::throw_runtime_error("Unknown Strategy");
+    }
+  }
+
+  size_t MmapCorpus::HandleRandStrat(Rand* rand, size_t) {
+    size_t corpus_len = snapshots.size();
     return rand->Next() % corpus_len;
   }
-  size_t MmapCorpus::HandleMostFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_feedback[rand_top_ten];
+  size_t MmapCorpus::HandleMostFeedbackStrat(Rand*, size_t rand_top_ten) {
+    return most_feedback[rand_top_ten];
   }
-  size_t MmapCorpus::HandleLeastFeedbackStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_feedback[this_->most_feedback.size() - rand_top_ten - 1];
+  size_t MmapCorpus::HandleLeastFeedbackStrat(Rand*, size_t rand_top_ten) {
+    return most_feedback[most_feedback.size() - rand_top_ten - 1];
   }
-  size_t MmapCorpus::HandleMostRecentStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->snapshots.size() - rand_top_ten - 1;
+  size_t MmapCorpus::HandleMostRecentStrat(Rand*, size_t rand_top_ten) {
+    return snapshots.size() - rand_top_ten - 1;
   }
-  size_t MmapCorpus::HandleLeastRecentStrat(MmapCorpus*, Rand*, size_t rand_top_ten) {
+  size_t MmapCorpus::HandleLeastRecentStrat(Rand*, size_t rand_top_ten) {
     return rand_top_ten;
   }
-  size_t MmapCorpus::HandleMostAncestorsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_ancestors_desc[rand_top_ten];
+  size_t MmapCorpus::HandleMostAncestorsStrat(Rand*, size_t rand_top_ten) {
+    return most_ancestors_desc[rand_top_ten];
   }
-  size_t MmapCorpus::HandleLeastAncestorsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_ancestors_desc[this_->most_ancestors_desc.size() - rand_top_ten - 1];
+  size_t MmapCorpus::HandleLeastAncestorsStrat(Rand*, size_t rand_top_ten) {
+    return most_ancestors_desc[most_ancestors_desc.size() - rand_top_ten - 1];
   }
-  size_t MmapCorpus::HandleMostDirectDescendantsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_direct_descendants_desc[rand_top_ten];
+  size_t MmapCorpus::HandleMostDirectDescendantsStrat(Rand*, size_t rand_top_ten) {
+    return most_direct_descendants_desc[rand_top_ten];
   }
-  size_t MmapCorpus::HandleLeastDirectDescendantsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_direct_descendants_desc[this_->most_direct_descendants_desc.size() - rand_top_ten - 1];
+  size_t MmapCorpus::HandleLeastDirectDescendantsStrat(Rand*, size_t rand_top_ten) {
+    return most_direct_descendants_desc[most_direct_descendants_desc.size() - rand_top_ten - 1];
   }
-  size_t MmapCorpus::HandleMostDescendantsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_descendants_desc[rand_top_ten];
+  size_t MmapCorpus::HandleMostDescendantsStrat(Rand*, size_t rand_top_ten) {
+    return most_descendants_desc[rand_top_ten];
   }
-  size_t MmapCorpus::HandleLeastDescendantsStrat(MmapCorpus* this_, Rand*, size_t rand_top_ten) {
-    return this_->most_descendants_desc[this_->most_descendants_desc.size() - rand_top_ten - 1];
+  size_t MmapCorpus::HandleLeastDescendantsStrat(Rand*, size_t rand_top_ten) {
+    return most_descendants_desc[most_descendants_desc.size() - rand_top_ten - 1];
   }
 
   Vector<RandSnapshot>* MmapCorpus::GetItem(Rand* rand, size_t* last_idx1, size_t* last_idx2) {
@@ -374,15 +410,7 @@ namespace corpora {
 
     this->Sync();
 
-    uint32_t choice_val = rand->Next();
-    uint32_t rand_val = rand->Next();
-    size_t corpus_len = this->snapshots.size();
-    size_t top_ten = corpus_len >= 10 ? 10 : corpus_len;
-    size_t rand_top_ten = rand_val % top_ten;
-
-    size_t rand_idx = this->strat_handlers[choice_val % this->strat_handlers.size()](
-      this, rand, rand_top_ten
-    );
+    size_t rand_idx = GetRandIdxFromStrats(rand);
 
     *last_idx1 = this->last_item1_one_based_idx = rand_idx + 1;
     *last_idx2 = this->last_item2_one_based_idx = 0;

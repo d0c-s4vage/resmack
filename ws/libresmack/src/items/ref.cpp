@@ -31,7 +31,7 @@ namespace items {
 
   size_t Ref::CalcRefDepth(calc::RefDepth* ref_calc) {
     size_t res = ref_calc->DepthOf(this->rule_name_);
-    if (res == calc::RefDepth::INF_DEPTH) {
+    if (res == resmack::calc::RefDepth::INF_DEPTH) {
       return res;
     }
     return res + 1;

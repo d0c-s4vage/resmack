@@ -18,12 +18,14 @@ foreach(TEST_FILE IN LISTS TEST_SOURCES)
     $<$<CONFIG:Release>:asan>
     $<$<CONFIG:RelWithDebInfo>:asan>
     GTest::gtest_main
-    ${LIBRESMACK_FUZZ_STATIC}
+    ${LIBRESMACK_FUZZ_SHARED}
+    # ${LIBRESMACK_FUZZ_STATIC}
   )
   target_compile_options(
     "${CURR_TEST_NAME}"
       PRIVATE
         -O0
+        -fno-omit-frame-pointer
         -g
         SHELL:${ASAN_FLAGS}
         SHELL:${COVERAGE_FLAGS}

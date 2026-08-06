@@ -99,8 +99,8 @@ namespace fuzz {
     void MonitorTraceeTimeout();
    
    private:
-    static void* DoMonitorTracee(void* this_arg);
-    static void* DoMonitorTraceeTimeout(void* this_arg);
+    void* DoMonitorTracee(void* this_arg);
+    void* DoMonitorTraceeTimeout(void* this_arg);
     void CalcHashes();
     void InitTimeoutMonitor();
     process_utils::SignalInfo WaitForExit();

@@ -14,16 +14,16 @@ namespace process_utils {
 
   static inline bool IsCrashSignal(int signal) {
     switch (signal) {
-        case SIGTRAP:
-          // a trace event
-          return false;
         case SIGSEGV:  // segfault
         case SIGABRT:  // abort() / assert / ASAN
         case SIGBUS:   // misaligned memory access
         case SIGFPE:   // divide by zero / float exception
         case SIGILL:   // illegal instruction
+          return true;
+
+        case SIGTRAP:
         default:
-            return true;
+          return false;
     }
   }
 
@@ -71,6 +71,26 @@ namespace process_utils {
     } else {
       out->exit_reason = ExitReason::Normal;
     }
+  }
+
+  bool IgnoreBasicSignals() noexcept {
+    const auto signals = std::to_array({
+      // is handled by the main process, which shuts everything down.
+      SIGINT,
+      // terminal resize
+      SIGWINCH,
+    });
+
+    bool success = true;
+    for (const auto& sig: signals) {
+      // the main parent process should be handling the SIGINT
+      if (std::signal(sig, SIG_IGN) == SIG_ERR) {
+        DEBUG_PRINT("ForkLauncher child: error installing %s handler\n", sigabbrev_np(sig));
+        success = false;
+      }
+    }
+
+    return success;
   }
 
 }

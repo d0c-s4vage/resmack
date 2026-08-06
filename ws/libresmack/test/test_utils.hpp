@@ -11,7 +11,7 @@
 
 namespace test_utils {
   __attribute__((unused))
-  static std::string BuildItem(resmack::Item* item) {
+  inline std::string BuildItem(resmack::Item* item) {
     resmack::Rand rand;
     resmack::Rules rules;
     rules.AddRule("test", item);
@@ -23,7 +23,7 @@ namespace test_utils {
   }
 
   __attribute__((unused))
-  static void CountBuilds(int iters, resmack::Item* item, resmack::Map<std::string, size_t>* counts) {
+  inline void CountBuilds(int iters, resmack::Item* item, resmack::Map<std::string, size_t>* counts) {
     resmack::Rand rand;
     resmack::Rules rules;
     rules.AddRule("test", item);
@@ -38,7 +38,7 @@ namespace test_utils {
   }
 
   __attribute__((unused))
-  static void SplitStr(const std::string& input, const std::string& split, std::vector<std::string>* output) {
+  inline void SplitStr(const std::string& input, const std::string& split, std::vector<std::string>* output) {
     size_t last_idx = 0;
     size_t split_idx = input.find(split, last_idx);
     while (split_idx != std::string::npos) {

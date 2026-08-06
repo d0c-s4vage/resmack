@@ -16,7 +16,7 @@
 namespace resmack {
 namespace fuzz {
 
-  Lock::Lock(std::string name) : anonymous(false), shared_between_procs(true), name(name) {
+  Lock::Lock(std::string name) : anonymous(false), name(name) {
     char sem_name[1 + (SHA_DIGEST_LENGTH * 2) + 1]; // SHA_DIGEST_LENGTH + NULL
     sem_name[0] = '/';
     utils::sha1_hex(name.c_str(), name.size(), sem_name);
@@ -32,8 +32,8 @@ namespace fuzz {
     this->Init();
   }
 
-  Lock::Lock(std::string name, bool shared_between_procs) : anonymous(true), shared_between_procs(shared_between_procs), name(name) {
-    if (shared_between_procs) {
+  Lock::Lock(std::string name, bool shared) : anonymous(true), name(name) {
+    if (shared) {
       this->_lock = static_cast<sem_t*>(mmap(
         NULL,
         sizeof(sem_t),
@@ -46,7 +46,7 @@ namespace fuzz {
       this->_lock = new sem_t();
     }
 
-    sem_init(this->_lock, shared_between_procs, 1);
+    sem_init(this->_lock, shared, 1);
     this->Init();
   }
 

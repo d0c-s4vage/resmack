@@ -12,7 +12,7 @@ namespace fuzz {
   void NoopCoverage::Stop() {
   }
 
-  FeedbackStats NoopCoverage::GetStats() {
+  FeedbackStats NoopCoverage::GetStats() const noexcept {
     return { 0, 0, 0 };
   }
 

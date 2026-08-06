@@ -57,7 +57,7 @@ namespace resmack {
 
     private:
      void Init(uint32_t seed);
-     static inline uint32_t Rotl(const uint32_t x, int k);
+     inline uint32_t Rotl(const uint32_t x, int k);
   };
 
 }

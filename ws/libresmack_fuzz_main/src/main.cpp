@@ -28,6 +28,7 @@
 #include "resmack/fuzz/external.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
+#include "resmack/fuzz/lock.hpp"
 #include "resmack/fuzz/mutate.hpp"
 #include "resmack/fuzz/state.hpp"
 #include "resmack/fuzz/states/mmap.hpp"
@@ -36,22 +37,18 @@
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/process_launchers/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
-#include "resmack/fuzz/ipc_util.hpp"
-#include "resmack/fuzz/sanitizer_init.hpp"
 
 namespace fs = std::filesystem;
-
-INIT_SANITIZER_GUARDS;
-
 
 namespace  {
 
 struct LoopPrintStatusArgs {
   resmack::fuzz::states::MmapState* state;
   resmack::fuzz::Feedback* feedback;
-  int show_stats;
-  bool should_run;
+  bool show_stats;
 };
+
+resmack::fuzz::Lock io_lock("ResmackIoLock", true);
 
 resmack::Vector<resmack::fuzz::Tracer*> TRACERS;
 pthread_t STATUS_THREAD = 0;
@@ -87,7 +84,7 @@ static FuzzOptions OPTS {
   .show_stats = false,
   .mute_stdio = true,
   .print_interval = 0.0f,
-  .stats_interval = 100,
+  .stats_interval = 10000,
   .crash_output = fs::absolute(fs::path("crashes")),
   .create_threshhold = 100000,
   // is ignored until set by the user
@@ -98,13 +95,16 @@ static FuzzOptions OPTS {
   // is set explicitly in ParseOptions
   .state_path = fs::absolute(fs::path(".resmack-state")),
   .pin_cpus = true,
-  .corpus_decay = 1000000, // 100,000 default decay
+  .corpus_decay = 100'000, // 100,000 default decay
 };
 
+pid_t MAIN_PID;
+std::atomic<bool> SHUTTING_DOWN(false);
+
 void sigint_handler([[maybe_unused]] int signum) {
-  if (::getpid() != resmack::fuzz::utils::MAIN_PID) { return; }
+  if (getpid() != MAIN_PID) { return; }
   DEBUG_PRINT("SIGINT handler from main process\n");
-  resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
+  SHUTTING_DOWN.store(true);
 }
 
 void PrintHelp(char* prog_name) {
@@ -187,25 +187,25 @@ bool ParseOptions(int argc, char**argv) {
           OPTS.show_stats = true;
           break;
         case 'd':
-          OPTS.max_depth = strtoull(optarg, NULL, 10);
+          OPTS.max_depth = strtoull(optarg, nullptr, 10);
           break;
         case 'm':
-          OPTS.max_iters = strtoull(optarg, NULL, 10);
+          OPTS.max_iters = strtoull(optarg, nullptr, 10);
           break;
         case 'M':
-          OPTS.max_crashes = strtoull(optarg, NULL, 10);
+          OPTS.max_crashes = strtoull(optarg, nullptr, 10);
           break;
         case 'n':
-          OPTS.nprocs = strtoull(optarg, NULL, 10);
+          OPTS.nprocs = strtoull(optarg, nullptr, 10);
           break;
         case 'i':
-          OPTS.stats_interval = strtoull(optarg, NULL, 10);
+          OPTS.stats_interval = strtoull(optarg, nullptr, 10);
           break;
         case 'c':
           OPTS.crash_output = fs::absolute(fs::path(optarg));
           break;
         case 't':
-          OPTS.create_threshhold = strtoull(optarg, NULL, 10);
+          OPTS.create_threshhold = strtoull(optarg, nullptr, 10);
           break;
         case 'D':
           OPTS.dump_corpus_path = fs::absolute(fs::path(optarg));
@@ -255,7 +255,7 @@ bool ParseOptions(int argc, char**argv) {
           OPTS.pin_cpus = false;
           break;
         case OPT_CORPUS_DECAY:
-          OPTS.corpus_decay = strtoull(optarg, NULL, 10);
+          OPTS.corpus_decay = strtoull(optarg, nullptr, 10);
           break;
       }
     }
@@ -264,48 +264,45 @@ bool ParseOptions(int argc, char**argv) {
 }
 
 void PrintStatus(
-  LoopPrintStatusArgs* args,
-  std::chrono::high_resolution_clock::time_point start,
+  resmack::fuzz::states::MmapState* state,
+  resmack::fuzz::Feedback* feedback,
+  bool show_stats,
+  float start,
   uint64_t start_iters
 ) {
   std::cout << std::flush;
 
-  std::chrono::high_resolution_clock::time_point end;
-  resmack::fuzz::states::MmapState* state = args->state;
-  bool show_stats = args->show_stats;
-
   resmack::fuzz::corpora::MmapCorpus* corpus = state->GetMmapCorpus();
-  args->feedback->Sync();
+  feedback->Sync();
   corpus->Sync();
 
   resmack::fuzz::StateStats* stats = state->GetStats();
 
-  end = std::chrono::high_resolution_clock::now();
   uint64_t num_iters = state->GetNumIterations();
   uint64_t session_iters = num_iters - start_iters;
-  std::chrono::duration<double> span = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+  float span = resmack::fuzz::utils::GetTimeNow() - start;
+  /*
   printf(
     "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu | Feedback: %s | %0.2f s\n",
     num_iters,
-    (float)session_iters / span.count(),
+    (float)session_iters / span,
     state->GetNumCrashes(),
     corpus->NumItemsRaw(),
-    args->feedback->GetSummary().c_str(),
-    span.count()
+    feedback->GetSummary().c_str(),
+    span,
   );
-  /*
+  */
   printf(
     "Iters: %lu | %0.2f iters/s | Crashes: %lu | Corpus: %lu (D:%05.2f,C:%05.2f) | Feedback: %s | %0.2f s\n",
     num_iters,
-    (float)session_iters / span.count(),
+    (float)session_iters / span,
     state->GetNumCrashes(),
     corpus->NumItemsRaw(),
     corpus->GetDecayPercent(),
     corpus->GetUsedCapacity() * 100,
-    args->feedback->GetSummary().c_str(),
-    span.count()
+    feedback->GetSummary().c_str(),
+    span
   );
-  */
 
   if (!show_stats) {
     return;
@@ -324,50 +321,54 @@ void PrintStatus(
 #undef STAT
 }
 
-void* LoopPrintStatus(void* args_ptr) {
-  LoopPrintStatusArgs* args = (LoopPrintStatusArgs*)args_ptr;
-  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-  resmack::fuzz::states::MmapState* state = args->state;
+void LoopPrintStatus(
+    resmack::fuzz::states::MmapState* state,
+    resmack::fuzz::Feedback* feedback,
+    bool show_stats
+) {
+  float start = resmack::fuzz::utils::GetTimeNow();
+  float last_print = start;
   uint64_t start_iters = state->GetNumIterations();
 
-  size_t sleep_amt;
+  float sleep_amt;
   if (OPTS.print_interval != 0.0f) {
-    sleep_amt = (size_t)(OPTS.print_interval * 1000);
+    sleep_amt = (float)(OPTS.print_interval);
   } else {
-    sleep_amt  = static_cast<size_t>(1 * 1000); // ms
+    sleep_amt  = 1.0f;
   }
 
-  while (args->should_run) {
-    if (OPTS.print_interval == 0.0f) {
-      sleep_amt += 1000;
-    }
-    size_t total_slept = 0;
-    size_t increment = 50;
-    size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
-    size_t prev_crash_count = state->GetNumCrashes();
-    while(total_slept < sleep_amt && args->should_run) {
-      if (OPTS.print_interval == 0.0f && (
-        state->GetCorpus()->NumItemsRaw() != prev_corpus_count
-        || state->GetNumCrashes() != prev_crash_count
-      )) {
-          break;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(increment));
-      total_slept += increment;
-    }
-    if (!args->should_run) {
-      break;
-    }
-    // in case we broke early to show immediate status
-    sleep_amt -= (sleep_amt - total_slept);
+  size_t increment = 50;
+  size_t prev_corpus_count = state->GetCorpus()->NumItemsRaw();
+  size_t prev_crash_count = state->GetNumCrashes();
 
-    PrintStatus(args, start, start_iters);
-  }
-  // one final status print
-  PrintStatus(args, start, start_iters);
-  printf("Exiting status loop\n");
+  do {
+    std::this_thread::sleep_for(std::chrono::milliseconds(increment));
 
-  return NULL;
+    float now = resmack::fuzz::utils::GetTimeNow();
+
+    size_t curr_corpus_count = state->GetCorpus()->NumItemsRaw();
+    size_t curr_crash_count = state->GetNumCrashes();
+    if ((now - last_print) >= sleep_amt
+      || curr_corpus_count != prev_corpus_count
+      || curr_crash_count != prev_crash_count
+    ) {
+      PrintStatus(state, feedback, show_stats, start, start_iters);
+      last_print = resmack::fuzz::utils::GetTimeNow();
+    }
+
+    prev_crash_count = curr_crash_count;
+    prev_corpus_count = curr_corpus_count;
+  } while(!SHUTTING_DOWN.load());
+}
+
+void* DoLoopPrintStatus(void* args_ptr) {
+  LoopPrintStatusArgs* args = static_cast<LoopPrintStatusArgs*>(args_ptr);
+  LoopPrintStatus(
+      args->state,
+      args->feedback,
+      args->show_stats
+  );
+  return nullptr;
 }
 
 void FuzzLoop(
@@ -380,7 +381,7 @@ void FuzzLoop(
 ) {
   resmack::fuzz::ExternalFunctions EF;
 
-  if (EF.ResmackInit != NULL) {
+  if (EF.ResmackInit != nullptr) {
     EF.ResmackInit();
   }
 
@@ -405,12 +406,12 @@ void FuzzLoop(
 
   size_t counts = 0;
   bool past_create_threshhold = true;
-  while (!resmack::fuzz::ipc_util::SHUTTING_DOWN.load(std::memory_order_relaxed)) {
+  while (!SHUTTING_DOWN.load(std::memory_order_relaxed)) {
     if (
         (OPTS.max_iters > 0 && state->GetNumIterations() >= OPTS.max_iters) ||
         (OPTS.max_crashes > 0 && state->GetNumCrashes() >= OPTS.max_crashes)
     ) {
-      resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true, std::memory_order_relaxed);
+      SHUTTING_DOWN.store(true, std::memory_order_relaxed);
       break;
     }
 
@@ -418,7 +419,6 @@ void FuzzLoop(
     if ((counts % OPTS.stats_interval) == 0) {
       state->IncNumIterations(OPTS.stats_interval);
       state->SyncStats(&stats);
-      feedback->Sync();
       stats.Clear();
       bool tmp = (corpus->ItersSinceNewItem() > OPTS.create_threshhold);
       if (tmp && !past_create_threshhold) {
@@ -433,7 +433,7 @@ void FuzzLoop(
     size_t last_corpus_idx2 = 0;
     bool used_corpus = false;
     if (corpus->NumItems() == 0 || (past_create_threshhold && meta_rand.Maybe())) {
-      ctx.SetReplay(NULL);
+      ctx.SetReplay(nullptr);
       ctx.max_depth = meta_rand.NextInRangeGaussian(1, OPTS.max_depth);
       //ctx.max_depth = (meta_rand.Next() % (OPTS.max_depth - 1)) + 1;
     } else {
@@ -460,16 +460,12 @@ void FuzzLoop(
       rules->Build(rule_idx, &ctx);
     });
 
-    //output = "I mock apples and bananas and grapes or bananas or apples without peaches without bananas with peaches or pears and apples and bananas";
-
     // this occurs *in* the traced process (after forking/*).
     // If an exception occurs, these values are extracted and
     // used to save crash information and update corpus stats
-    if (tracee != NULL) {
-      tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx1, last_corpus_idx2, OPTS.max_depth);
-      tracee->SaveLastReplay(&mutated_replay);
-      tracee->IterStart();
-    }
+    tracee->SaveLastCorpusInfo(used_corpus, last_corpus_idx1, last_corpus_idx2, OPTS.max_depth);
+    tracee->SaveLastReplay(&mutated_replay);
+    tracee->IterStart();
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::TARGET, {
       target.Launch(feedback, &output, &settings, &stats);
@@ -482,11 +478,14 @@ void FuzzLoop(
     resmack::fuzz::FeedbackStats feedback_stats = feedback->GetStats();
     if (feedback_stats.new_coverage) {
       std::cout << "NEW COVERAGE: " << output << std::endl;
+      feedback->Sync();
     }
 
     RECORD_STAT(&stats, resmack::fuzz::SampleTypes::CORPUS, {
-      if (stats.valid && feedback_stats.new_coverage && corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
-        past_create_threshhold = false;
+      if (stats.valid && feedback_stats.new_coverage) {
+        if (corpus->AddRandSnapshotIfNotSeen(build_rand.GetSnapshots(), feedback_stats, used_corpus)) {
+          past_create_threshhold = false;
+        }
       }
     });
   }
@@ -501,7 +500,7 @@ void HandleTimeout(
   [[maybe_unused]] resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
-  if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
+  if (SHUTTING_DOWN.load()) {
     return;
   }
 
@@ -527,15 +526,15 @@ void HandleException(
   resmack::fuzz::Tracer* tracer,
   resmack::fuzz::Tracee* tracee
 ) {
-  if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
+  if (SHUTTING_DOWN.load()) {
     return;
   }
 
   state->IncNumIterations(1);
   resmack::fuzz::Corpus* corpus = state->GetCorpus();
-  corpus->Sync();
   corpus->IncUnwanted(tracee->GetLastCorpusIndex1());
   corpus->IncUnwanted(tracee->GetLastCorpusIndex2());
+  corpus->Sync();
 
   std::string output;
   // doesn't have to be the same one as before since we're doing a full,
@@ -559,7 +558,7 @@ void HandleException(
   out_path += info->minor_hash;
 
   state->IncNumCrashesIfTrue([out_path, output, tracee, info]() -> bool {
-    if (resmack::fuzz::ipc_util::SHUTTING_DOWN.load()) {
+    if (SHUTTING_DOWN.load()) {
       return false;
     }
     if (!std::filesystem::exists(out_path)) {
@@ -569,7 +568,7 @@ void HandleException(
       file.close();
 
       const resmack::fuzz::ser::AsanInfo* asan_info = tracee->GetAsanInfo();
-      if (asan_info != NULL) {
+      if (asan_info != nullptr) {
         std::string asan_path = out_path + ".asan.txt";
         file.open(asan_path.c_str(), std::ofstream::out | std::ofstream::binary);
         file.write(asan_info->report, strlen(asan_info->report));
@@ -597,7 +596,7 @@ void HandleException(
   if (OPTS.max_crashes != 0 && state->GetNumCrashes() >= OPTS.max_crashes) {
     // this only applies to *THIS* forked process - we need to stop
     // capturing coverage data
-    resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
+    SHUTTING_DOWN.store(true);
     return;
   }
 }
@@ -622,7 +621,7 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
     ctx.SetReplay(&entry->snapshot);
     rules->Build(rule_idx, &ctx);
 
-    char* output_sha = resmack::fuzz::utils::sha1_hex(output.data(), output.size(), NULL);
+    char* output_sha = resmack::fuzz::utils::sha1_hex(output.data(), output.size(), nullptr);
     std::string out_path = std::string(OPTS.dump_corpus_path) + "/" + std::to_string(i) + "_" + output_sha;
     free(output_sha);
 
@@ -640,13 +639,9 @@ void DumpCorpus(resmack::Rules* rules, resmack::fuzz::Corpus* corpus, size_t rul
 
 } // namespace resmack::main
 
-const char* __asan_default_options() {
-  return resmack::fuzz::asan::ASAN_DEFAULT_OPTIONS;
-}
-
 __attribute__((visibility("default")))
 int main(int argc, char** argv) {
-  resmack::fuzz::utils::MAIN_PID = getpid();
+  MAIN_PID = getpid();
   DEBUG_PRINT("MAIN PID: %d\n", getpid());
 
   ParseOptions(argc, argv);
@@ -658,7 +653,7 @@ int main(int argc, char** argv) {
   resmack::fuzz::ExternalFunctions EF;
 
   resmack::Rules rules;
-  if (EF.ResmackGrammarInit == NULL) {
+  if (EF.ResmackGrammarInit == nullptr) {
     std::cout << "ResmackGrammarInit is not defined" << std::endl;
     return 1;
   }
@@ -681,7 +676,7 @@ int main(int argc, char** argv) {
   }
 
   if (OPTS.run_direct) {
-    FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, NULL);
+    FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, nullptr);
     std::exit(0);
   }
 
@@ -733,9 +728,8 @@ int main(int argc, char** argv) {
 
   STATUS_ARGS.state = &mmap_state;
   STATUS_ARGS.show_stats = OPTS.show_stats;
-  STATUS_ARGS.should_run = true;
   STATUS_ARGS.feedback = &cov;
-  pthread_create(&STATUS_THREAD, NULL, LoopPrintStatus, (void*)&STATUS_ARGS);
+  pthread_create(&STATUS_THREAD, nullptr, DoLoopPrintStatus, (void*)&STATUS_ARGS);
 
   signal(SIGINT, sigint_handler);
 
@@ -743,9 +737,10 @@ int main(int argc, char** argv) {
       if (
           (OPTS.max_crashes > 0 && mmap_state.GetNumCrashes() >= OPTS.max_crashes) ||
           (OPTS.max_iters > 0 && mmap_state.GetNumIterations() >= OPTS.max_iters) ||
-          resmack::fuzz::ipc_util::SHUTTING_DOWN.load()
+          SHUTTING_DOWN.load()
       ) {
-          resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
+          DEBUG_PRINT("MET/EXCEED MAX CRASHES or NUM_ITERS\n");
+          SHUTTING_DOWN.store(true);
           for (auto* tracer : TRACERS) {
               tracer->Stop(true);
           }
@@ -761,9 +756,8 @@ int main(int argc, char** argv) {
 
   DEBUG_PRINT("KILLING THINGS NOW\n");
 
-  resmack::fuzz::ipc_util::SHUTTING_DOWN.store(true);
-  STATUS_ARGS.should_run = false;
+  SHUTTING_DOWN.store(true);
 
   pthread_cancel(STATUS_THREAD);
-  pthread_join(STATUS_THREAD, NULL);
+  pthread_join(STATUS_THREAD, nullptr);
 }

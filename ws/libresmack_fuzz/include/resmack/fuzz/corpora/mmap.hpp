@@ -38,7 +38,7 @@ namespace corpora {
     void* corpus_map;
     size_t max_corpus_size;
     uint32_t strats;
-    Vector<size_t(*)(MmapCorpus*, Rand*, size_t)> strat_handlers;
+    Vector<CorpusStrat> strat_handlers;
     Lock corpus_lock;
     Set<size_t> seen_keys;
     Vector<CorpusEntry> snapshots;
@@ -110,6 +110,8 @@ namespace corpora {
     void IncUnwanted(size_t one_based_idx);
 
    private:
+    size_t GetRandIdxFromStrats(Rand* rand);
+
     void AddRandSnapshotInner(
       const resmack::Vector<RandSnapshot>* snapshot,
       FeedbackStats stats,
@@ -122,17 +124,17 @@ namespace corpora {
     void SortedsClear();
     void SortedsResort();
 
-    static size_t HandleRandStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleMostFeedbackStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleLeastFeedbackStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleMostRecentStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleLeastRecentStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleMostAncestorsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleLeastAncestorsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleMostDirectDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleLeastDirectDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleMostDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
-    static size_t HandleLeastDescendantsStrat(MmapCorpus* this_, Rand* rand, size_t rand_top_ten);
+    size_t HandleRandStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleMostFeedbackStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleLeastFeedbackStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleMostRecentStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleLeastRecentStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleMostAncestorsStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleLeastAncestorsStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleMostDirectDescendantsStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleLeastDirectDescendantsStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleMostDescendantsStrat(Rand* rand, size_t rand_top_ten);
+    size_t HandleLeastDescendantsStrat(Rand* rand, size_t rand_top_ten);
   };
 
 }

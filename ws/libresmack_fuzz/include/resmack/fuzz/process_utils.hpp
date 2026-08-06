@@ -24,6 +24,8 @@ namespace process_utils {
 
   void LoadSignalInfo(int status, SignalInfo* out);
 
+  bool IgnoreBasicSignals() noexcept;
+
 }
 }
 }

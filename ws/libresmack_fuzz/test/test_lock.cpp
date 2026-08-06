@@ -13,7 +13,7 @@ namespace fuzz {
 
   TEST(Lock, WorksAcrossForks) {
     void* shared = mmap(
-      NULL,
+      nullptr,
       sizeof(uint32_t),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
@@ -39,7 +39,7 @@ namespace fuzz {
     *counter = 1;
     lock.unlock();
 
-    waitpid(forked, NULL, 0);
+    waitpid(forked, nullptr, 0);
     EXPECT_EQ(*counter, 2);
   }
 

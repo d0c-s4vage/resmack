@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #include "resmack/fuzz/states/mmap.hpp"
-#include "resmack/fuzz/ipc_util.hpp"
 #include "resmack/fuzz/corpus.hpp"
 #include "resmack/fuzz/corpora/mmap.hpp"
 #include "resmack/fuzz/utils.hpp"

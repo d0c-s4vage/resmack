@@ -20,7 +20,7 @@ namespace process_launchers {
     ForkLauncher(bool mute_io, TraceSpawnCb spawn_cb);
     ~ForkLauncher();
 
-    static void* SpawnThreadTarget(void* tracee_arg);
+    void* SpawnThreadTarget(Tracee* tracee_arg);
     pid_t Spawn(Tracee* tracee);
   };
 

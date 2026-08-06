@@ -6,7 +6,7 @@ project("${LIBRESMACK_FUZZ_MAIN}"
 )
 
 file(GLOB_RECURSE LIBRESMACK_FUZZ_MAIN_PRIVATE_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
 
 # -------------------------------------------

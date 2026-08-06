@@ -29,7 +29,7 @@ namespace fuzz {
     stats->Reset();
 
     RECORD_STAT(stats, SampleTypes::FEEDBACK, {
-      feedback->Start();
+      feedback->FPOStart();
     });
 
     stats->valid = false;
@@ -38,7 +38,7 @@ namespace fuzz {
     });
 
     RECORD_STAT(stats, SampleTypes::FEEDBACK, {
-      feedback->Stop();
+      feedback->FPOStop();
     });
   }
 

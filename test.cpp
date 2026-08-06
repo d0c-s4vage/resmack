@@ -71,10 +71,9 @@ bool parseSubject(std::vector<std::string>* parts, size_t* curr_idx) {
 
 // don't optimize this!
 __attribute__((optnone))
-void intentionally_crash(int n) {
-    int i = 0 / n;
-    // Your crashing code here
-    int *ptr = NULL;
+void intentionally_crash() {
+    //int i = 0 / n;
+    int *ptr = nullptr;
     *ptr = 42; 
 }
 
@@ -101,8 +100,11 @@ bool parseSentence(const uint8_t* data, size_t size) {
     return false;
   }
 
+    intentionally_crash();
+
   size_t start_idx = curr_idx;
   if (parts[curr_idx++] == "and" && parts[curr_idx++] == "we" && parts[curr_idx++] == "devour" && parts[curr_idx++] == "peaches") {
+    intentionally_crash();
     ((void(*)())(0))();
     //raise(SIGSEGV);
   }

@@ -13,7 +13,7 @@ namespace fuzz {
    public:
     void Start();
     void Stop();
-    FeedbackStats GetStats();
+    FeedbackStats GetStats() const noexcept;
   };
 
 }

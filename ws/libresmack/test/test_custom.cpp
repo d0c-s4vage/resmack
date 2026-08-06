@@ -18,7 +18,7 @@ namespace items {
 
     CustomLenInserted(Item* item) : item_(item) {}
     ~CustomLenInserted() {
-      delete this->item_;
+      delete item_;
     }
 
     ItemType Type() {
@@ -32,7 +32,7 @@ namespace items {
       size_t len_pos = ctx->output->size();
       *ctx->output += (char)len;
 
-      this->item_->Build(ctx);
+      item_->Build(ctx);
 
       len = ctx->output->size() - len_pos - sizeof(len);
       ctx->output->data()[len_pos] = static_cast<char>(len);
@@ -42,7 +42,7 @@ namespace items {
   TEST(Custom, CustomItemsWork)
   {
     Rand rand(100);
-    CustomLenInserted* custom = new CustomLenInserted(STR(0x41, 0x42, "B", 1));
+    CustomLenInserted* custom = new CustomLenInserted(STR(0x41, 0x42, "B"));
 
     std::string built = test_utils::BuildItem(custom);
     EXPECT_EQ(built, "ABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");

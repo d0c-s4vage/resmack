@@ -3,6 +3,7 @@
 
 #include "stddef.h"
 #include "inttypes.h"
+#include <atomic>
 
 namespace resmack {
 namespace fuzz {
@@ -38,13 +39,13 @@ struct CorpusItemHeader {
 
 struct CorpusMetadata {
   // number that gets incremented every time the corpus is updated
-  uint32_t updated_seq;
-  uint32_t reorg_seq;
-  uint32_t num_entries;
+  std::atomic<uint32_t> updated_seq;
+  std::atomic<uint32_t> reorg_seq;
+  std::atomic<uint32_t> num_entries;
 };
 
 struct AsanInfo {
-  uint32_t exists; // bool
+  std::atomic<uint32_t> exists; // bool
   char major_hash[41];
   char minor_hash[41];
   char report[0x10000];

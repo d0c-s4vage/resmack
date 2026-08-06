@@ -104,19 +104,7 @@ namespace compile {
       "-fno-omit-frame-pointer",
       "-fno-sanitize=all",
       "-Iws/libresmack/include",
-      "-lresmack_fuzz_main-static",
-      "-lresmack_fuzz",
-      "-lresmack",
-      "-lpthread",
-      "-lcrypto",
-      "-lunwind",
-      "-lunwind-ptrace",
-      "-lunwind-generic",
     });
-
-    std::string parent_path = std::filesystem::path(GetExePath()).parent_path();
-    options.emplace_back("-L");
-    options.emplace_back(parent_path.c_str());
 
     if (opts.use_asan) {
       options.emplace_back("-O0");
@@ -132,12 +120,23 @@ namespace compile {
     for (int curr_opt_ind = optind; curr_opt_ind < argc; curr_opt_ind++) {
       options.emplace_back(argv[curr_opt_ind]);
     }
-    // these go last and are ordered!
-    //
 
-    //options.emplace_back("build/release.syms/libresmack_fuzz_main.a");
-    //options.emplace_back("build/release.syms/libresmack_fuzz.a");
-    //options.emplace_back("build/release.syms/libresmack.a");
+    options.insert(options.end(), {
+      "-Wl,--whole-archive",
+      "-lresmack_fuzz_main-static",
+      "-Wl,--no-whole-archive",
+      "-lresmack_fuzz",
+      "-lresmack",
+      "-lpthread",
+      "-lcrypto",
+      "-lunwind",
+      "-lunwind-ptrace",
+      "-lunwind-generic",
+    });
+
+    std::string parent_path = std::filesystem::path(GetExePath()).parent_path();
+    options.emplace_back("-L");
+    options.emplace_back(parent_path.c_str());
 
     //options.emplace_back("-mllvm");
     //options.emplace_back("-sanitizer-coverage-gated-trace-callbacks");

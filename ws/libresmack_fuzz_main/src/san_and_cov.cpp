@@ -1,5 +1,3 @@
-#include "gtest/gtest.h"
-
 #include "resmack/fuzz/asan_util.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
@@ -17,10 +15,4 @@ void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* end) {
 
 void __sanitizer_cov_trace_pc_guard(uint32_t* guard_var) {
   resmack::fuzz::HandleSanitizerCovTracePcGuard(guard_var);
-}
-
-int main(int argc, char** argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

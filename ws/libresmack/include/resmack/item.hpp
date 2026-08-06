@@ -44,7 +44,7 @@ namespace resmack {
     TYPE_CUSTOM,
   };
 
-  static std::string ItemTypeName(ItemType type) {
+  inline std::string ItemTypeName(ItemType type) {
     switch (type) {
       case TYPE_RAW:
         return "RAW";

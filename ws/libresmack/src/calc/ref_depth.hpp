@@ -11,7 +11,6 @@
 
 namespace resmack {
 namespace calc {
-
   class RefDepth {
    private:
     RuleManager* rule_man_;
@@ -23,7 +22,7 @@ namespace calc {
     Map<size_t /*rule_idx*/, size_t /*depth*/> depths_;
 
    public:
-    static const size_t INF_DEPTH = std::numeric_limits<size_t>::max();
+    inline static constexpr size_t INF_DEPTH = std::numeric_limits<size_t>::max();
 
     RefDepth(RuleManager* rule_man);
     ~RefDepth();

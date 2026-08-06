@@ -95,9 +95,9 @@ namespace debug_state {
   void DebugCorpus(char* corpus_data) {
     fuzz::ser::CorpusMetadata* meta = (fuzz::ser::CorpusMetadata*)corpus_data;
     printf("Corpus Metadata:\n");
-    printf("  updated_seq: %u\n", meta->updated_seq);
-    printf("  reorg_seq:   %u\n", meta->reorg_seq);
-    printf("  num_entries: %u\n", meta->num_entries);
+    printf("  updated_seq: %u\n", meta->updated_seq.load());
+    printf("  reorg_seq:   %u\n", meta->reorg_seq.load());
+    printf("  num_entries: %u\n", meta->num_entries.load());
 
     char* curr_ptr = corpus_data + sizeof(fuzz::ser::CorpusMetadata);
     for(size_t i = 0; i < meta->num_entries; i++) {
@@ -138,7 +138,7 @@ namespace debug_state {
       return 1;
     }
 
-    if (argv[optind] == NULL) {
+    if (argv[optind] == nullptr) {
       std::cout << "Must provide the STATE_FILE\n" << std::endl;
       PrintHelp();
       return 1;
@@ -156,7 +156,7 @@ namespace debug_state {
     printf("State file size: %zu\n", file_size);
     
     FILE* fd = fopen(state_file, "rb");
-    if (fd == NULL) {
+    if (fd == nullptr) {
       perror("Error opening file");
       return 1;
     }

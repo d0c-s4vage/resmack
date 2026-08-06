@@ -99,12 +99,12 @@ namespace items {
     rules.AddRule("letters", STR(2, 20))
       ->AddRule("numbers", INT(0, 0x10000))
       ->AddRule("ref1", AND_S("-",
-        STR(3, 5, "abcd", 4),
+        STR(3, 5, "abcd"),
         OR(REF("numbers"), REF("letters")),
         V("hello")
       ))
       ->AddRule("ref2", AND_S("-",
-        STR(3, 5, "WXYZ", 4),
+        STR(3, 5, "WXYZ"),
         OR(REF("numbers"), REF("letters")),
         V("goodbye")
       ))

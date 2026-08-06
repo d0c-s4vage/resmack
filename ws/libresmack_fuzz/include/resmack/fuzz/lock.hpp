@@ -11,9 +11,7 @@ namespace fuzz {
   class Lock {
    private:
     sem_t* _lock;
-    pid_t creator;
     bool anonymous;
-    bool shared_between_procs;
 
     // the name (in sem_open / sem_unlink / sem_* API terms) that was
     // used to create the semaphore

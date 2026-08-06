@@ -21,6 +21,7 @@ Checks:
   - clang-analyzer-unix*
   - clang-analyzer-security*
   - bugprone-*
+  - -bugprone-easily-swappable-parameters
 ImplementationFileExtensions: ['cpp']
 HeaderFileExtensions:         ['hpp']
 WarningsAsErrors: ''

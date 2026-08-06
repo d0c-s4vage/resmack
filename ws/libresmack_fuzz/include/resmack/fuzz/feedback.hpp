@@ -17,11 +17,11 @@ namespace fuzz {
 
   class Feedback {
    public:
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
-    virtual bool Sync() = 0;
-    virtual std::string GetSummary() = 0;
-    virtual FeedbackStats GetStats() = 0;
+    virtual void FPOStart() noexcept = 0;
+    virtual void FPOStop() noexcept = 0;
+    virtual bool Sync() noexcept = 0;
+    virtual std::string GetSummary() const noexcept = 0;
+    virtual FeedbackStats GetStats() const noexcept = 0;
   };
 
 }

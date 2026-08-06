@@ -6,7 +6,6 @@
 #include "resmack/debug.hpp"
 #include "resmack/fuzz/asan_util.hpp"
 
-
 namespace resmack {
 namespace fuzz {
 namespace asan {

@@ -2,7 +2,6 @@
 
 #include "gtest/gtest.h"
 
-#include "resmack/debug.hpp"
 #include "resmack/fuzz/feedback.hpp"
 #include "resmack/fuzz/feedbacks/coverage.hpp"
 
@@ -11,19 +10,18 @@ namespace fuzz {
 
   __attribute__((no_sanitize("coverage")))
   void TestCoverageHitsTwice() {
-    uint32_t vars[3] = {0, 0, 0};
+    uint32_t vars[3] = {0, 1, 2};
     HandleSanitizerCovTracePcGuardInit(&vars[0], &vars[2]);
 
     Coverage cov;
-    cov.Start();
+    cov.FPOStart();
 
     HandleSanitizerCovTracePcGuard(&vars[0]);
     HandleSanitizerCovTracePcGuard(&vars[1]);
 
-    cov.Stop();
-    cov.Sync();
-
+    cov.FPOStop();
     FeedbackStats stats = cov.GetStats();
+
     EXPECT_EQ(stats.new_coverage, true);
     EXPECT_EQ(stats.num, 2);
     EXPECT_NE(stats.key, 1);
@@ -36,8 +34,8 @@ namespace fuzz {
   __attribute__((no_sanitize("coverage")))
   void TestCoverageNotHit() {
     Coverage cov;
-    cov.Start();
-    cov.Stop();
+    cov.FPOStart();
+    cov.FPOStop();
 
     EXPECT_EQ(cov.GetStats().new_coverage, false);
   }
