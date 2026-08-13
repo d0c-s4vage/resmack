@@ -23,4 +23,31 @@ LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size);
 }
 #endif  // __cplusplus
 
+#define FLAGGIFIED(NAME) FLAG_ ## NAME
+
+
+// Two scenarios for these flags:
+//
+// 1. libresmack_fuzz_main.a - main.cpp
+//   * Doesn't have -DFINAL set, so all of the flags are defined as
+//     weak symbols (they're undefined in libresmack_fuzz_main.a)
+//
+// 2. The CLI command `resmack cc` will define FINAL and any flag values
+#ifdef FINAL
+  
+#define DYNAMIC_FLAG(FLAG_NAME) \
+  bool FLAG_NAME = FLAGGIFIED(FLAG_NAME);
+
+
+// this branch is for main.cpp in libresmack_fuzz_main
+# else
+#define DYNAMIC_FLAG(FLAG_NAME) \
+  __attribute__((weak)) bool FLAG_NAME;
+
+#endif // #ifdef FINAL
+
+namespace resmack::fuzz::flags {
+  DYNAMIC_FLAG(USING_ASAN);
+}
+
 #endif

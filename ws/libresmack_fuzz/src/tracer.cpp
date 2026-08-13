@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "resmack/debug.hpp"
+#include "resmack/fuzz/asan_util.hpp"
 #include "resmack/rand.hpp"
 #include "resmack/utils.hpp"
 #include "resmack/fuzz/tracer.hpp"
@@ -30,30 +31,34 @@ namespace fuzz {
     ProcessLauncher* proc_launcher,
     TraceExceptionCb exception_cb,
     TraceTimeoutCb timeout_cb,
-    uint32_t idx
+    uint32_t idx,
+    bool using_asan
   ) :
-    idx(idx),
-    tracee(idx),
-    proc_launcher(proc_launcher),
-    traced_pid(-1),
-    timeout(5.0),
-    exception_cb(exception_cb),
-    timeout_cb(timeout_cb),
-    trace_lock("TraceLock", true)
-  {}
+    idx_(idx),
+    using_asan_(using_asan),
+    tracee_(idx),
+    proc_launcher_(proc_launcher),
+    traced_pid_(-1),
+    timeout_(5.0),
+    exception_cb_(exception_cb),
+    timeout_cb_(timeout_cb),
+    trace_lock_("TraceLock", true)
+  {
+    DEBUG_PRINT("USING ASAN: %d\n", using_asan_);
+  }
   Tracer::~Tracer() {}
 
   void Tracer::Start() {
-    should_run.store(true);
-    monitor_thread = utils::CreateThread(&Tracer::MonitorTracee, this);
-    monitor_timeout_thread = utils::CreateThread(&Tracer::MonitorTraceeTimeout, this);
+    should_run_.store(true);
+    monitor_thread_ = utils::CreateThread(&Tracer::MonitorTracee, this);
+    monitor_timeout_thread_ = utils::CreateThread(&Tracer::MonitorTraceeTimeout, this);
   }
 
   void Tracer::Stop(bool hard_stop) {
-    should_run.store(false);
+    should_run_.store(false);
 
     if (hard_stop) {
-      pid_t pid = traced_pid.load();
+      pid_t pid = traced_pid_.load();
       if (pid > 0) {
         DEBUG_PRINT("KILLING THE TRACED PID: %d\n", pid);
         kill(pid, SIGKILL);
@@ -62,8 +67,8 @@ namespace fuzz {
   }
 
   void Tracer::Join() {
-    pthread_join(monitor_thread, nullptr);
-    pthread_join(monitor_timeout_thread, nullptr);
+    pthread_join(monitor_thread_, nullptr);
+    pthread_join(monitor_timeout_thread_, nullptr);
   }
 
   void* Tracer::DoMonitorTraceeTimeout(void* this_arg) {
@@ -84,23 +89,23 @@ namespace fuzz {
    * then it kills the tracee.
    **/
   void Tracer::MonitorTraceeTimeout() {
-    float alive_max = 600.0f;
+    float alive_max = 10000.0f;
 
-    while (should_run.load()) {
+    while (should_run_.load()) {
       {
-        std::scoped_lock _lock(trace_lock);
-        pid_t pid = traced_pid.load();
+        std::scoped_lock _lock(trace_lock_);
+        pid_t pid = traced_pid_.load();
         // hasn't started yet
-        if (tracee.GetIterStart() <= 0.0f) {
+        if (tracee_.GetIterStart() <= 0.0f) {
           ; // noop
         } else {
           float now = utils::GetTimeNow();
-          float iter_span = now  - tracee.GetIterStart();
-          float lifetime_span = now - tracee.GetLifetimeStart();
+          float iter_span = now  - tracee_.GetIterStart();
+          float lifetime_span = now - tracee_.GetLifetimeStart();
 
-          tracee.iter_timed_out = (iter_span >= timeout);
-          tracee.lifetime_timed_out = (lifetime_span >= alive_max);
-          if (tracee.iter_timed_out || tracee.lifetime_timed_out) {
+          tracee_.iter_timed_out_ = (iter_span >= timeout_);
+          tracee_.lifetime_timed_out_ = (lifetime_span >= alive_max);
+          if (tracee_.iter_timed_out_ || tracee_.lifetime_timed_out_) {
             DEBUG_PRINT("KILLING THE TRACED PID (TIMEDOUT): %d\n", pid);
             kill(pid, SIGKILL);
             break;
@@ -116,65 +121,102 @@ namespace fuzz {
   }
 
   process_utils::SignalInfo Tracer::WaitForExit() {
+    pid_t pid = traced_pid_.load();
     int status;
-    if (waitpid(traced_pid.load(), &status, 0) == -1) {
-      DEBUG_PRINT("Error waiting for traced pid\n");
-      // the process is already dead!
-      //if (errno == ECHILD) {
-      //}
-      throw std::runtime_error("Error waiting for child: " + std::string(std::strerror(errno)));
-    }
     process_utils::SignalInfo sig_info;
-    process_utils::LoadSignalInfo(status, &sig_info);
+
+    bool keep_going = true;
+    while (keep_going) {
+      keep_going = false;
+
+      if (waitpid(pid, &status, 0) == -1) {
+        // the timeout thread may have killed it
+        if (errno == ECHILD) {
+          sig_info.exit_reason = process_utils::ExitReason::Normal;
+          sig_info.exited = true;
+          return sig_info;
+        }
+        throw std::runtime_error("Error waiting for child: " + std::string(std::strerror(errno)));
+      }
+      sig_info = process_utils::ExtractSignalInfo(status);
+
+      if (using_asan_) {
+        DEBUG_PRINT("USING ASAN\n");
+        // it's an event forwarded by ptrace, we need to continue so the signal gets
+        // processed by ASAN
+        if (sig_info.stopped) {
+          keep_going = true;
+
+        // a definitive ASAN exit
+        } else if (sig_info.exited && sig_info.exit_status == asan::ASAN_EXIT_CODE) {
+          keep_going = false;
+
+        // all others
+        } else {
+          DEBUG_PRINT("WHAT WAS THIS????\n");
+          keep_going = false;
+        }
+      } else {
+        keep_going = (sig_info.exit_reason == process_utils::ExitReason::Ptrace);
+      }
+
+      if (keep_going) {
+        DEBUG_PRINT("KEEP_GOING: YES, sending PTRACE_CONT\n");
+        if (ptrace(PTRACE_CONT, pid, nullptr, sig_info.stop_signal) == -1) {
+          throw std::runtime_error("Could not tell traced process to continue: " + std::string(std::strerror(errno)));
+        }
+      }
+    }
+
     return sig_info;
   }
 
   pid_t Tracer::LaunchTargetProcess() {
-    return proc_launcher->Spawn(&tracee);
+    return proc_launcher_->Spawn(&tracee_);
   }
 
   void Tracer::ProcessCrash(process_utils::SignalInfo sig_info) {
     DEBUG_PRINT("PROCESSING CRASH\n");
-    last_crash.crashed = true;
-    last_crash.signal_info = sig_info;
+    last_crash_.crashed = true;
+    last_crash_.signal_info = sig_info;
 
-    const ser::AsanInfo* asan_info = tracee.GetAsanInfo();
+    const ser::AsanInfo* asan_info = tracee_.GetAsanInfo();
 
     // simple case: we used ASAN and just need to copy the info
     if (asan_info != nullptr) {
-      last_crash.major_stack.clear();
-      last_crash.minor_stack.clear();
-      memcpy(last_crash.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
-      memcpy(last_crash.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
+      last_crash_.major_stack.clear();
+      last_crash_.minor_stack.clear();
+      memcpy(last_crash_.major_hash, asan_info->major_hash, sizeof(asan_info->major_hash));
+      memcpy(last_crash_.minor_hash, asan_info->minor_hash, sizeof(asan_info->minor_hash));
 
 
     // more complicated: we didn't use ASAN and we need to calculate / collect the info manually
     } else {
-      last_crash.major_hash[0] = 0;
-      last_crash.minor_hash[0] = 0;
+      last_crash_.major_hash[0] = 0;
+      last_crash_.minor_hash[0] = 0;
 
       CalcHashes();
 
-      if (last_crash.major_hash[0] == 0) {
+      if (last_crash_.major_hash[0] == 0) {
         Rand rand;
         std::string charset = "abcdefghijklmnopqrstuvwxyz";
 
-        snprintf(last_crash.major_hash, sizeof(last_crash.major_hash), "%s", "unknown_exit");
-        last_crash.major_stack = "unknown_exit";
-        last_crash.minor_stack = "unknown_exit";
+        snprintf(last_crash_.major_hash, sizeof(last_crash_.major_hash), "%s", "unknown_exit");
+        last_crash_.major_stack = "unknown_exit";
+        last_crash_.minor_stack = "unknown_exit";
         std::string out;
         resmack::utils::RandBytes(&rand, charset.c_str(), 10, &out);
-        snprintf(last_crash.minor_hash, sizeof(last_crash.minor_hash), "%s", out.c_str());
+        snprintf(last_crash_.minor_hash, sizeof(last_crash_.minor_hash), "%s", out.c_str());
       }
     }
   }
 
   void Tracer::MonitorTracee() {
-    while (should_run.load()) {
-      traced_pid.store(LaunchTargetProcess());
+    while (should_run_.load()) {
+      traced_pid_.store(LaunchTargetProcess());
       process_utils::SignalInfo exit_info = WaitForExit();
 
-      if (!should_run.load()) {
+      if (!should_run_.load()) {
         break;
       }
 
@@ -185,11 +227,11 @@ namespace fuzz {
         case process_utils::ExitReason::Crash:
           DEBUG_PRINT("MonitorTracee:: Crashing exit\n");
           ProcessCrash(exit_info);
-          exception_cb(traced_pid.load(), this, &tracee);
+          exception_cb_(traced_pid_.load(), this, &tracee_);
 
           // this happens if we aren't using ASAN
           if (exit_info.stopped && !exit_info.exited) {
-            pid_t pid = traced_pid.load();
+            pid_t pid = traced_pid_.load();
             kill(pid, SIGKILL);
 
             int reap_status;
@@ -200,7 +242,7 @@ namespace fuzz {
           break;
         case process_utils::ExitReason::Timeout:
           DEBUG_PRINT("MonitorTracee:: Timeout exit\n");
-          timeout_cb(traced_pid.load(), this, &tracee);
+          timeout_cb_(traced_pid_.load(), this, &tracee_);
           break;
         default:
           break;
@@ -210,11 +252,11 @@ namespace fuzz {
 
   // https://github.com/daniel-thompson/libunwind-examples/blob/master/unwind-pid.c
   void Tracer::CalcHashes() {
-    last_crash.major_stack.clear();
-    last_crash.minor_stack.clear();
+    last_crash_.major_stack.clear();
+    last_crash_.minor_stack.clear();
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-    void *context = _UPT_create(traced_pid.load());
+    void *context = _UPT_create(traced_pid_.load());
     unw_cursor_t cursor;
     int res = unw_init_remote(&cursor, as, context);
     if (res != 0) {
@@ -224,9 +266,9 @@ namespace fuzz {
     }
 
     // last five frames
-    std::string* major_stack = &last_crash.major_stack;
+    std::string* major_stack = &last_crash_.major_stack;
     // all frames
-    std::string* minor_stack = &last_crash.minor_stack;
+    std::string* minor_stack = &last_crash_.minor_stack;
 
     char sym[4096];
     size_t count = 0;
@@ -273,8 +315,8 @@ namespace fuzz {
     _UPT_destroy(context);
     unw_destroy_addr_space(as);
 
-    utils::sha1_hex(major_stack->data(), major_stack->size(), last_crash.major_hash);
-    utils::sha1_hex(minor_stack->data(), minor_stack->size(), last_crash.minor_hash);
+    utils::sha1_hex(major_stack->data(), major_stack->size(), last_crash_.major_hash);
+    utils::sha1_hex(minor_stack->data(), minor_stack->size(), last_crash_.minor_hash);
   }
 
 }

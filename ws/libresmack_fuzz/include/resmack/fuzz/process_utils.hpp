@@ -9,8 +9,8 @@ namespace process_utils {
     Normal,
     Crash,
     Timeout,
+    Ptrace,
   };
-  ExitReason GetExitReason(int status);
 
   struct SignalInfo {
     ExitReason exit_reason;
@@ -22,7 +22,7 @@ namespace process_utils {
     int term_signal;
   };
 
-  void LoadSignalInfo(int status, SignalInfo* out);
+  SignalInfo ExtractSignalInfo(int status);
 
   bool IgnoreBasicSignals() noexcept;
 

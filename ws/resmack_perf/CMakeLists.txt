@@ -1,4 +1,4 @@
-include(${libresmack_fuzz_SOURCE_DIR}/variables.cmake)
+include("${libresmack_fuzz_SOURCE_DIR}/variables.cmake")
 
 project(resmack_perf)
 

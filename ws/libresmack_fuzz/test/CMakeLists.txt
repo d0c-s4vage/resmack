@@ -1,4 +1,3 @@
-include(${CMAKE_SOURCE_DIR}/cmake/gtest.cmake)
 enable_testing()
 
 file(GLOB TEST_SOURCES *.cpp)

@@ -5,16 +5,6 @@ project("${LIBRESMACK}"
     DESCRIPTION "resmack core grammar library"
 )
 
-include(FetchContent)
-FetchContent_Declare(
-    fmt
-    # Specify the commit you depend on and update it regularly.
-    GIT_REPOSITORY https://github.com/fmtlib/fmt
-    GIT_TAG 12.2.0
-    SYSTEM
-)
-FetchContent_MakeAvailable(fmt)
-
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/resmack/debug.hpp.in"
     "include/resmack/debug.hpp"

@@ -9,6 +9,11 @@ file(GLOB_RECURSE LIBRESMACK_FUZZ_MAIN_PRIVATE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
 
+file(GLOB_RECURSE LIBRESMACK_FUZZ_MAIN_INCLUDES
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/resmack/fuzz_main/*.hpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/resmack/fuzz_main/*.hpp"
+)
+
 # -------------------------------------------
 # OBJECT FILE (so we only have to build once)
 # -------------------------------------------
@@ -16,6 +21,13 @@ file(GLOB_RECURSE LIBRESMACK_FUZZ_MAIN_PRIVATE_SRC
 add_library(${LIBRESMACK_FUZZ_MAIN_OBJ} STATIC)
 target_sources(
     ${LIBRESMACK_FUZZ_MAIN_OBJ}
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS
+            "${CMAKE_CURRENT_SOURCE_DIR}/include"
+            "${CMAKE_CURRENT_BINARY_DIR}/include"
+        FILES
+          ${LIBRESMACK_FUZZ_MAIN_INCLUDES}
     PRIVATE
         ${LIBRESMACK_FUZZ_MAIN_PRIVATE_SRC}
 )

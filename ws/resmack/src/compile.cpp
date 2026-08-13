@@ -18,6 +18,7 @@ namespace compile {
   struct CompileOpts {
     int help;
     int use_asan;
+    int debug;
   };
 
   void PrintHelp() {
@@ -40,26 +41,31 @@ namespace compile {
 
   bool ParseOpts(int argc, char** argv, CompileOpts* opts) {
     static struct option long_options[] = {
-      { "help", no_argument, &opts->help, 'h' },
-      { "asan", no_argument, &opts->use_asan, 'a' },
+      { "help", no_argument, nullptr, 'h' },
+      { "asan", no_argument, nullptr, 'a' },
+      { "debug", no_argument, nullptr, 'd' },
       { 0, 0, 0, 0 },
     };
     int opt_index = 0;
 
     while (true) {
-      int c = getopt_long(argc, argv, "hs", long_options, &opt_index);
+      int c = getopt_long(argc, argv, "hsad", long_options, &opt_index);
       if (c == -1) {
         break;
       }
 
       switch (c) {
-        case 0:
-          break;
         case 'h':
           opts->help = true;
           break;
         case 'a':
           opts->use_asan = true;
+          break;
+        case 'd':
+          opts->debug = true;
+          break;
+        default:
+          // Handle unknown options
           break;
       }
     }
@@ -91,6 +97,7 @@ namespace compile {
     CompileOpts opts {
       .help = false,
       .use_asan = false,
+      .debug = false,
     };
 
     ParseOpts(argc, argv, &opts);
@@ -99,13 +106,19 @@ namespace compile {
       return 1;
     }
 
-    std::vector<const char *> options({
+    std::vector<std::string> options({
       "clang++",
       "-fno-omit-frame-pointer",
       "-fno-sanitize=all",
       "-Iws/libresmack/include",
     });
 
+    if (opts.debug) {
+      options.emplace_back("-g");
+    }
+
+    options.emplace_back("-DFINAL");
+    options.emplace_back("-DFLAG_USING_ASAN=" + std::to_string(static_cast<int>(opts.use_asan)));
     if (opts.use_asan) {
       options.emplace_back("-O0");
       options.emplace_back("-fsanitize=address");
@@ -135,22 +148,20 @@ namespace compile {
     });
 
     std::string parent_path = std::filesystem::path(GetExePath()).parent_path();
-    options.emplace_back("-L");
-    options.emplace_back(parent_path.c_str());
-
-    //options.emplace_back("-mllvm");
-    //options.emplace_back("-sanitizer-coverage-gated-trace-callbacks");
-    options.emplace_back((const char*)NULL);
+    options.emplace_back("-L" + parent_path);
 
     std::cout << "Executing: " << std::endl << std::endl;
-    for (size_t i = 0; i < options.size(); i++) {
-      if (options[i] == NULL) { continue; }
-      std::cout << options[i] << " ";
+    std::vector<char *> argv_c;
+    argv_c.reserve(options.size() + 1);
+    for (auto& elem : options) {
+      std::cout << elem << " ";
+      argv_c.push_back(elem.data());
     }
+    argv_c.push_back(nullptr);
     std::cout << std::endl << std::endl;
 
     if (fork() == 0) {
-      execvp("clang++", (char* const*)options.data());
+      execvp("clang++", argv_c.data());
     } else {
       wait(NULL);
     }

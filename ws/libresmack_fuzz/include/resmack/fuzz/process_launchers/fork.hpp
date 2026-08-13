@@ -16,6 +16,8 @@ namespace process_launchers {
     TraceSpawnCb cb;
     bool mute_io;
 
+    void DoPtraceSyncWithChild(pid_t child_pid);
+
    public:
     ForkLauncher(bool mute_io, TraceSpawnCb spawn_cb);
     ~ForkLauncher();

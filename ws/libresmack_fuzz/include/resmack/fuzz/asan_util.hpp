@@ -5,6 +5,7 @@
 #include <functional>
 #include <sanitizer/asan_interface.h>
 #include <sanitizer/coverage_interface.h>
+#include <string>
 
 #include "resmack/defs.hpp"
 
@@ -95,12 +96,16 @@ extern "C" {
     int __lsan_is_turned_off();
 }
 
+#define STRINGIFY(x) STRINGIFY_INNER(x)
+#define STRINGIFY_INNER(x) #x
+#define ASAN_EXIT_CODE_RAW 199
+
 namespace resmack {
 namespace fuzz {
 namespace asan {
 
-  inline constexpr int ASAN_EXIT_CODE = 199;
-  inline constexpr const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:halt_on_error=1:verbosity=0:symbolize=1";
+  inline constexpr const int ASAN_EXIT_CODE = ASAN_EXIT_CODE_RAW;
+  inline constexpr const char* ASAN_DEFAULT_OPTIONS = "exitcode=" STRINGIFY(ASAN_EXIT_CODE_RAW) ":detect_leaks=0:verbosity=0:symbolize=0:malloc_context_size=0:allocator_may_return_null=1";
   // symbolize=0
   // log_path=/dev/null
   //const char *ASAN_DEFAULT_OPTIONS = "exitcode=199:detect_leaks=0:symbolize=0:halt_on_error=1";

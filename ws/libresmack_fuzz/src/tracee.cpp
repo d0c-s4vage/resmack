@@ -22,29 +22,28 @@ namespace fuzz {
   // TRACEE ---------------------------------------------------------------------
   // ----------------------------------------------------------------------------
 
-  Tracee::Tracee(uint32_t idx): idx(idx) {
-    this->basic_shared = static_cast<TraceeShared*>(mmap(
+  Tracee::Tracee(uint32_t idx): idx_(idx) {
+    this->basic_shared_ = static_cast<TraceeShared*>(mmap(
       NULL,
-      sizeof(*this->basic_shared),
+      sizeof(*this->basic_shared_),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
       0
     ));
-    if (this->basic_shared == MAP_FAILED) {
+    if (this->basic_shared_ == MAP_FAILED) {
       throw std::runtime_error("Could not create basic_shared mmap: " + std::string(strerror(errno)));
     }
 
-
-    this->asan_shared = static_cast<ser::AsanInfo*>(mmap(
+    asan_shared_ = static_cast<ser::AsanInfo*>(mmap(
       NULL,
-      sizeof(*this->asan_shared),
+      sizeof(*asan_shared_),
       PROT_READ | PROT_WRITE,
       MAP_SHARED | MAP_ANONYMOUS,
       -1,
       0
     ));
-    if (this->asan_shared == MAP_FAILED) {
+    if (asan_shared_ == MAP_FAILED) {
       throw std::runtime_error("Could not create asan_shared mmap: " + std::string(strerror(errno)));
     }
 
@@ -52,10 +51,10 @@ namespace fuzz {
   }
 
   Tracee::~Tracee() {
-    munmap(this->basic_shared, sizeof(*this->basic_shared));
-    this->basic_shared = NULL;
-    munmap(this->asan_shared, sizeof(*this->asan_shared));
-    this->asan_shared = NULL;
+    munmap(this->basic_shared_, sizeof(*this->basic_shared_));
+    this->basic_shared_ = NULL;
+    munmap(asan_shared_, sizeof(*asan_shared_));
+    asan_shared_ = NULL;
   }
 
   void Tracee::SaveLastCorpusInfo(
@@ -64,15 +63,15 @@ namespace fuzz {
     size_t last_corpus_idx2,
     size_t max_depth
   ) {
-    this->basic_shared->last_used_corpus = (uint32_t)used_corpus;
-    this->basic_shared->last_corpus_index1 = last_corpus_idx1;
-    this->basic_shared->last_corpus_index2 = last_corpus_idx2;
-    this->basic_shared->last_max_depth = max_depth;
+    this->basic_shared_->last_used_corpus_ = (uint32_t)used_corpus;
+    this->basic_shared_->last_corpus_index1_ = last_corpus_idx1;
+    this->basic_shared_->last_corpus_index2_ = last_corpus_idx2;
+    this->basic_shared_->last_max_depth_ = max_depth;
   }
 
   void Tracee::SaveLastReplay(Vector<RandSnapshot>* replay) {
-    this->basic_shared->last_gen_state.num_states = replay->size();
-    ser::GenState* curr = this->basic_shared->states;
+    basic_shared_->last_gen_state_.num_states = replay->size();
+    ser::GenState* curr = basic_shared_->states_;
 
     if (replay->size() >= TRACEE_MAX_LAST_GEN_STATES) {
       throw std::runtime_error(std::format(
@@ -92,10 +91,10 @@ namespace fuzz {
   }
 
   void Tracee::LoadLastReplay(Vector<RandSnapshot>* dest) {
-    size_t num_states = this->basic_shared->last_gen_state.num_states;
+    size_t num_states = basic_shared_->last_gen_state_.num_states;
 
     for (size_t i = 0; i < num_states; i++) {
-      const ser::GenState* curr = &this->basic_shared->states[i];
+      const ser::GenState* curr = &basic_shared_->states_[i];
       dest->emplace_back(
         curr->ref_depth,
         curr->max_depth,
@@ -106,12 +105,12 @@ namespace fuzz {
   }
 
   void Tracee::SaveAsanInfo(const char* report) {
-    this->asan_shared->exists = true;
+    asan_shared_->exists = true;
     size_t report_size = strlen(report);
-    size_t size_to_copy = report_size < sizeof(this->asan_shared->report) ? report_size : sizeof(this->asan_shared->report)-1;
+    size_t size_to_copy = report_size < sizeof(asan_shared_->report) ? report_size : sizeof(asan_shared_->report)-1;
     size_to_copy--; // null byte room
-    memcpy(this->asan_shared->report, report, size_to_copy);
-    this->asan_shared->report[size_to_copy+1] = 0;
+    memcpy(asan_shared_->report, report, size_to_copy);
+    asan_shared_->report[size_to_copy+1] = 0;
 
     std::string major_stack;
     std::string minor_stack;
@@ -162,26 +161,26 @@ namespace fuzz {
       minor_stack += sym;
     }
 
-    utils::sha1_hex(major_stack.data(), major_stack.size(), this->asan_shared->major_hash);
-    utils::sha1_hex(minor_stack.data(), minor_stack.size(), this->asan_shared->minor_hash);
+    utils::sha1_hex(major_stack.data(), major_stack.size(), asan_shared_->major_hash);
+    utils::sha1_hex(minor_stack.data(), minor_stack.size(), asan_shared_->minor_hash);
   }
 
   void Tracee::IterStart() {
-    this->basic_shared->iter_start = utils::GetTimeNow();
+    basic_shared_->iter_start_ = utils::GetTimeNow();
   }
 
   float Tracee::GetIterStart() {
-    return this->basic_shared->iter_start;
+    return basic_shared_->iter_start_;
   }
 
   float Tracee::GetLifetimeStart() {
-    return this->basic_shared->lifetime_start;
+    return basic_shared_->lifetime_start_;
   }
 
   void Tracee::Reset() {
-    this->asan_shared->exists = false;
-    this->basic_shared->iter_start = -1.0f;
-    this->basic_shared->lifetime_start = utils::GetTimeNow();
+    asan_shared_->exists = false;
+    basic_shared_->iter_start_ = -1.0f;
+    basic_shared_->lifetime_start_ = utils::GetTimeNow();
   }
 
 }

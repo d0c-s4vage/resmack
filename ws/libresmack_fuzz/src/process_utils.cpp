@@ -27,50 +27,58 @@ namespace process_utils {
     }
   }
 
-  void LoadSignalInfo(int status, SignalInfo* out) {
-#if DEBUG_MESSAGES
-    DEBUG_PRINT("SIGNAL_INFO: %d\n", status);
-    DEBUG_PRINT("    WIFEXITED(status): %d\n", WIFEXITED(status));
-    DEBUG_PRINT( \
-        "    WEXITSTATUS(status): %d %s %s\n",
-        WEXITSTATUS(status),
-        sigabbrev_np(WEXITSTATUS(status)),
-        strsignal(WEXITSTATUS(status))
-    );
-    DEBUG_PRINT("    WIFSTOPPED(status): %d\n", WIFSTOPPED(status));
-    DEBUG_PRINT(\
-        "    WSTOPSIG(status): %d %s %s\n",
-        WSTOPSIG(status),
-        sigabbrev_np(WSTOPSIG(status)),
-        strsignal(WSTOPSIG(status))
-    );
-    DEBUG_PRINT("    WIFSIGNALED(status): %d\n", WIFSIGNALED(status));
-    DEBUG_PRINT(
-        "    WTERMSIG(status): %d %s %s\n",
-        WTERMSIG(status),
-        sigabbrev_np(WTERMSIG(status)),
-        strsignal(WTERMSIG(status))
-    );
-    DEBUG_PRINT("    WCOREDUMP(status): %d\n", WCOREDUMP(status));
-#endif
-    out->exited = WIFEXITED(status);
-    out->exit_status = WEXITSTATUS(status);
+  SignalInfo ExtractSignalInfo(int status) {
+//     DEBUG_PRINT("SIGNAL_INFO: %d\n", status);
+//     DEBUG_PRINT("    WIFEXITED(status): %d\n", WIFEXITED(status));
+//     DEBUG_PRINT( \
+//         "    WEXITSTATUS(status): %d %s %s\n",
+//         WEXITSTATUS(status),
+//         sigabbrev_np(WEXITSTATUS(status)),
+//         strsignal(WEXITSTATUS(status))
+//     );
+//     DEBUG_PRINT("    WIFSTOPPED(status): %d\n", WIFSTOPPED(status));
+//     DEBUG_PRINT(\
+//         "    WSTOPSIG(status): %d %s %s\n",
+//         WSTOPSIG(status),
+//         sigabbrev_np(WSTOPSIG(status)),
+//         strsignal(WSTOPSIG(status))
+//     );
+//     DEBUG_PRINT("    WIFSIGNALED(status): %d\n", WIFSIGNALED(status));
+//     DEBUG_PRINT(
+//         "    WTERMSIG(status): %d %s %s\n",
+//         WTERMSIG(status),
+//         sigabbrev_np(WTERMSIG(status)),
+//         strsignal(WTERMSIG(status))
+//     );
+//     DEBUG_PRINT("    WCOREDUMP(status): %d\n", WCOREDUMP(status));
 
-    out->signaled = WIFSIGNALED(status);
-    out->term_signal = WTERMSIG(status);
+    SignalInfo sig_info;
 
-    out->stopped = WIFSTOPPED(status);
-    out->stop_signal = WSTOPSIG(status);
+    sig_info.exited = WIFEXITED(status);
+    sig_info.exit_status = WEXITSTATUS(status);
+
+    sig_info.signaled = WIFSIGNALED(status);
+    sig_info.term_signal = WTERMSIG(status);
+
+    sig_info.stopped = WIFSTOPPED(status);
+    sig_info.stop_signal = WSTOPSIG(status);
 
     if(
-      (out->exited && out->exit_status == asan::ASAN_EXIT_CODE)
-      || (out->stopped && IsCrashSignal(out->stop_signal))
-      || (out->signaled && out->term_signal == SIGABRT)
+      (sig_info.exited && sig_info.exit_status == asan::ASAN_EXIT_CODE)
+      || (sig_info.stopped && IsCrashSignal(sig_info.stop_signal))
+      || (sig_info.signaled && sig_info.term_signal == SIGABRT)
     ) {
-      out->exit_reason = ExitReason::Crash;
+      DEBUG_PRINT("ExitReason::Crash\n");
+      sig_info.exit_reason = ExitReason::Crash;
+    } else if (sig_info.stopped) {
+      sig_info.exit_reason = ExitReason::Ptrace;
+      DEBUG_PRINT("ExitReason::Ptrace\n");
     } else {
-      out->exit_reason = ExitReason::Normal;
+      sig_info.exit_reason = ExitReason::Normal;
+      DEBUG_PRINT("ExitReason::Normal\n");
     }
+
+    return sig_info;
   }
 
   bool IgnoreBasicSignals() noexcept {

@@ -1,5 +1,4 @@
 include("${CMAKE_CURRENT_SOURCE_DIR}/variables.cmake")
-include("${CMAKE_SOURCE_DIR}/cmake/xxhash.cmake")
 
 project("${LIBRESMACK_FUZZ}"
     VERSION 0.0.1

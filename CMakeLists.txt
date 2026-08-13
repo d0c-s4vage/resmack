@@ -2,9 +2,19 @@ cmake_minimum_required(VERSION 3.13)
 
 project(resmack-main)
 
-include(cmake/clang_tidy.cmake)
+# load all dependencies
+file(GLOB CMAKE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/deps/*.cmake")
+foreach(CMAKE_FILE ${CMAKE_FILES})
+    include(${CMAKE_FILE})
+endforeach()
+
 include(cmake/compiler_options.cmake)
+include(cmake/clang_tidy.cmake)
 include(cmake/debug.cmake)
+
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_INSTALL_PREFIX "/usr")
 

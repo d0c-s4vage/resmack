@@ -6,6 +6,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
   GIT_TAG        v${XXHASH_VERSION}
   SOURCE_SUBDIR cmake_unofficial
+  SYSTEM
 )
 
 set(XXH_BUILD_SHARED OFF CACHE BOOL "" FORCE)

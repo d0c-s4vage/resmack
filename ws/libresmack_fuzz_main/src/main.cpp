@@ -37,6 +37,8 @@
 #include "resmack/fuzz/tracee.hpp"
 #include "resmack/fuzz/process_launchers/fork.hpp"
 #include "resmack/fuzz/utils.hpp"
+#include "resmack/fuzz/interface.hpp"
+
 
 namespace fs = std::filesystem;
 
@@ -111,7 +113,7 @@ void PrintHelp(char* prog_name) {
   std::cout << resmack::GetResmackLogo() << std::endl;
 
   std::cout << prog_name << std::endl << std::endl;
-  std::cout << "  Fuzz the compiled target" << std::endl << std::endl;
+  std::cout << "  Fuzz the compiled target (USING_ASAN=" << resmack::fuzz::flags::USING_ASAN << ")" << std::endl << std::endl;
   std::cout << prog_name << " [-d MAX_DEPTH] [-n NPROCS] [-s] [-i INTERVAL] [--help]"  << std::endl << std::endl;
   std::cout << "             --help,-h             Show this help message" << std::endl;
   std::cout << "           --direct                Run the fuzzing loop and target in the main thread (" << OPTS.run_direct << ")" << std::endl;
@@ -477,7 +479,7 @@ void FuzzLoop(
 
     resmack::fuzz::FeedbackStats feedback_stats = feedback->GetStats();
     if (feedback_stats.new_coverage) {
-      std::cout << "NEW COVERAGE: " << output << std::endl;
+      // std::cout << "NEW COVERAGE: " << output << std::endl;
       feedback->Sync();
     }
 
@@ -547,7 +549,7 @@ void HandleException(
   ctx.SetReplay(&snapshot);
 
   rules->Build(rule_idx, &ctx);
-  std::cout << "NEW COVERAGE (CRASH): " << output << std::endl;
+  // std::cout << "NEW COVERAGE (CRASH): " << output << std::endl;
 
   const resmack::fuzz::CrashInfo* info = tracer->GetCrashInfo();
   std::string out_path = std::string(OPTS.crash_output) + "/" + info->major_hash;
@@ -676,7 +678,8 @@ int main(int argc, char** argv) {
   }
 
   if (OPTS.run_direct) {
-    FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, nullptr);
+    resmack::fuzz::Tracee tracee(0);
+    FuzzLoop(rule_idx, &rules, &cov, &mmap_state, corpus, &tracee);
     std::exit(0);
   }
 
@@ -720,7 +723,8 @@ int main(int argc, char** argv) {
       ) -> void {
         return HandleTimeout(&rules, &mmap_state, rule_idx, pid, tracer, tracee);
       },
-      child_num
+      child_num,
+      resmack::fuzz::flags::USING_ASAN
     );
     tracer->Start();
     TRACERS.push_back(tracer);

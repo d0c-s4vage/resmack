@@ -62,9 +62,9 @@ namespace process_launchers {
       // us to continue once it has attached w/ ptrace
       raise(SIGSTOP);
 
-      // this works, gets exit code resmack::fuzz::asan::ASAN_EXIT_CODE
-      pthread_t thread = utils::CreateThread(&ForkLauncher::SpawnThreadTarget, this, tracee);
-      pthread_join(thread, nullptr);
+      //pthread_t thread = utils::CreateThread(&ForkLauncher::SpawnThreadTarget, this, tracee);
+      //pthread_join(thread, nullptr);
+      cb(tracee);
 
 
       DEBUG_PRINT("child: Done\n");
@@ -72,24 +72,27 @@ namespace process_launchers {
       _exit(0);
     }
 
+    DoPtraceSyncWithChild(fork_pid);
+
+    DEBUG_PRINT("parent: Done spawning, child pid: %d\n", fork_pid);
+    return fork_pid;
+  }
+
+  void ForkLauncher::DoPtraceSyncWithChild(pid_t child_pid) {
     DEBUG_PRINT("parent: Forked, waiting for SIGSTOP from child\n");
     int tracee_status = 0;
     if (
-        waitpid(fork_pid, &tracee_status, 0) != -1
+        waitpid(child_pid, &tracee_status, 0) != -1
         && WIFSTOPPED(tracee_status)
         && WSTOPSIG(tracee_status) == SIGSTOP
     ) {
       DEBUG_PRINT("parent: Saw the SIGSTOP, sending PTRACE_CONT\n");
-      if (ptrace(PTRACE_CONT, fork_pid, nullptr, nullptr) == -1) {
+      if (ptrace(PTRACE_CONT, child_pid, nullptr, nullptr) == -1) {
         throw std::runtime_error("Could not tell forked process to continue: " + std::string(std::strerror(errno)));
       }
     } else {
       throw std::runtime_error("Could not wait for forked pid to stop: " + std::string(std::strerror(errno)));
     }
-
-    DEBUG_PRINT("parent: Done spawning, child pid: %d\n", fork_pid);
-
-    return fork_pid;
   }
 
   void* ForkLauncher::SpawnThreadTarget(Tracee* tracee) {

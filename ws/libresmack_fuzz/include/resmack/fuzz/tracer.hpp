@@ -60,30 +60,32 @@ namespace fuzz {
 
   class Tracer {
    private:
-    uint32_t idx;
-    Tracee tracee;
-    ProcessLauncher* proc_launcher;
-    std::atomic<pid_t> traced_pid;
-    std::atomic<bool> should_run;
-    float timeout;
-    TraceExceptionCb exception_cb;
-    TraceTimeoutCb timeout_cb;
-    CrashInfo last_crash;
-    Lock trace_lock;
+    uint32_t idx_;
+    bool using_asan_;
+    Tracee tracee_;
+    ProcessLauncher* proc_launcher_;
+    std::atomic<pid_t> traced_pid_;
+    std::atomic<bool> should_run_;
+    float timeout_;
+    TraceExceptionCb exception_cb_;
+    TraceTimeoutCb timeout_cb_;
+    CrashInfo last_crash_;
+    Lock trace_lock_;
 
-    pthread_t monitor_thread;
-    pthread_t monitor_timeout_thread;
+    pthread_t monitor_thread_;
+    pthread_t monitor_timeout_thread_;
 
    public:
     Tracer(
       ProcessLauncher* proc_launcher,
       TraceExceptionCb exception_cb,
       TraceTimeoutCb timeout_cb,
-      uint32_t idx
+      uint32_t idx,
+      bool using_asan
     );
     ~Tracer();
 
-    uint32_t GetIdx() { return this->idx; }
+    uint32_t GetIdx() { return this->idx_; }
 
     ATTRIBUTE_NO_SANITIZING
     void Start();
@@ -92,7 +94,7 @@ namespace fuzz {
     ATTRIBUTE_NO_SANITIZING
     void Join();
     ATTRIBUTE_NO_SANITIZING
-    const CrashInfo* GetCrashInfo() { return &this->last_crash; }
+    const CrashInfo* GetCrashInfo() { return &this->last_crash_; }
     ATTRIBUTE_NO_SANITIZING
     void MonitorTracee();
     ATTRIBUTE_NO_SANITIZING

@@ -20,13 +20,12 @@ namespace fuzz {
   }
 
   void HandleSanitizerCovTracePcGuard(uint32_t* guard) noexcept {
-    if (nullptr == guard || !*guard || nullptr == FPO_COV_DATA) { return; }
+    if (nullptr == guard || nullptr == FPO_COV_DATA) { return; }
 
     uint32_t idx = *guard - 1;
     uint8_t old = FPO_COV_DATA->flags[idx];
     FPO_COV_DATA->flags[idx] = 1;
     FPO_COV_DATA->fpo_saw_new |= (old == 0);
-    FPO_COV_DATA->hit_flags += (old == 0);
   }
 
   /*
@@ -87,7 +86,7 @@ namespace fuzz {
   }
 
   std::string Coverage::GetSummary() const noexcept {
-    return std::to_string(fpo_data_->hit_flags) + " edges";
+    return std::to_string(shared_data_->hit_flags) + " edges";
   }
 
   void Coverage::FPOStart() noexcept {
@@ -102,6 +101,11 @@ namespace fuzz {
     // shared_data_->hash won't equal fpo_data_->hash when new coverage was synced
     // by someone else to shared_data_
     if (fpo_data_->fpo_saw_new || shared_data_->hash != fpo_data_->hash) {
+      DEBUG_PRINT("FPO_SAW_NEW: %b, shared_data_->hash (%016lx) != fpo_data_->hash (%016lx)\n",
+          fpo_data_->fpo_saw_new,
+          shared_data_->hash,
+          fpo_data_->hash
+      );
       Sync();
     }
   }
@@ -128,6 +132,7 @@ namespace fuzz {
     // (NOTE: shared_data_->fpo_has_new isn't used)
     bool we_had_new = false;
     bool they_had_new = false;
+    uint64_t num_flags = 0;
 
     for (size_t i = 0; i < fpo_data_->num_flags; i++) {
         uint64_t ours   = fpo_data_->flags[i];
@@ -137,6 +142,8 @@ namespace fuzz {
         we_had_new |= ((ours & ~shared) != 0);
         they_had_new |= ((shared & ~ours) != 0);
 
+        num_flags += (merged & 1);
+
         fpo_data_->flags[i] = merged;
         shared_data_->flags[i] = merged;
     }
@@ -145,6 +152,9 @@ namespace fuzz {
       fpo_data_->hash = CalcHash();
       shared_data_->hash = fpo_data_->hash;
     }
+
+    fpo_data_->hit_flags = num_flags;
+    shared_data_->hit_flags = num_flags;
 
     return fpo_data_->fpo_saw_new;
   }
